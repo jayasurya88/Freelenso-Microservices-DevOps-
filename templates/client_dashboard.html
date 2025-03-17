@@ -62,10 +62,45 @@
                     </a>
                 </div>
                 <div class="card-body">
-                    <p class="text-muted text-center py-4">
-                        <i class="bi bi-clipboard2-x display-4 d-block mb-3"></i>
-                        No active projects
-                    </p>
+                    {% if profile.posted_projects.exists %}
+                        <div class="list-group">
+                            {% for project in profile.posted_projects.all %}
+                                <div class="list-group-item border-0 mb-3 bg-light rounded">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <div>
+                                            <h6 class="mb-1">{{ project.title }}</h6>
+                                            <p class="text-muted small mb-0">
+                                                <span class="me-3">
+                                                    <i class="bi bi-clock me-1"></i>
+                                                    Posted {{ project.created_at|timesince }} ago
+                                                </span>
+                                                <span class="me-3">
+                                                    <i class="bi bi-currency-dollar me-1"></i>
+                                                    ${{ project.budget_min }} - ${{ project.budget_max }}
+                                                </span>
+                                                <span class="badge {% if project.status == 'open' %}bg-success{% elif project.status == 'in_progress' %}bg-primary{% else %}bg-secondary{% endif %}">
+                                                    {{ project.get_status_display }}
+                                                </span>
+                                            </p>
+                                        </div>
+                                        <div class="d-flex gap-2">
+                                            <a href="{% url 'project_detail' project.id %}" class="btn btn-outline-primary btn-sm">
+                                                <i class="bi bi-eye me-1"></i>View
+                                            </a>
+                                            <a href="{% url 'manage_applications' project.id %}" class="btn btn-primary btn-sm">
+                                                <i class="bi bi-people me-1"></i>Manage
+                                            </a>
+                                        </div>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <p class="text-muted text-center py-4">
+                            <i class="bi bi-clipboard2-x display-4 d-block mb-3"></i>
+                            No active projects
+                        </p>
+                    {% endif %}
                 </div>
             </div>
 

@@ -377,3 +377,33 @@ def my_projects(request):
         'projects': projects,
     }
     return render(request, template, context)
+
+@login_required
+def delete_project(request, project_id):
+    """View for deleting a project"""
+    project = get_object_or_404(Project, id=project_id)
+    
+    # Check if user is the project owner
+    if project.client != request.user.userprofile:
+        messages.error(request, "You don't have permission to delete this project.")
+        return redirect('project_detail', project_id=project_id)
+    
+    if request.method == 'POST':
+        try:
+            # Delete all project files
+            for attachment in project.attachments.all():
+                if attachment.file:
+                    if os.path.exists(attachment.file.path):
+                        os.remove(attachment.file.path)
+            
+            # Delete the project (this will cascade delete applications and milestones)
+            project.delete()
+            
+            messages.success(request, 'Project deleted successfully.')
+            return redirect('dashboard')
+            
+        except Exception as e:
+            messages.error(request, f'Error deleting project: {str(e)}')
+            return redirect('project_detail', project_id=project_id)
+    
+    return redirect('project_detail', project_id=project_id)

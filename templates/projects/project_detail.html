@@ -36,9 +36,14 @@
                 </div>
                 <div class="text-end">
                     {% if is_owner %}
-                        <a href="{% url 'manage_applications' project.id %}" class="btn btn-primary">
-                            <i class="bi bi-people me-2"></i>Manage Applications
-                        </a>
+                        <div class="btn-group">
+                            <a href="{% url 'manage_applications' project.id %}" class="btn btn-primary">
+                                <i class="bi bi-people me-2"></i>Manage Applications
+                            </a>
+                            <button type="button" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#deleteProjectModal">
+                                <i class="bi bi-trash me-2"></i>Delete Project
+                            </button>
+                        </div>
                     {% elif not has_applied and user.userprofile.is_freelancer %}
                         <a href="{% url 'apply_to_project' project.id %}" class="btn btn-primary">
                             <i class="bi bi-send me-2"></i>Apply Now
@@ -177,4 +182,58 @@
         </div>
     {% endif %}
 </div>
+
+<!-- Delete Project Modal -->
+{% if is_owner %}
+<div class="modal fade" id="deleteProjectModal" tabindex="-1" aria-labelledby="deleteProjectModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header border-0">
+                <h5 class="modal-title text-danger" id="deleteProjectModalLabel">
+                    <i class="bi bi-exclamation-triangle-fill me-2"></i>Delete Project
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="alert alert-warning">
+                    <h6 class="alert-heading">⚠️ Warning</h6>
+                    <p class="mb-0">This action cannot be undone. This will permanently delete the project, all applications, and associated files.</p>
+                </div>
+                <form id="deleteProjectForm" method="POST" action="{% url 'delete_project' project.id %}">
+                    {% csrf_token %}
+                    <div class="mb-3">
+                        <label for="confirmProjectName" class="form-label">Please type <strong>{{ project.title }}</strong> to confirm deletion:</label>
+                        <input type="text" class="form-control" id="confirmProjectName" required>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer border-0">
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-danger" id="confirmDeleteBtn" disabled>
+                    <i class="bi bi-trash me-2"></i>Delete Project
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const confirmInput = document.getElementById('confirmProjectName');
+    const confirmBtn = document.getElementById('confirmDeleteBtn');
+    const projectTitle = "{{ project.title }}";
+    const deleteForm = document.getElementById('deleteProjectForm');
+
+    confirmInput.addEventListener('input', function() {
+        confirmBtn.disabled = this.value !== projectTitle;
+    });
+
+    confirmBtn.addEventListener('click', function() {
+        if (confirmInput.value === projectTitle) {
+            deleteForm.submit();
+        }
+    });
+});
+</script>
+{% endif %}
 {% endblock %} 
