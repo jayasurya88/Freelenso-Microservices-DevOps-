@@ -1,0 +1,187 @@
+{% extends 'base.html' %}
+
+{% block title %}Edit Profile{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            {% if messages %}
+                {% for message in messages %}
+                    <div class="alert alert-{{ message.tags }} alert-dismissible fade show mb-4" role="alert">
+                        {% if message.tags == 'success' %}
+                            <i class="bi bi-check-circle-fill me-2"></i>
+                        {% elif message.tags == 'error' %}
+                            <i class="bi bi-exclamation-circle-fill me-2"></i>
+                        {% elif message.tags == 'info' %}
+                            <i class="bi bi-info-circle-fill me-2"></i>
+                        {% elif message.tags == 'warning' %}
+                            <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                        {% endif %}
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                {% endfor %}
+            {% endif %}
+
+            <div class="card border-0 shadow-sm">
+                <div class="card-body">
+                    <h2 class="card-title mb-4">Edit Profile</h2>
+                    
+                    <form method="post" enctype="multipart/form-data" id="profile-form">
+                        {% csrf_token %}
+                        
+                        <!-- Profile Picture -->
+                        <div class="mb-4">
+                            <label class="form-label">Profile Picture</label>
+                            <div class="d-flex align-items-center gap-3">
+                                <div class="position-relative" style="width: 100px; height: 100px;">
+                                    {% if profile.profile_picture %}
+                                        <img src="{{ profile.profile_picture.url }}?v={{ profile.updated_at|date:'U' }}" 
+                                             alt="Current Profile Picture" 
+                                             class="rounded-circle shadow" 
+                                             style="width: 100px; height: 100px; object-fit: cover;">
+                                    {% else %}
+                                        <div class="rounded-circle bg-primary bg-opacity-10 d-flex align-items-center justify-content-center" 
+                                             style="width: 100px; height: 100px;">
+                                            <i class="bi bi-person text-primary" style="font-size: 2.5rem;"></i>
+                                        </div>
+                                    {% endif %}
+                                </div>
+                                <div class="flex-grow-1">
+                                    <input type="file" 
+                                           name="profile_picture" 
+                                           class="form-control" 
+                                           accept="image/*"
+                                           id="profile-picture-input">
+                                    <div class="form-text mt-1">
+                                        <small class="text-muted">
+                                            Maximum file size: 5MB. Recommended size: 400x400 pixels.
+                                            Supported formats: JPG, PNG, GIF
+                                        </small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Basic Information -->
+                        <div class="mb-4">
+                            <h5 class="mb-3">Basic Information</h5>
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <label class="form-label">First Name</label>
+                                    <input type="text" name="first_name" value="{{ user.first_name }}" class="form-control" placeholder="Enter your first name">
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">Last Name</label>
+                                    <input type="text" name="last_name" value="{{ user.last_name }}" class="form-control" placeholder="Enter your last name">
+                                </div>
+                                <div class="col-12">
+                                    <label class="form-label">Bio</label>
+                                    <textarea name="bio" class="form-control" rows="4" placeholder="Tell us about yourself">{{ profile.bio }}</textarea>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">Country</label>
+                                    <input type="text" name="country" value="{{ profile.country }}" class="form-control" placeholder="Your country">
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">Phone Number</label>
+                                    <input type="tel" name="phone_number" value="{{ profile.phone_number }}" class="form-control" placeholder="Your phone number">
+                                </div>
+                            </div>
+                        </div>
+
+                        {% if profile.is_freelancer %}
+                            <!-- Professional Information -->
+                            <div class="mb-4">
+                                <h5 class="mb-3">Professional Information</h5>
+                                <div class="row g-3">
+                                    <div class="col-12">
+                                        <label class="form-label">Skills (separate with spaces)</label>
+                                        <input type="text" name="skills" value="{{ profile.skills }}" class="form-control" placeholder="e.g. Python JavaScript React">
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label">Hourly Rate ($)</label>
+                                        <input type="number" name="hourly_rate" value="{{ profile.hourly_rate }}" class="form-control" placeholder="Your hourly rate">
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label">Availability</label>
+                                        <select name="availability" class="form-select">
+                                            <option value="">Select availability</option>
+                                            <option value="Full Time" {% if profile.availability == 'Full Time' %}selected{% endif %}>Full Time</option>
+                                            <option value="Part Time" {% if profile.availability == 'Part Time' %}selected{% endif %}>Part Time</option>
+                                            <option value="Freelance" {% if profile.availability == 'Freelance' %}selected{% endif %}>Freelance</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-12">
+                                        <label class="form-label">Languages</label>
+                                        <input type="text" name="languages" value="{{ profile.languages }}" class="form-control" placeholder="e.g. English, Spanish">
+                                    </div>
+                                    <div class="col-12">
+                                        <label class="form-label">Experience</label>
+                                        <textarea name="experience" class="form-control" rows="4" placeholder="Describe your work experience">{{ profile.experience }}</textarea>
+                                    </div>
+                                    <div class="col-12">
+                                        <label class="form-label">Education</label>
+                                        <textarea name="education" class="form-control" rows="4" placeholder="List your educational background">{{ profile.education }}</textarea>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Links -->
+                            <div class="mb-4">
+                                <h5 class="mb-3">Links</h5>
+                                <div class="row g-3">
+                                    <div class="col-12">
+                                        <label class="form-label">Website</label>
+                                        <input type="url" name="website" value="{{ profile.website }}" class="form-control" placeholder="https://example.com">
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label">LinkedIn</label>
+                                        <input type="url" name="linkedin" value="{{ profile.linkedin }}" class="form-control" placeholder="Your LinkedIn profile URL">
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label">GitHub</label>
+                                        <input type="url" name="github" value="{{ profile.github }}" class="form-control" placeholder="Your GitHub profile URL">
+                                    </div>
+                                </div>
+                            </div>
+                        {% endif %}
+
+                        <!-- Submit Button -->
+                        <div class="d-flex gap-2">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-check-lg me-2"></i>Save Changes
+                            </button>
+                            <a href="{% url 'view_profile' %}" class="btn btn-outline-secondary">
+                                <i class="bi bi-x-lg me-2"></i>Cancel
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.getElementById('profile-picture-input').addEventListener('change', function(e) {
+    const file = e.target.files[0];
+    if (file) {
+        // Check file size
+        if (file.size > 5 * 1024 * 1024) {
+            alert('File size too large. Please select an image under 5MB.');
+            this.value = '';
+            return;
+        }
+        
+        // Check file type
+        if (!file.type.startsWith('image/')) {
+            alert('Please select an image file.');
+            this.value = '';
+            return;
+        }
+    }
+});
+</script>
+{% endblock %} 

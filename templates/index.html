@@ -1,0 +1,185 @@
+{% extends 'base.html' %}
+
+{% block title %}Welcome to Freelenso{% endblock %}
+
+{% block content %}
+<!-- Hero Section -->
+<div class="row align-items-center py-5">
+    <div class="col-lg-6">
+        <h1 class="display-4 fw-bold mb-4" style="background: linear-gradient(to right, var(--primary-color), var(--secondary-color)); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">
+            Find Expert Freelancers for Your Projects
+        </h1>
+        <p class="lead mb-4 text-muted">Connect with top talent from around the world. Get quality work done quickly and efficiently.</p>
+        {% if not user.is_authenticated %}
+            <div class="d-grid gap-2 d-md-flex">
+                <a href="{% url 'register' %}" class="btn btn-primary btn-lg me-md-2">
+                    <i class="bi bi-rocket-takeoff me-2"></i>Get Started
+                </a>
+                <a href="{% url 'login' %}" class="btn btn-outline-primary btn-lg">
+                    <i class="bi bi-person me-2"></i>Login
+                </a>
+            </div>
+        {% else %}
+            <a href="{% url 'dashboard' %}" class="btn btn-primary btn-lg">
+                <i class="bi bi-speedometer2 me-2"></i>Go to Dashboard
+            </a>
+        {% endif %}
+    </div>
+    <div class="col-lg-6 mt-5 mt-lg-0">
+        <div class="position-relative">
+            <div class="card border-0 shadow-lg p-3 mb-3 position-absolute" style="width: 200px; top: 0; right: 0;">
+                <div class="d-flex align-items-center">
+                    <i class="bi bi-people-fill text-primary h4 mb-0 me-2"></i>
+                    <div>
+                        <h6 class="mb-0">Active Freelancers</h6>
+                        <small class="text-muted">1000+ Online</small>
+                    </div>
+                </div>
+            </div>
+            <div class="card border-0 shadow-lg p-3 position-absolute" style="width: 200px; bottom: 0; left: 0;">
+                <div class="d-flex align-items-center">
+                    <i class="bi bi-check-circle-fill text-success h4 mb-0 me-2"></i>
+                    <div>
+                        <h6 class="mb-0">Projects Completed</h6>
+                        <small class="text-muted">500+ This Week</small>
+                    </div>
+                </div>
+            </div>
+            <img src="https://via.placeholder.com/600x500" alt="Freelancing" class="img-fluid rounded-3 shadow-lg">
+        </div>
+    </div>
+</div>
+
+<!-- Popular Categories -->
+<div class="py-5">
+    <div class="text-center mb-5">
+        <h2 class="fw-bold">Popular Categories</h2>
+        <p class="text-muted">Browse our most sought-after services</p>
+    </div>
+    <div class="row g-4">
+        <div class="col-md-4">
+            <div class="card h-100 border-0">
+                <div class="card-body text-center p-4">
+                    <div class="rounded-circle bg-primary bg-opacity-10 p-3 d-inline-block mb-3">
+                        <i class="bi bi-code-slash text-primary display-6"></i>
+                    </div>
+                    <h5 class="card-title">Web Development</h5>
+                    <p class="card-text text-muted">Custom websites, web apps, and API development</p>
+                    <a href="#" class="btn btn-outline-primary">
+                        <i class="bi bi-arrow-right me-2"></i>Explore
+                    </a>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card h-100 border-0">
+                <div class="card-body text-center p-4">
+                    <div class="rounded-circle bg-primary bg-opacity-10 p-3 d-inline-block mb-3">
+                        <i class="bi bi-brush text-primary display-6"></i>
+                    </div>
+                    <h5 class="card-title">Graphic Design</h5>
+                    <p class="card-text text-muted">Logos, branding, illustrations, and UI/UX design</p>
+                    <a href="#" class="btn btn-outline-primary">
+                        <i class="bi bi-arrow-right me-2"></i>Explore
+                    </a>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card h-100 border-0">
+                <div class="card-body text-center p-4">
+                    <div class="rounded-circle bg-primary bg-opacity-10 p-3 d-inline-block mb-3">
+                        <i class="bi bi-pencil text-primary display-6"></i>
+                    </div>
+                    <h5 class="card-title">Content Writing</h5>
+                    <p class="card-text text-muted">Blog posts, articles, and copywriting services</p>
+                    <a href="#" class="btn btn-outline-primary">
+                        <i class="bi bi-arrow-right me-2"></i>Explore
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- How It Works -->
+<div class="py-5 bg-white rounded-4 shadow-sm">
+    <div class="text-center mb-5">
+        <h2 class="fw-bold">How It Works</h2>
+        <p class="text-muted">Get your project done in three simple steps</p>
+    </div>
+    <div class="row g-4">
+        <div class="col-md-4">
+            <div class="text-center px-4">
+                <div class="position-relative mb-4">
+                    <div class="display-4 fw-bold text-primary">1</div>
+                    <div class="position-absolute top-50 end-0 translate-middle-y d-none d-md-block">
+                        <i class="bi bi-arrow-right text-muted display-6"></i>
+                    </div>
+                </div>
+                <h5 class="fw-bold">Post a Project</h5>
+                <p class="text-muted">Share your project details and requirements</p>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="text-center px-4">
+                <div class="position-relative mb-4">
+                    <div class="display-4 fw-bold text-primary">2</div>
+                    <div class="position-absolute top-50 end-0 translate-middle-y d-none d-md-block">
+                        <i class="bi bi-arrow-right text-muted display-6"></i>
+                    </div>
+                </div>
+                <h5 class="fw-bold">Review Proposals</h5>
+                <p class="text-muted">Compare offers from talented freelancers</p>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="text-center px-4">
+                <div class="position-relative mb-4">
+                    <div class="display-4 fw-bold text-primary">3</div>
+                </div>
+                <h5 class="fw-bold">Complete Project</h5>
+                <p class="text-muted">Work with the best and get results</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Why Choose Us -->
+<div class="py-5">
+    <div class="text-center mb-5">
+        <h2 class="fw-bold">Why Choose Freelenso</h2>
+        <p class="text-muted">Benefits that make us stand out</p>
+    </div>
+    <div class="row g-4">
+        <div class="col-md-3">
+            <div class="text-center">
+                <i class="bi bi-shield-check text-primary display-4 mb-3"></i>
+                <h5 class="fw-bold">Secure Payments</h5>
+                <p class="text-muted small">Your payment is always protected</p>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="text-center">
+                <i class="bi bi-trophy text-primary display-4 mb-3"></i>
+                <h5 class="fw-bold">Quality Work</h5>
+                <p class="text-muted small">Only the best freelancers</p>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="text-center">
+                <i class="bi bi-clock-history text-primary display-4 mb-3"></i>
+                <h5 class="fw-bold">24/7 Support</h5>
+                <p class="text-muted small">We're here to help anytime</p>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="text-center">
+                <i class="bi bi-graph-up-arrow text-primary display-4 mb-3"></i>
+                <h5 class="fw-bold">Great Value</h5>
+                <p class="text-muted small">Competitive pricing</p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

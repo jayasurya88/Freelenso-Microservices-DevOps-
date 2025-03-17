@@ -1,0 +1,397 @@
+{% extends 'base.html' %}
+
+{% block title %}Create New Project{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <!-- Progress Bar -->
+    <div class="row justify-content-center mb-5">
+        <div class="col-md-8">
+            <div class="position-relative">
+                <div class="progress" style="height: 3px;">
+                    <div class="progress-bar" role="progressbar" id="progress-bar"
+                         style="width: 25%;" aria-valuenow="25" aria-valuemin="0" aria-valuemax="100"></div>
+                </div>
+                <div class="position-absolute top-0 start-0 translate-middle-y d-flex justify-content-between w-100 px-2" style="margin-top: 1.5px;">
+                    <div class="step active" data-step="1">
+                        <div class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center" style="width: 30px; height: 30px;">
+                            <i class="bi bi-1-circle-fill"></i>
+                        </div>
+                        <span class="position-absolute text-primary" style="width: 100px; margin-top: 35px; margin-left: -35px; font-size: 0.85rem;">Basic Info</span>
+                    </div>
+                    <div class="step" data-step="2">
+                        <div class="rounded-circle bg-secondary text-white d-flex align-items-center justify-content-center" style="width: 30px; height: 30px;">
+                            <i class="bi bi-2-circle"></i>
+                        </div>
+                        <span class="position-absolute text-secondary" style="width: 100px; margin-top: 35px; margin-left: -35px; font-size: 0.85rem;">Requirements</span>
+                    </div>
+                    <div class="step" data-step="3">
+                        <div class="rounded-circle bg-secondary text-white d-flex align-items-center justify-content-center" style="width: 30px; height: 30px;">
+                            <i class="bi bi-3-circle"></i>
+                        </div>
+                        <span class="position-absolute text-secondary" style="width: 100px; margin-top: 35px; margin-left: -35px; font-size: 0.85rem;">Budget</span>
+                    </div>
+                    <div class="step" data-step="4">
+                        <div class="rounded-circle bg-secondary text-white d-flex align-items-center justify-content-center" style="width: 30px; height: 30px;">
+                            <i class="bi bi-4-circle"></i>
+                        </div>
+                        <span class="position-absolute text-secondary" style="width: 100px; margin-top: 35px; margin-left: -35px; font-size: 0.85rem;">Review</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Form Container -->
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <form id="projectForm" method="POST" enctype="multipart/form-data">
+                {% csrf_token %}
+                
+                <!-- Step 1: Basic Info -->
+                <div class="step-content" id="step1">
+                    <div class="card border-0 shadow-sm">
+                        <div class="card-body p-4">
+                            <h4 class="card-title mb-4">Basic Information</h4>
+                            
+                            <div class="mb-4">
+                                <label for="title" class="form-label">Project Title</label>
+                                <input type="text" class="form-control" id="title" name="title" required>
+                                <div class="form-text">Choose a clear and descriptive title for your project.</div>
+                            </div>
+
+                            <div class="mb-4">
+                                <label for="category" class="form-label">Category</label>
+                                <select class="form-select" id="category" name="category" required>
+                                    <option value="">Select a category</option>
+                                    <option value="web_development">Web Development</option>
+                                    <option value="mobile_development">Mobile Development</option>
+                                    <option value="design">Design</option>
+                                    <option value="writing">Writing</option>
+                                    <option value="marketing">Marketing</option>
+                                    <option value="data">Data Science</option>
+                                </select>
+                            </div>
+
+                            <div class="mb-4">
+                                <label for="description" class="form-label">Project Description</label>
+                                <textarea class="form-control" id="description" name="description" rows="5" required></textarea>
+                                <div class="form-text">Describe your project in detail. Be specific about what you need.</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Step 2: Requirements -->
+                <div class="step-content d-none" id="step2">
+                    <div class="card border-0 shadow-sm">
+                        <div class="card-body p-4">
+                            <h4 class="card-title mb-4">Project Requirements</h4>
+
+                            <div class="mb-4">
+                                <label for="skills" class="form-label">Required Skills</label>
+                                <input type="text" class="form-control" id="skills" name="skills" required>
+                                <div class="form-text">Enter skills separated by commas (e.g., Python, React, UI Design)</div>
+                            </div>
+
+                            <div class="mb-4">
+                                <label for="experience_level" class="form-label">Experience Level</label>
+                                <select class="form-select" id="experience_level" name="experience_level" required>
+                                    <option value="">Select experience level</option>
+                                    <option value="entry">Entry Level</option>
+                                    <option value="intermediate">Intermediate</option>
+                                    <option value="expert">Expert</option>
+                                </select>
+                            </div>
+
+                            <div class="mb-4">
+                                <label for="duration" class="form-label">Project Duration</label>
+                                <select class="form-select" id="duration" name="duration" required>
+                                    <option value="">Select estimated duration</option>
+                                    <option value="short">Less than 1 month</option>
+                                    <option value="medium">1-3 months</option>
+                                    <option value="long">3-6 months</option>
+                                    <option value="ongoing">Ongoing</option>
+                                </select>
+                            </div>
+
+                            <div class="mb-4">
+                                <label for="attachments" class="form-label">Project Files</label>
+                                <input type="file" class="form-control" id="attachments" name="attachments" multiple>
+                                <div class="form-text">Upload any relevant files (max 5 files, 10MB each)</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Step 3: Budget -->
+                <div class="step-content d-none" id="step3">
+                    <div class="card border-0 shadow-sm">
+                        <div class="card-body p-4">
+                            <h4 class="card-title mb-4">Budget Information</h4>
+
+                            <div class="mb-4">
+                                <label class="form-label">Budget Range</label>
+                                <div class="row g-3">
+                                    <div class="col-md-6">
+                                        <div class="input-group">
+                                            <span class="input-group-text">$</span>
+                                            <input type="number" class="form-control" id="budget_min" name="budget_min" required>
+                                        </div>
+                                        <div class="form-text">Minimum budget</div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="input-group">
+                                            <span class="input-group-text">$</span>
+                                            <input type="number" class="form-control" id="budget_max" name="budget_max" required>
+                                        </div>
+                                        <div class="form-text">Maximum budget</div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="mb-4">
+                                <label for="deadline" class="form-label">Project Deadline</label>
+                                <input type="date" class="form-control" id="deadline" name="deadline" required>
+                            </div>
+
+                            <div id="milestones-container">
+                                <h5 class="mb-3">Project Milestones</h5>
+                                <div class="milestone mb-3">
+                                    <div class="card border">
+                                        <div class="card-body">
+                                            <div class="row g-3">
+                                                <div class="col-md-6">
+                                                    <label class="form-label">Milestone Title</label>
+                                                    <input type="text" class="form-control" name="milestone_titles[]" required>
+                                                </div>
+                                                <div class="col-md-6">
+                                                    <label class="form-label">Amount</label>
+                                                    <div class="input-group">
+                                                        <span class="input-group-text">$</span>
+                                                        <input type="number" class="form-control" name="milestone_amounts[]" required>
+                                                    </div>
+                                                </div>
+                                                <div class="col-md-6">
+                                                    <label class="form-label">Due Date</label>
+                                                    <input type="date" class="form-control milestone-due-date" name="milestone_due_dates[]" required>
+                                                </div>
+                                                <div class="col-md-12">
+                                                    <label class="form-label">Description</label>
+                                                    <textarea class="form-control" name="milestone_descriptions[]" rows="2" required></textarea>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <button type="button" class="btn btn-outline-primary" id="addMilestone">
+                                <i class="bi bi-plus-circle me-2"></i>Add Another Milestone
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Step 4: Review -->
+                <div class="step-content d-none" id="step4">
+                    <div class="card border-0 shadow-sm">
+                        <div class="card-body p-4">
+                            <h4 class="card-title mb-4">Review Your Project</h4>
+                            <div id="projectSummary">
+                                <!-- Will be populated by JavaScript -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Navigation Buttons -->
+                <div class="d-flex justify-content-between mt-4">
+                    <button type="button" class="btn btn-outline-primary" id="prevBtn" style="display: none;">
+                        <i class="bi bi-arrow-left me-2"></i>Previous
+                    </button>
+                    <button type="button" class="btn btn-primary" id="nextBtn">
+                        Next<i class="bi bi-arrow-right ms-2"></i>
+                    </button>
+                    <button type="submit" class="btn btn-success" id="submitBtn" style="display: none;">
+                        <i class="bi bi-check-circle me-2"></i>Post Project
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- JavaScript for Form Wizard -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    let currentStep = 1;
+    const totalSteps = 4;
+    const form = document.getElementById('projectForm');
+    const nextBtn = document.getElementById('nextBtn');
+    const prevBtn = document.getElementById('prevBtn');
+    const submitBtn = document.getElementById('submitBtn');
+    const progressBar = document.getElementById('progress-bar');
+
+    // Set minimum date for milestone due dates
+    function updateMinDates() {
+        const projectDeadline = document.getElementById('deadline').value;
+        const milestoneDueDates = document.querySelectorAll('.milestone-due-date');
+        
+        milestoneDueDates.forEach(dateInput => {
+            dateInput.setAttribute('max', projectDeadline);
+            // Set minimum date to today
+            const today = new Date().toISOString().split('T')[0];
+            dateInput.setAttribute('min', today);
+        });
+    }
+
+    // Update milestone due date constraints when project deadline changes
+    document.getElementById('deadline').addEventListener('change', updateMinDates);
+
+    // Add event listener to the "Add Milestone" button
+    document.getElementById('addMilestone').addEventListener('click', function() {
+        const container = document.getElementById('milestones-container');
+        const milestoneTemplate = document.querySelector('.milestone').cloneNode(true);
+        
+        // Clear input values
+        milestoneTemplate.querySelectorAll('input, textarea').forEach(input => {
+            input.value = '';
+        });
+        
+        // Insert before the "Add Milestone" button
+        container.insertBefore(milestoneTemplate, this.parentElement);
+        
+        // Update date constraints for the new milestone
+        updateMinDates();
+    });
+
+    // Initialize date constraints
+    updateMinDates();
+
+    function updateProgress() {
+        const percent = (currentStep / totalSteps) * 100;
+        progressBar.style.width = percent + '%';
+        progressBar.setAttribute('aria-valuenow', percent);
+
+        // Update step indicators
+        document.querySelectorAll('.step').forEach((step, index) => {
+            const stepNum = index + 1;
+            const icon = step.querySelector('i');
+            const circle = step.querySelector('.rounded-circle');
+            const text = step.querySelector('span');
+
+            if (stepNum < currentStep) {
+                circle.classList.remove('bg-secondary');
+                circle.classList.add('bg-success');
+                icon.classList.remove('bi-' + stepNum + '-circle');
+                icon.classList.add('bi-check-circle-fill');
+                text.classList.remove('text-secondary');
+                text.classList.add('text-success');
+            } else if (stepNum === currentStep) {
+                circle.classList.remove('bg-secondary', 'bg-success');
+                circle.classList.add('bg-primary');
+                icon.classList.remove('bi-check-circle-fill');
+                icon.classList.add('bi-' + stepNum + '-circle-fill');
+                text.classList.remove('text-secondary', 'text-success');
+                text.classList.add('text-primary');
+            } else {
+                circle.classList.remove('bg-primary', 'bg-success');
+                circle.classList.add('bg-secondary');
+                icon.classList.remove('bi-check-circle-fill', 'bi-' + stepNum + '-circle-fill');
+                icon.classList.add('bi-' + stepNum + '-circle');
+                text.classList.remove('text-primary', 'text-success');
+                text.classList.add('text-secondary');
+            }
+        });
+    }
+
+    function showStep(step) {
+        document.querySelectorAll('.step-content').forEach(content => {
+            content.classList.add('d-none');
+        });
+        document.getElementById('step' + step).classList.remove('d-none');
+
+        // Show/hide navigation buttons
+        prevBtn.style.display = step === 1 ? 'none' : 'block';
+        nextBtn.style.display = step === totalSteps ? 'none' : 'block';
+        submitBtn.style.display = step === totalSteps ? 'block' : 'none';
+
+        // Update progress
+        updateProgress();
+
+        // If on review step, populate summary
+        if (step === totalSteps) {
+            populateReview();
+        }
+    }
+
+    function validateCurrentStep() {
+        const currentStepElement = document.getElementById('step' + currentStep);
+        const requiredFields = currentStepElement.querySelectorAll('[required]');
+        let isValid = true;
+
+        requiredFields.forEach(field => {
+            if (!field.value) {
+                isValid = false;
+                field.classList.add('is-invalid');
+            } else {
+                field.classList.remove('is-invalid');
+            }
+        });
+
+        return isValid;
+    }
+
+    function populateReview() {
+        const summary = document.getElementById('projectSummary');
+        const formData = new FormData(form);
+        let html = `
+            <div class="review-section mb-4">
+                <h5 class="text-primary mb-3">Basic Information</h5>
+                <p><strong>Title:</strong> ${formData.get('title')}</p>
+                <p><strong>Category:</strong> ${document.getElementById('category').options[document.getElementById('category').selectedIndex].text}</p>
+                <p><strong>Description:</strong> ${formData.get('description')}</p>
+            </div>
+
+            <div class="review-section mb-4">
+                <h5 class="text-primary mb-3">Requirements</h5>
+                <p><strong>Required Skills:</strong> ${formData.get('skills')}</p>
+                <p><strong>Experience Level:</strong> ${document.getElementById('experience_level').options[document.getElementById('experience_level').selectedIndex].text}</p>
+                <p><strong>Duration:</strong> ${document.getElementById('duration').options[document.getElementById('duration').selectedIndex].text}</p>
+            </div>
+
+            <div class="review-section mb-4">
+                <h5 class="text-primary mb-3">Budget</h5>
+                <p><strong>Budget Range:</strong> $${formData.get('budget_min')} - $${formData.get('budget_max')}</p>
+                <p><strong>Deadline:</strong> ${formData.get('deadline')}</p>
+            </div>
+        `;
+        summary.innerHTML = html;
+    }
+
+    nextBtn.addEventListener('click', function() {
+        if (validateCurrentStep()) {
+            currentStep++;
+            showStep(currentStep);
+        }
+    });
+
+    prevBtn.addEventListener('click', function() {
+        currentStep--;
+        showStep(currentStep);
+    });
+
+    // Initialize form validation
+    form.addEventListener('submit', function(e) {
+        e.preventDefault();
+        if (validateCurrentStep()) {
+            // Submit the form
+            this.submit();
+        }
+    });
+
+    // Initialize the form wizard
+    showStep(currentStep);
+});
+</script>
+{% endblock %} 

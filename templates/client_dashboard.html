@@ -1,0 +1,86 @@
+{% extends 'base.html' %}
+
+{% block title %}Client Dashboard{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row">
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-body text-center">
+                    <div class="position-relative d-inline-block mb-3">
+                        {% if profile.profile_picture %}
+                            <img src="{{ profile.profile_picture.url }}?v={{ profile.updated_at|date:'U' }}" 
+                                 class="rounded-circle shadow" 
+                                 alt="{{ profile.user.username }}'s profile picture"
+                                 style="width: 150px; height: 150px; object-fit: cover;">
+                        {% else %}
+                            <div class="rounded-circle bg-primary bg-opacity-10 d-flex align-items-center justify-content-center mx-auto"
+                                 style="width: 150px; height: 150px;">
+                                <i class="bi bi-person text-primary" style="font-size: 4rem;"></i>
+                            </div>
+                        {% endif %}
+                    </div>
+                    <h4 class="mb-1">{{ profile.user.get_full_name|default:profile.user.username }}</h4>
+                    <p class="text-muted mb-2">Client</p>
+                    {% if profile.country %}
+                        <p class="mb-3"><i class="bi bi-geo-alt me-1"></i>{{ profile.country }}</p>
+                    {% endif %}
+                    <a href="{% url 'edit_profile' %}" class="btn btn-primary">
+                        <i class="bi bi-pencil-square me-2"></i>Edit Profile
+                    </a>
+                </div>
+            </div>
+            
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-header bg-transparent border-0">
+                    <h5 class="card-title mb-0">Account Summary</h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <div class="text-muted">Active Projects</div>
+                        <div class="badge bg-primary">0</div>
+                    </div>
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <div class="text-muted">Completed Projects</div>
+                        <div class="badge bg-success">0</div>
+                    </div>
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div class="text-muted">Total Spent</div>
+                        <div class="fw-bold">$0</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-8">
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-header bg-transparent border-0 d-flex justify-content-between align-items-center">
+                    <h5 class="card-title mb-0">My Projects</h5>
+                    <a href="{% url 'create_project' %}" class="btn btn-primary btn-sm">
+                        <i class="bi bi-plus-lg me-2"></i>Post New Project
+                    </a>
+                </div>
+                <div class="card-body">
+                    <p class="text-muted text-center py-4">
+                        <i class="bi bi-clipboard2-x display-4 d-block mb-3"></i>
+                        No active projects
+                    </p>
+                </div>
+            </div>
+
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-transparent border-0">
+                    <h5 class="card-title mb-0">Recent Activity</h5>
+                </div>
+                <div class="card-body">
+                    <p class="text-muted text-center py-4">
+                        <i class="bi bi-activity display-4 d-block mb-3"></i>
+                        No recent activity
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 
