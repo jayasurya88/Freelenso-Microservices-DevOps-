@@ -1,0 +1,141 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ project.title }} - Workspace{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <!-- Project Header -->
+    <div class="d-flex justify-content-between align-items-start mb-4">
+        <div>
+            <h1 class="h3 mb-2">{{ project.title }}</h1>
+            <p class="text-muted mb-0">Project Status: 
+                <span class="badge {% if project.status == 'in_progress' %}bg-primary{% elif project.status == 'completed' %}bg-success{% else %}bg-warning{% endif %}">
+                    {{ project.get_status_display }}
+                </span>
+            </p>
+        </div>
+        <div class="progress" style="width: 200px; height: 30px;">
+            <div class="progress-bar" role="progressbar" style="width: {{ project.progress }}%;" 
+                 aria-valuenow="{{ project.progress }}" aria-valuemin="0" aria-valuemax="100">
+                {{ project.progress }}%
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Left Column -->
+        <div class="col-md-8">
+            <!-- Milestone Progress -->
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-body">
+                    <h5 class="card-title mb-4">Milestones</h5>
+                    {% for milestone in milestones %}
+                    <div class="milestone-item {% if not forloop.last %}border-bottom pb-3 mb-3{% endif %}">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h6 class="mb-1">{{ milestone.title }}</h6>
+                                <p class="text-muted mb-0 small">Due: {{ milestone.due_date|date:"M d, Y" }}</p>
+                            </div>
+                            <div class="d-flex align-items-center gap-3">
+                                <span class="badge {% if milestone.is_completed %}bg-success{% else %}bg-warning{% endif %}">
+                                    {% if milestone.is_completed %}Completed{% else %}Pending{% endif %}
+                                </span>
+                                <span class="text-muted">${{ milestone.amount }}</span>
+                            </div>
+                        </div>
+                    </div>
+                    {% empty %}
+                    <p class="text-muted mb-0">No milestones defined yet.</p>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- Recent Activities -->
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-body">
+                    <h5 class="card-title mb-4">Recent Activities</h5>
+                    {% for activity in recent_activities %}
+                    <div class="activity-item {% if not forloop.last %}border-bottom pb-3 mb-3{% endif %}">
+                        <div class="d-flex gap-3">
+                            <div class="activity-icon">
+                                {% if activity.activity_type == 'milestone_completed' %}
+                                    <i class="bi bi-check-circle text-success"></i>
+                                {% elif activity.activity_type == 'file_uploaded' %}
+                                    <i class="bi bi-file-earmark-arrow-up text-primary"></i>
+                                {% elif activity.activity_type == 'message_sent' %}
+                                    <i class="bi bi-chat-dots text-info"></i>
+                                {% else %}
+                                    <i class="bi bi-activity text-warning"></i>
+                                {% endif %}
+                            </div>
+                            <div>
+                                <p class="mb-1">{{ activity.description }}</p>
+                                <p class="text-muted small mb-0">
+                                    {{ activity.user.get_full_name }} - {{ activity.created_at|timesince }} ago
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                    {% empty %}
+                    <p class="text-muted mb-0">No recent activities.</p>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Column -->
+        <div class="col-md-4">
+            <!-- Team Members -->
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-body">
+                    <h5 class="card-title mb-4">Team Members</h5>
+                    <div class="team-member mb-3">
+                        <h6 class="mb-1">Client</h6>
+                        <p class="mb-0">{{ team_members.client.user.get_full_name }}</p>
+                    </div>
+                    <div class="team-member">
+                        <h6 class="mb-1">Freelancer</h6>
+                        <p class="mb-0">{{ team_members.freelancer.user.get_full_name }}</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Project Files -->
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-body">
+                    <h5 class="card-title mb-4">Project Files</h5>
+                    {% if is_client or is_freelancer %}
+                    <form method="post" action="{% url 'upload_file' project.id %}" enctype="multipart/form-data" class="mb-3">
+                        {% csrf_token %}
+                        <div class="input-group">
+                            <input type="file" class="form-control" name="file" required>
+                            <button type="submit" class="btn btn-primary">Upload</button>
+                        </div>
+                    </form>
+                    {% endif %}
+                    
+                    {% for file in project_files %}
+                    <div class="file-item {% if not forloop.last %}border-bottom pb-2 mb-2{% endif %}">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <a href="{{ file.file.url }}" class="text-decoration-none">
+                                    <i class="bi bi-file-earmark me-2"></i>{{ file.file_name }}
+                                </a>
+                                <p class="text-muted small mb-0">
+                                    Uploaded by {{ file.uploaded_by.get_full_name }} - {{ file.uploaded_at|timesince }} ago
+                                </p>
+                            </div>
+                            <a href="{{ file.file.url }}" class="btn btn-sm btn-outline-primary" download>
+                                <i class="bi bi-download"></i>
+                            </a>
+                        </div>
+                    </div>
+                    {% empty %}
+                    <p class="text-muted mb-0">No files uploaded yet.</p>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

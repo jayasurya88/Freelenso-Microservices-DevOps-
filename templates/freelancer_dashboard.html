@@ -5,174 +5,131 @@
 {% block content %}
 <div class="container py-5">
     <!-- Welcome Section -->
-    <div class="row mb-4">
-        <div class="col-12">
-            <div class="card border-0 bg-primary text-white shadow-sm">
-                <div class="card-body p-4">
-                    <div class="d-flex align-items-center">
-                        <div class="me-4">
-                            {% if profile.profile_picture %}
-                                <img src="{{ profile.profile_picture.url }}?v={{ profile.updated_at|date:'U' }}" 
-                                     alt="Profile Picture" 
-                                     class="rounded-circle border border-3 border-white"
-                                     style="width: 80px; height: 80px; object-fit: cover;">
-                            {% else %}
-                                <div class="rounded-circle bg-white d-flex align-items-center justify-content-center"
-                                     style="width: 80px; height: 80px;">
-                                    <i class="bi bi-person text-primary" style="font-size: 2.5rem;"></i>
-                                </div>
-                            {% endif %}
+    <div class="row mb-5">
+        <div class="col-md-8">
+            <div class="d-flex align-items-center">
+                <div class="profile-picture-container me-4">
+                    {% if profile.profile_picture %}
+                        <img src="{{ profile.profile_picture.url }}" alt="{{ profile.user.username }}" class="profile-picture">
+                    {% else %}
+                        <div class="profile-picture-placeholder">
+                            <i class="bi bi-person-circle"></i>
                         </div>
-                        <div>
-                            <h2 class="mb-1">Welcome, {{ profile.user.get_full_name|default:profile.user.username }}!</h2>
-                            <p class="mb-0 opacity-75">
-                                <i class="bi bi-geo-alt-fill me-1"></i>
-                                {{ profile.country|default:"Location not set" }}
-                            </p>
-                        </div>
-                    </div>
+                    {% endif %}
+                </div>
+                <div>
+                    <h1 class="mb-2">Welcome back, {{ profile.user.get_full_name|default:profile.user.username }}!</h1>
+                    <p class="text-muted mb-0">
+                        <i class="bi bi-briefcase me-2"></i>{{ profile.skills|default:"Add your skills" }}
+                    </p>
                 </div>
             </div>
+        </div>
+        <div class="col-md-4 text-end">
+            <a href="{% url 'project_list' %}" class="btn btn-primary btn-lg">
+                <i class="bi bi-search me-2"></i>Browse Projects
+            </a>
         </div>
     </div>
 
     <!-- Stats Row -->
-    <div class="row mb-4">
-        <!-- Profile Views -->
-        <div class="col-md-4 mb-3 mb-md-0">
+    <div class="row mb-5">
+        <div class="col-md-6">
             <div class="card border-0 shadow-sm h-100">
                 <div class="card-body">
-                    <div class="d-flex align-items-center mb-3">
-                        <div class="bg-primary bg-opacity-10 rounded-circle p-3 me-3">
-                            <i class="bi bi-eye text-primary"></i>
+                    <div class="d-flex align-items-center">
+                        <div class="stats-icon bg-primary bg-opacity-10 text-primary me-3">
+                            <i class="bi bi-eye"></i>
                         </div>
-                        <h5 class="card-title mb-0">Profile Views</h5>
+                        <div>
+                            <h6 class="text-muted mb-1">Profile Views</h6>
+                            <h3 class="mb-0">0</h3>
+                        </div>
                     </div>
-                    <h3 class="mb-0">0</h3>
-                    <p class="text-muted small mb-0">Last 30 days</p>
                 </div>
             </div>
         </div>
-
-        <!-- Projects -->
-        <div class="col-md-4 mb-3 mb-md-0">
+        <div class="col-md-6">
             <div class="card border-0 shadow-sm h-100">
                 <div class="card-body">
-                    <div class="d-flex align-items-center mb-3">
-                        <div class="bg-success bg-opacity-10 rounded-circle p-3 me-3">
-                            <i class="bi bi-briefcase text-success"></i>
+                    <div class="d-flex align-items-center">
+                        <div class="stats-icon bg-success bg-opacity-10 text-success me-3">
+                            <i class="bi bi-currency-dollar"></i>
                         </div>
-                        <h5 class="card-title mb-0">Active Projects</h5>
-                    </div>
-                    <h3 class="mb-0">0</h3>
-                    <p class="text-muted small mb-0">Current projects</p>
-                </div>
-            </div>
-        </div>
-
-        <!-- Earnings -->
-        <div class="col-md-4">
-            <div class="card border-0 shadow-sm h-100">
-                <div class="card-body">
-                    <div class="d-flex align-items-center mb-3">
-                        <div class="bg-info bg-opacity-10 rounded-circle p-3 me-3">
-                            <i class="bi bi-currency-dollar text-info"></i>
+                        <div>
+                            <h6 class="text-muted mb-1">Total Earnings</h6>
+                            <h3 class="mb-0">$0</h3>
                         </div>
-                        <h5 class="card-title mb-0">Earnings</h5>
                     </div>
-                    <h3 class="mb-0">${{ profile.hourly_rate|default:"0" }}/hr</h3>
-                    <p class="text-muted small mb-0">Your hourly rate</p>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Main Content Row -->
+    <!-- Main Content -->
     <div class="row">
         <!-- Left Column -->
-        <div class="col-lg-8 mb-4 mb-lg-0">
+        <div class="col-md-8">
             <!-- Skills Section -->
             <div class="card border-0 shadow-sm mb-4">
                 <div class="card-body">
-                    <div class="d-flex justify-content-between align-items-center mb-4">
-                        <h5 class="card-title mb-0">Skills</h5>
-                        <a href="{% url 'edit_profile' %}" class="btn btn-sm btn-outline-primary">
-                            <i class="bi bi-pencil-square me-1"></i>Edit
-                        </a>
+                    <h5 class="card-title mb-4">Your Skills</h5>
+                    <div class="d-flex flex-wrap gap-2">
+                        {% for skill in profile.skills.split %}
+                            <span class="badge bg-primary bg-opacity-10 text-primary px-3 py-2">{{ skill }}</span>
+                        {% empty %}
+                            <p class="text-muted mb-0">No skills added yet. <a href="{% url 'edit_profile' %}">Add your skills</a></p>
+                        {% endfor %}
                     </div>
-                    {% if profile.skills %}
-                        <div class="d-flex flex-wrap gap-2">
-                            {% for skill in profile.skills.split %}
-                                <span class="badge bg-primary bg-opacity-10 text-primary px-3 py-2">{{ skill }}</span>
-                            {% endfor %}
-                        </div>
-                    {% else %}
-                        <p class="text-muted mb-0">No skills added yet. Add your skills to attract more clients!</p>
-                    {% endif %}
                 </div>
             </div>
 
             <!-- Availability Section -->
-            <div class="card border-0 shadow-sm mb-4">
-                <div class="card-body">
-                    <div class="d-flex justify-content-between align-items-center mb-4">
-                        <h5 class="card-title mb-0">Availability</h5>
-                        <a href="{% url 'edit_profile' %}" class="btn btn-sm btn-outline-primary">
-                            <i class="bi bi-pencil-square me-1"></i>Edit
-                        </a>
-                    </div>
-                    <div class="d-flex align-items-center">
-                        <i class="bi bi-clock text-primary me-2"></i>
-                        <span>{{ profile.availability|default:"Not specified" }}</span>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Recent Activity -->
             <div class="card border-0 shadow-sm">
                 <div class="card-body">
-                    <h5 class="card-title mb-4">Recent Activity</h5>
-                    <div class="text-center py-4">
-                        <i class="bi bi-activity text-muted" style="font-size: 3rem;"></i>
-                        <p class="text-muted mt-3">No recent activity to show.</p>
+                    <h5 class="card-title mb-4">Availability</h5>
+                    <div class="d-flex align-items-center">
+                        <div class="availability-status me-3">
+                            <i class="bi bi-circle-fill text-success"></i>
+                        </div>
+                        <div>
+                            <h6 class="mb-1">Available for Work</h6>
+                            <p class="text-muted mb-0">{{ profile.availability|default:"Not specified" }}</p>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
 
         <!-- Right Column -->
-        <div class="col-lg-4">
+        <div class="col-md-4">
             <!-- Profile Completion -->
             <div class="card border-0 shadow-sm mb-4">
                 <div class="card-body">
                     <h5 class="card-title mb-4">Profile Completion</h5>
-                    <div class="d-flex justify-content-between align-items-center mb-2">
-                        <span>Profile Picture</span>
-                        <i class="bi {% if profile.profile_picture %}bi-check-circle-fill text-success{% else %}bi-x-circle-fill text-danger{% endif %}"></i>
-                    </div>
-                    <div class="d-flex justify-content-between align-items-center mb-2">
-                        <span>Bio</span>
-                        <i class="bi {% if profile.bio %}bi-check-circle-fill text-success{% else %}bi-x-circle-fill text-danger{% endif %}"></i>
-                    </div>
-                    <div class="d-flex justify-content-between align-items-center mb-2">
-                        <span>Skills</span>
-                        <i class="bi {% if profile.skills %}bi-check-circle-fill text-success{% else %}bi-x-circle-fill text-danger{% endif %}"></i>
-                    </div>
-                    <div class="d-flex justify-content-between align-items-center mb-2">
-                        <span>Hourly Rate</span>
-                        <i class="bi {% if profile.hourly_rate %}bi-check-circle-fill text-success{% else %}bi-x-circle-fill text-danger{% endif %}"></i>
-                    </div>
-                    <div class="d-flex justify-content-between align-items-center mb-2">
-                        <span>Contact Info</span>
-                        <i class="bi {% if profile.phone_number and profile.country %}bi-check-circle-fill text-success{% else %}bi-x-circle-fill text-danger{% endif %}"></i>
-                    </div>
-                    {% if not profile.is_profile_complete %}
-                        <div class="mt-3">
-                            <a href="{% url 'edit_profile' %}" class="btn btn-primary w-100">
-                                <i class="bi bi-pencil-square me-2"></i>Complete Profile
-                            </a>
+                    <div class="profile-completion">
+                        <div class="progress mb-3" style="height: 8px;">
+                            <div class="progress-bar bg-primary" role="progressbar" style="width: 75%"></div>
                         </div>
-                    {% endif %}
+                        <div class="completion-items">
+                            <div class="completion-item d-flex align-items-center mb-2">
+                                <i class="bi bi-check-circle-fill text-success me-2"></i>
+                                <span>Basic Information</span>
+                            </div>
+                            <div class="completion-item d-flex align-items-center mb-2">
+                                <i class="bi bi-check-circle-fill text-success me-2"></i>
+                                <span>Skills</span>
+                            </div>
+                            <div class="completion-item d-flex align-items-center mb-2">
+                                <i class="bi bi-check-circle-fill text-success me-2"></i>
+                                <span>Profile Picture</span>
+                            </div>
+                            <div class="completion-item d-flex align-items-center">
+                                <i class="bi bi-circle me-2 text-muted"></i>
+                                <span class="text-muted">Portfolio</span>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -181,26 +138,104 @@
                 <div class="card-body">
                     <h5 class="card-title mb-4">Quick Links</h5>
                     <div class="list-group list-group-flush">
-                        <a href="{% url 'view_profile' %}" class="list-group-item list-group-item-action d-flex align-items-center">
-                            <i class="bi bi-person-circle me-3"></i>
-                            View Public Profile
+                        <!-- Profile Management -->
+                        <a href="{% url 'edit_profile' %}" class="list-group-item list-group-item-action border-0 px-0">
+                            <i class="bi bi-pencil-square me-2"></i>Edit Profile
                         </a>
-                        <a href="{% url 'edit_profile' %}" class="list-group-item list-group-item-action d-flex align-items-center">
-                            <i class="bi bi-gear me-3"></i>
-                            Edit Profile
+                        <a href="{% url 'view_profile' %}" class="list-group-item list-group-item-action border-0 px-0">
+                            <i class="bi bi-person me-2"></i>View Public Profile
                         </a>
-                        <a href="#" class="list-group-item list-group-item-action d-flex align-items-center">
-                            <i class="bi bi-bell me-3"></i>
-                            Notifications
+
+                        <!-- Project Management -->
+                        <div class="mt-3 mb-2">
+                            <small class="text-muted text-uppercase">Projects</small>
+                        </div>
+                        <a href="{% url 'project_list' %}" class="list-group-item list-group-item-action border-0 px-0">
+                            <i class="bi bi-search me-2"></i>Browse Projects
                         </a>
-                        <a href="#" class="list-group-item list-group-item-action d-flex align-items-center">
-                            <i class="bi bi-chat-dots me-3"></i>
-                            Messages
+                        <a href="{% url 'my_applications' %}" class="list-group-item list-group-item-action border-0 px-0">
+                            <i class="bi bi-clipboard-check me-2"></i>My Applications
                         </a>
+
+                        <!-- Active Projects -->
+                        {% if active_projects %}
+                            <div class="mt-3 mb-2">
+                                <small class="text-muted text-uppercase">Active Projects</small>
+                            </div>
+                            {% for project in active_projects %}
+                                <a href="{% url 'project_workspace' project.id %}" class="list-group-item list-group-item-action border-0 px-0">
+                                    <i class="bi bi-briefcase me-2"></i>{{ project.title }}
+                                    <span class="badge bg-primary rounded-pill float-end">
+                                        {{ project.progress }}%
+                                    </span>
+                                </a>
+                            {% endfor %}
+                        {% endif %}
+
+                        <!-- Completed Projects -->
+                        {% if completed_projects %}
+                            <div class="mt-3 mb-2">
+                                <small class="text-muted text-uppercase">Completed Projects</small>
+                            </div>
+                            {% for project in completed_projects %}
+                                <a href="{% url 'project_workspace' project.id %}" class="list-group-item list-group-item-action border-0 px-0">
+                                    <i class="bi bi-check-circle me-2"></i>{{ project.title }}
+                                </a>
+                            {% endfor %}
+                        {% endif %}
                     </div>
                 </div>
             </div>
         </div>
     </div>
 </div>
+
+<style>
+.profile-picture-container {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    overflow: hidden;
+}
+
+.profile-picture {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.profile-picture-placeholder {
+    width: 100%;
+    height: 100%;
+    background-color: #f8f9fa;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2rem;
+    color: #6c757d;
+}
+
+.stats-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+}
+
+.availability-status {
+    width: 12px;
+    height: 12px;
+}
+
+.completion-items {
+    font-size: 0.9rem;
+}
+
+.list-group-item-action:hover {
+    background-color: #f8f9fa;
+}
+</style>
 {% endblock %} 

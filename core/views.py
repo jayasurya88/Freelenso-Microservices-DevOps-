@@ -2,7 +2,7 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.models import User
 from django.contrib.auth import login, logout, authenticate
 from django.contrib.auth.decorators import login_required
-from .models import UserProfile, Project, ProjectApplication, ProjectMilestone, ProjectAttachment
+from .models import UserProfile, Project, ProjectApplication, ProjectMilestone, ProjectAttachment, ProjectFile, ProjectActivity
 from django.contrib import messages
 from django.conf import settings
 from django.db.models import Q
@@ -80,11 +80,26 @@ def logout_user(request):
 
 @login_required
 def dashboard(request):
+    """View for user dashboard"""
     user_profile = UserProfile.objects.get(user=request.user)
-    if user_profile.is_freelancer:
-        return render(request, 'freelancer_dashboard.html', {'profile': user_profile})
+    
+    if user_profile.is_client:
+        # Get client's projects
+        context = {
+            'profile': user_profile,
+        }
+        return render(request, 'client_dashboard.html', context)
     else:
-        return render(request, 'client_dashboard.html', {'profile': user_profile})
+        # Get freelancer's projects
+        active_projects = user_profile.assigned_projects.exclude(status='completed')
+        completed_projects = user_profile.assigned_projects.filter(status='completed')
+        
+        context = {
+            'profile': user_profile,
+            'active_projects': active_projects,
+            'completed_projects': completed_projects,
+        }
+        return render(request, 'freelancer_dashboard.html', context)
 
 @login_required
 def profile_view(request):
@@ -200,25 +215,44 @@ def project_detail(request, project_id):
     project = get_object_or_404(Project, id=project_id)
     user_profile = UserProfile.objects.get(user=request.user)
     
-    # Check if user has already applied
-    has_applied = ProjectApplication.objects.filter(
+    # Check if user has an active application
+    has_active_application = ProjectApplication.objects.filter(
         project=project,
-        freelancer=user_profile
+        freelancer=user_profile,
+        status='pending'
     ).exists()
     
     # Get application if exists
     application = None
-    if has_applied:
+    if has_active_application:
         application = ProjectApplication.objects.get(
             project=project,
             freelancer=user_profile
         )
     
+    # Count active (non-withdrawn) applications
+    active_applications_count = ProjectApplication.objects.filter(
+        project=project,
+        status='pending'
+    ).count()
+    
+    # Get all relevant applications for display
+    applications = None
+    if project.client == user_profile:
+        if project.status == 'open':
+            # Show all non-withdrawn applications for open projects
+            applications = project.applications.exclude(status='withdrawn').order_by('-created_at')
+        else:
+            # For closed/in-progress projects, only show the accepted application
+            applications = project.applications.filter(status='accepted')
+    
     context = {
         'project': project,
-        'has_applied': has_applied,
+        'has_active_application': has_active_application,
         'application': application,
         'is_owner': project.client == user_profile,
+        'active_applications_count': active_applications_count,
+        'applications': applications,
     }
     return render(request, 'projects/project_detail.html', context)
 
@@ -286,28 +320,49 @@ def apply_to_project(request, project_id):
     project = get_object_or_404(Project, id=project_id)
     user_profile = UserProfile.objects.get(user=request.user)
     
+    # Check if user is a freelancer
     if not user_profile.is_freelancer:
         messages.error(request, 'Only freelancers can apply to projects')
         return redirect('project_detail', project_id=project_id)
     
+    # Check if project is open
     if project.status != 'open':
         messages.error(request, 'This project is no longer accepting applications')
         return redirect('project_detail', project_id=project_id)
     
-    if ProjectApplication.objects.filter(project=project, freelancer=user_profile).exists():
+    # Check if user has an active application
+    has_active_application = ProjectApplication.objects.filter(
+        project=project,
+        freelancer=user_profile,
+        status='pending'
+    ).exists()
+    
+    if has_active_application:
         messages.error(request, 'You have already applied to this project')
         return redirect('project_detail', project_id=project_id)
     
     if request.method == 'POST':
         try:
-            application = ProjectApplication(
+            # Try to get existing application (including withdrawn ones)
+            application, created = ProjectApplication.objects.get_or_create(
                 project=project,
                 freelancer=user_profile,
-                cover_letter=request.POST.get('cover_letter'),
-                proposed_budget=request.POST.get('proposed_budget'),
-                estimated_duration=request.POST.get('estimated_duration')
+                defaults={
+                    'cover_letter': request.POST.get('cover_letter'),
+                    'proposed_budget': request.POST.get('proposed_budget'),
+                    'estimated_duration': request.POST.get('estimated_duration'),
+                    'status': 'pending'
+                }
             )
-            application.save()
+            
+            # If application existed but was withdrawn, update it
+            if not created:
+                application.cover_letter = request.POST.get('cover_letter')
+                application.proposed_budget = request.POST.get('proposed_budget')
+                application.estimated_duration = request.POST.get('estimated_duration')
+                application.status = 'pending'
+                application.save()
+            
             messages.success(request, 'Application submitted successfully!')
             return redirect('project_detail', project_id=project_id)
             
@@ -326,8 +381,9 @@ def manage_applications(request, project_id):
     project = get_object_or_404(Project, id=project_id)
     user_profile = UserProfile.objects.get(user=request.user)
     
-    if project.client != user_profile:
-        messages.error(request, 'You do not have permission to manage this project')
+    # Check if user is a client and is the project owner
+    if not user_profile.is_client or project.client != user_profile:
+        messages.error(request, 'You do not have permission to manage applications for this project')
         return redirect('project_detail', project_id=project_id)
     
     if request.method == 'POST':
@@ -351,7 +407,12 @@ def manage_applications(request, project_id):
         application.save()
         return redirect('manage_applications', project_id=project_id)
     
-    applications = ProjectApplication.objects.filter(project=project)
+    applications = ProjectApplication.objects.filter(
+        project=project
+    ).exclude(
+        status='withdrawn'
+    ).select_related('freelancer', 'freelancer__user')
+    
     context = {
         'project': project,
         'applications': applications,
@@ -407,3 +468,150 @@ def delete_project(request, project_id):
             return redirect('project_detail', project_id=project_id)
     
     return redirect('project_detail', project_id=project_id)
+
+@login_required
+def view_profile(request):
+    profile = request.user.userprofile
+    return render(request, 'profile/view_profile.html', {'profile': profile})
+
+@login_required
+def view_freelancer_profile(request, username):
+    freelancer = get_object_or_404(UserProfile, user__username=username, is_freelancer=True)
+    
+    # Get freelancer's projects
+    completed_projects = Project.objects.filter(
+        assigned_freelancer=freelancer,
+        status='completed'
+    ).count()
+    
+    # Get freelancer's applications
+    active_applications = ProjectApplication.objects.filter(
+        freelancer=freelancer,
+        status='pending'
+    ).count()
+    
+    context = {
+        'freelancer': freelancer,
+        'completed_projects': completed_projects,
+        'active_applications': active_applications,
+    }
+    return render(request, 'profile/view_freelancer_profile.html', context)
+
+@login_required
+def my_applications(request):
+    """View for freelancers to see their applications"""
+    user_profile = UserProfile.objects.get(user=request.user)
+    
+    # If not a freelancer, just redirect to dashboard without error message
+    if not user_profile.is_freelancer:
+        return redirect('dashboard')
+    
+    applications = ProjectApplication.objects.filter(
+        freelancer=user_profile
+    ).select_related('project', 'project__client').order_by('-created_at')
+    
+    context = {
+        'applications': applications,
+    }
+    return render(request, 'projects/my_applications.html', context)
+
+@login_required
+def withdraw_application(request, application_id):
+    """View for freelancers to withdraw their applications"""
+    application = get_object_or_404(ProjectApplication, id=application_id)
+    user_profile = UserProfile.objects.get(user=request.user)
+    
+    if application.freelancer != user_profile:
+        messages.error(request, 'You do not have permission to withdraw this application')
+        return redirect('my_applications')
+    
+    if application.status != 'pending':
+        messages.error(request, 'You can only withdraw pending applications')
+        return redirect('my_applications')
+    
+    if request.method == 'POST':
+        application.status = 'withdrawn'
+        application.save()
+        messages.success(request, 'Application withdrawn successfully')
+    
+    return redirect('my_applications')
+
+@login_required
+def project_workspace(request, project_id):
+    """View for project workspace"""
+    project = get_object_or_404(Project, id=project_id)
+    user_profile = UserProfile.objects.get(user=request.user)
+    
+    # Check if user has access to this project
+    if not (project.client == user_profile or project.assigned_freelancer == user_profile):
+        messages.error(request, 'You do not have access to this project workspace')
+        return redirect('dashboard')
+    
+    # Get project milestones
+    milestones = ProjectMilestone.objects.filter(project=project).order_by('due_date')
+    
+    # Get recent activities
+    recent_activities = project.activities.all()[:10]
+    
+    # Get project files
+    project_files = project.files.all()
+    
+    # Get team members
+    team_members = {
+        'client': project.client,
+        'freelancer': project.assigned_freelancer
+    }
+    
+    context = {
+        'project': project,
+        'milestones': milestones,
+        'recent_activities': recent_activities,
+        'project_files': project_files,
+        'team_members': team_members,
+        'is_client': project.client == user_profile,
+        'is_freelancer': project.assigned_freelancer == user_profile,
+    }
+    return render(request, 'projects/workspace.html', context)
+
+@login_required
+def upload_project_file(request, project_id):
+    """View for uploading project files"""
+    if request.method != 'POST':
+        return redirect('project_workspace', project_id=project_id)
+        
+    project = get_object_or_404(Project, id=project_id)
+    user_profile = UserProfile.objects.get(user=request.user)
+    
+    # Check if user has access to this project
+    if not (project.client == user_profile or project.assigned_freelancer == user_profile):
+        messages.error(request, 'You do not have permission to upload files to this project')
+        return redirect('dashboard')
+    
+    if 'file' in request.FILES:
+        file = request.FILES['file']
+        
+        # Create project file
+        project_file = ProjectFile.objects.create(
+            project=project,
+            uploaded_by=request.user,
+            file=file,
+            file_name=file.name,
+            file_type=file.content_type
+        )
+        
+        # Create activity record
+        ProjectActivity.objects.create(
+            project=project,
+            user=request.user,
+            activity_type='file_uploaded',
+            description=f'Uploaded file: {file.name}'
+        )
+        
+        # Update project last activity
+        project.update_last_activity()
+        
+        messages.success(request, 'File uploaded successfully')
+    else:
+        messages.error(request, 'No file was provided')
+    
+    return redirect('project_workspace', project_id=project_id)

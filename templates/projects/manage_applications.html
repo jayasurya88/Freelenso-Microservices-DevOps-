@@ -31,85 +31,87 @@
         <div class="col-12">
             {% if applications %}
                 {% for application in applications %}
-                    <div class="card border-0 shadow-sm mb-4">
-                        <div class="card-body">
-                            <!-- Freelancer Info -->
-                            <div class="d-flex align-items-center mb-4">
-                                <div class="me-3">
-                                    {% if application.freelancer.profile_picture %}
-                                        <img src="{{ application.freelancer.profile_picture.url }}" 
-                                             alt="Profile Picture"
-                                             class="rounded-circle"
-                                             style="width: 60px; height: 60px; object-fit: cover;">
-                                    {% else %}
-                                        <div class="rounded-circle bg-primary bg-opacity-10 d-flex align-items-center justify-content-center"
-                                             style="width: 60px; height: 60px;">
-                                            <i class="bi bi-person text-primary"></i>
+                    {% if application.status != 'withdrawn' %}
+                        <div class="card border-0 shadow-sm mb-4">
+                            <div class="card-body">
+                                <!-- Freelancer Info -->
+                                <div class="d-flex align-items-center mb-4">
+                                    <div class="me-3">
+                                        {% if application.freelancer.profile_picture %}
+                                            <img src="{{ application.freelancer.profile_picture.url }}" 
+                                                alt="Profile Picture"
+                                                class="rounded-circle"
+                                                style="width: 60px; height: 60px; object-fit: cover;">
+                                        {% else %}
+                                            <div class="rounded-circle bg-primary bg-opacity-10 d-flex align-items-center justify-content-center"
+                                                style="width: 60px; height: 60px;">
+                                                <i class="bi bi-person text-primary"></i>
+                                            </div>
+                                        {% endif %}
+                                    </div>
+                                    <div>
+                                        <h5 class="mb-1">{{ application.freelancer.user.get_full_name }}</h5>
+                                        <p class="text-muted mb-0">
+                                            <i class="bi bi-geo-alt me-1"></i>
+                                            {{ application.freelancer.country|default:"Location not specified" }}
+                                        </p>
+                                    </div>
+                                    <div class="ms-auto text-end">
+                                        <span class="badge {% if application.status == 'accepted' %}bg-success{% elif application.status == 'rejected' %}bg-danger{% else %}bg-warning{% endif %} mb-2">
+                                            {{ application.get_status_display }}
+                                        </span>
+                                        <div class="text-muted small">
+                                            Applied {{ application.created_at|timesince }} ago
                                         </div>
-                                    {% endif %}
-                                </div>
-                                <div>
-                                    <h5 class="mb-1">{{ application.freelancer.user.get_full_name }}</h5>
-                                    <p class="text-muted mb-0">
-                                        <i class="bi bi-geo-alt me-1"></i>
-                                        {{ application.freelancer.country|default:"Location not specified" }}
-                                    </p>
-                                </div>
-                                <div class="ms-auto text-end">
-                                    <span class="badge {% if application.status == 'accepted' %}bg-success{% elif application.status == 'rejected' %}bg-danger{% else %}bg-warning{% endif %} mb-2">
-                                        {{ application.get_status_display }}
-                                    </span>
-                                    <div class="text-muted small">
-                                        Applied {{ application.created_at|timesince }} ago
                                     </div>
                                 </div>
-                            </div>
 
-                            <!-- Application Details -->
-                            <div class="row mb-4">
-                                <div class="col-md-4">
-                                    <h6 class="text-muted mb-2">Proposed Budget</h6>
-                                    <p class="mb-0">${{ application.proposed_budget }}</p>
+                                <!-- Application Details -->
+                                <div class="row mb-4">
+                                    <div class="col-md-4">
+                                        <h6 class="text-muted mb-2">Proposed Budget</h6>
+                                        <p class="mb-0">${{ application.proposed_budget }}</p>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <h6 class="text-muted mb-2">Estimated Duration</h6>
+                                        <p class="mb-0">{{ application.get_estimated_duration_display }}</p>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <h6 class="text-muted mb-2">Skills</h6>
+                                        <p class="mb-0">{{ application.freelancer.skills|default:"Not specified" }}</p>
+                                    </div>
                                 </div>
-                                <div class="col-md-4">
-                                    <h6 class="text-muted mb-2">Estimated Duration</h6>
-                                    <p class="mb-0">{{ application.get_estimated_duration_display }}</p>
-                                </div>
-                                <div class="col-md-4">
-                                    <h6 class="text-muted mb-2">Skills</h6>
-                                    <p class="mb-0">{{ application.freelancer.skills|default:"Not specified" }}</p>
-                                </div>
-                            </div>
 
-                            <!-- Cover Letter -->
-                            <div class="mb-4">
-                                <h6 class="text-muted mb-2">Cover Letter</h6>
-                                <p class="mb-0">{{ application.cover_letter }}</p>
-                            </div>
-
-                            {% if application.status == 'pending' %}
-                                <!-- Action Buttons -->
-                                <div class="d-flex justify-content-end gap-2">
-                                    <form method="POST" class="d-inline">
-                                        {% csrf_token %}
-                                        <input type="hidden" name="application_id" value="{{ application.id }}">
-                                        <input type="hidden" name="action" value="reject">
-                                        <button type="submit" class="btn btn-outline-danger">
-                                            <i class="bi bi-x-circle me-2"></i>Reject
-                                        </button>
-                                    </form>
-                                    <form method="POST" class="d-inline">
-                                        {% csrf_token %}
-                                        <input type="hidden" name="application_id" value="{{ application.id }}">
-                                        <input type="hidden" name="action" value="accept">
-                                        <button type="submit" class="btn btn-success">
-                                            <i class="bi bi-check-circle me-2"></i>Accept
-                                        </button>
-                                    </form>
+                                <!-- Cover Letter -->
+                                <div class="mb-4">
+                                    <h6 class="text-muted mb-2">Cover Letter</h6>
+                                    <p class="mb-0">{{ application.cover_letter }}</p>
                                 </div>
-                            {% endif %}
+
+                                {% if application.status == 'pending' %}
+                                    <!-- Action Buttons -->
+                                    <div class="d-flex justify-content-end gap-2">
+                                        <form method="POST" class="d-inline">
+                                            {% csrf_token %}
+                                            <input type="hidden" name="application_id" value="{{ application.id }}">
+                                            <input type="hidden" name="action" value="reject">
+                                            <button type="submit" class="btn btn-outline-danger">
+                                                <i class="bi bi-x-circle me-2"></i>Reject
+                                            </button>
+                                        </form>
+                                        <form method="POST" class="d-inline">
+                                            {% csrf_token %}
+                                            <input type="hidden" name="application_id" value="{{ application.id }}">
+                                            <input type="hidden" name="action" value="accept">
+                                            <button type="submit" class="btn btn-success">
+                                                <i class="bi bi-check-circle me-2"></i>Accept
+                                            </button>
+                                        </form>
+                                    </div>
+                                {% endif %}
+                            </div>
                         </div>
-                    </div>
+                    {% endif %}
                 {% endfor %}
             {% else %}
                 <div class="card border-0 shadow-sm">

@@ -1,0 +1,172 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ freelancer.user.get_full_name|default:freelancer.user.username }} - Freelancer Profile{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <!-- Back Button -->
+    <div class="mb-4">
+        <a href="javascript:history.back()" class="btn btn-outline-primary">
+            <i class="bi bi-arrow-left me-2"></i>Back
+        </a>
+    </div>
+
+    <!-- Profile Header -->
+    <div class="row mb-5">
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body text-center">
+                    <div class="profile-picture-container mx-auto mb-4">
+                        {% if freelancer.profile_picture %}
+                            <img src="{{ freelancer.profile_picture.url }}" alt="{{ freelancer.user.username }}" class="profile-picture">
+                        {% else %}
+                            <div class="profile-picture-placeholder">
+                                <i class="bi bi-person-circle"></i>
+                            </div>
+                        {% endif %}
+                    </div>
+                    <h3 class="mb-2">{{ freelancer.user.get_full_name|default:freelancer.user.username }}</h3>
+                    <p class="text-muted mb-3">
+                        <i class="bi bi-geo-alt me-2"></i>{{ freelancer.country|default:"Location not specified" }}
+                    </p>
+                    <div class="d-grid gap-2">
+                        <a href="#" class="btn btn-primary">
+                            <i class="bi bi-chat-dots me-2"></i>Contact Freelancer
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-8">
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-body">
+                    <h4 class="card-title mb-4">About</h4>
+                    <p class="mb-0">{{ freelancer.bio|default:"No bio available." }}</p>
+                </div>
+            </div>
+
+            <!-- Stats -->
+            <div class="row mb-4">
+                <div class="col-md-6">
+                    <div class="card border-0 shadow-sm h-100">
+                        <div class="card-body">
+                            <div class="d-flex align-items-center">
+                                <div class="stats-icon bg-success bg-opacity-10 text-success me-3">
+                                    <i class="bi bi-check-circle"></i>
+                                </div>
+                                <div>
+                                    <h6 class="text-muted mb-1">Completed Projects</h6>
+                                    <h3 class="mb-0">{{ completed_projects }}</h3>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="card border-0 shadow-sm h-100">
+                        <div class="card-body">
+                            <div class="d-flex align-items-center">
+                                <div class="stats-icon bg-primary bg-opacity-10 text-primary me-3">
+                                    <i class="bi bi-briefcase"></i>
+                                </div>
+                                <div>
+                                    <h6 class="text-muted mb-1">Active Applications</h6>
+                                    <h3 class="mb-0">{{ active_applications }}</h3>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Skills -->
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-body">
+                    <h4 class="card-title mb-4">Skills</h4>
+                    <div class="d-flex flex-wrap gap-2">
+                        {% for skill in freelancer.skills.split %}
+                            <span class="badge bg-primary bg-opacity-10 text-primary px-3 py-2">{{ skill }}</span>
+                        {% empty %}
+                            <p class="text-muted mb-0">No skills listed.</p>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Experience -->
+            <div class="card border-0 shadow-sm">
+                <div class="card-body">
+                    <h4 class="card-title mb-4">Experience</h4>
+                    <div class="experience-item">
+                        <h6 class="mb-2">Experience Level</h6>
+                        <p class="text-muted mb-0">{{ freelancer.experience_level|default:"Not specified" }}</p>
+                    </div>
+                    {% if freelancer.experience %}
+                        <div class="experience-item mt-4">
+                            <h6 class="mb-2">Experience Details</h6>
+                            <p class="text-muted mb-0">{{ freelancer.experience }}</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Portfolio Section -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body">
+                    <h4 class="card-title mb-4">Portfolio</h4>
+                    <div class="text-center py-4">
+                        <i class="bi bi-briefcase text-muted" style="font-size: 3rem;"></i>
+                        <p class="text-muted mt-3">No portfolio items available.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.profile-picture-container {
+    width: 150px;
+    height: 150px;
+    border-radius: 50%;
+    overflow: hidden;
+}
+
+.profile-picture {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.profile-picture-placeholder {
+    width: 100%;
+    height: 100%;
+    background-color: #f8f9fa;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 3rem;
+    color: #6c757d;
+}
+
+.stats-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+}
+
+.experience-item {
+    padding: 1rem;
+    background-color: #f8f9fa;
+    border-radius: 8px;
+}
+</style>
+{% endblock %} 

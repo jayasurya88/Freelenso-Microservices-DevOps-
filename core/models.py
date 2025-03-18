@@ -2,6 +2,7 @@ from django.db import models
 from django.contrib.auth.models import User
 from django.core.validators import MinValueValidator
 from decimal import Decimal
+from django.utils import timezone
 
 # Create your models here.
 
@@ -88,8 +89,25 @@ class Project(models.Model):
     deadline = models.DateField(null=True, blank=True)
     assigned_freelancer = models.ForeignKey(UserProfile, on_delete=models.SET_NULL, null=True, blank=True, related_name='assigned_projects')
 
+    # New fields for workspace
+    progress = models.IntegerField(default=0)  # Overall progress percentage
+    total_milestones = models.IntegerField(default=0)
+    completed_milestones = models.IntegerField(default=0)
+    last_activity_date = models.DateTimeField(null=True, blank=True)
+
     def __str__(self):
         return self.title
+
+    def update_progress(self):
+        """Update project progress based on completed milestones"""
+        if self.total_milestones > 0:
+            self.progress = (self.completed_milestones / self.total_milestones) * 100
+        self.save()
+
+    def update_last_activity(self):
+        """Update the last activity timestamp"""
+        self.last_activity_date = timezone.now()
+        self.save()
 
     class Meta:
         ordering = ['-created_at']
@@ -151,3 +169,38 @@ class ProjectMilestone(models.Model):
 
     class Meta:
         ordering = ['due_date']
+
+class ProjectActivity(models.Model):
+    """Model for tracking project activities"""
+    project = models.ForeignKey(Project, on_delete=models.CASCADE, related_name='activities')
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    activity_type = models.CharField(max_length=50, choices=[
+        ('milestone_created', 'Milestone Created'),
+        ('milestone_completed', 'Milestone Completed'),
+        ('file_uploaded', 'File Uploaded'),
+        ('message_sent', 'Message Sent'),
+        ('status_updated', 'Status Updated'),
+        ('payment_released', 'Payment Released'),
+    ])
+    description = models.TextField()
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-created_at']
+        verbose_name_plural = 'Project Activities'
+
+class ProjectFile(models.Model):
+    """Model for project files"""
+    project = models.ForeignKey(Project, on_delete=models.CASCADE, related_name='files')
+    uploaded_by = models.ForeignKey(User, on_delete=models.CASCADE)
+    file = models.FileField(upload_to='project_files/')
+    file_name = models.CharField(max_length=255)
+    file_type = models.CharField(max_length=50)
+    description = models.TextField(blank=True)
+    uploaded_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-uploaded_at']
+
+    def __str__(self):
+        return self.file_name
