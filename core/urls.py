@@ -13,6 +13,7 @@ urlpatterns = [
     path('projects/', views.project_list, name='project_list'),
     path('projects/create/', views.create_project, name='create_project'),
     path('projects/<int:project_id>/', views.project_detail, name='project_detail'),
+    path('projects/<int:project_id>/edit/', views.edit_project, name='edit_project'),
     path('projects/<int:project_id>/apply/', views.apply_to_project, name='apply_to_project'),
     path('projects/<int:project_id>/applications/', views.manage_applications, name='manage_applications'),
     path('projects/<int:project_id>/delete/', views.delete_project, name='delete_project'),
@@ -21,4 +22,8 @@ urlpatterns = [
     path('applications/<int:application_id>/withdraw/', views.withdraw_application, name='withdraw_application'),
     path('projects/<int:project_id>/workspace/', views.project_workspace, name='project_workspace'),
     path('projects/<int:project_id>/upload/', views.upload_project_file, name='upload_file'),
+    path('projects/<int:project_id>/chat/', views.chat_room, name='chat_room'),
+    path('projects/<int:project_id>/chat/send/', views.send_message, name='send_message'),
+    path('projects/<int:project_id>/chat/messages/', views.get_messages, name='get_messages'),
+    path('projects/<int:project_id>/chat/messages/<int:message_id>/read/', views.mark_message_read, name='mark_message_read'),
 ]

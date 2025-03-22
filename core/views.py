@@ -2,11 +2,19 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.models import User
 from django.contrib.auth import login, logout, authenticate
 from django.contrib.auth.decorators import login_required
-from .models import UserProfile, Project, ProjectApplication, ProjectMilestone, ProjectAttachment, ProjectFile, ProjectActivity
+from .models import UserProfile, Project, ProjectApplication, ProjectMilestone, ProjectAttachment, ProjectFile, ProjectActivity, ChatRoom, ChatMessage, ChatParticipant
 from django.contrib import messages
 from django.conf import settings
 from django.db.models import Q
 import os
+from django.http import JsonResponse
+import json
+from django.views.decorators.http import require_POST
+from django.utils import timezone
+from django.core.paginator import Paginator
+from django.utils.text import slugify
+from django.core.files.storage import default_storage
+from django.core.files.base import ContentFile
 
 # Create your views here.
 def index(request):
@@ -538,40 +546,34 @@ def withdraw_application(request, application_id):
 
 @login_required
 def project_workspace(request, project_id):
-    """View for project workspace"""
-    project = get_object_or_404(Project, id=project_id)
-    user_profile = UserProfile.objects.get(user=request.user)
-    
-    # Check if user has access to this project
-    if not (project.client == user_profile or project.assigned_freelancer == user_profile):
-        messages.error(request, 'You do not have access to this project workspace')
+    try:
+        project = Project.objects.get(id=project_id)
+        user_profile = request.user.userprofile
+        
+        # Check if user has access to this project
+        if not (project.client == user_profile or project.assigned_freelancer == user_profile):
+            messages.error(request, 'Access denied')
+            return redirect('dashboard')
+        
+        # Get project files
+        project_files = ProjectFile.objects.filter(project=project).order_by('-uploaded_at')
+        
+        # Get project activities
+        activities = ProjectActivity.objects.filter(project=project).order_by('-created_at')[:10]
+        
+        context = {
+            'project': project,
+            'project_files': project_files,
+            'activities': activities,
+            'is_client': project.client == user_profile,
+            'is_freelancer': project.assigned_freelancer == user_profile
+        }
+        
+        return render(request, 'projects/workspace.html', context)
+        
+    except Project.DoesNotExist:
+        messages.error(request, 'Project not found')
         return redirect('dashboard')
-    
-    # Get project milestones
-    milestones = ProjectMilestone.objects.filter(project=project).order_by('due_date')
-    
-    # Get recent activities
-    recent_activities = project.activities.all()[:10]
-    
-    # Get project files
-    project_files = project.files.all()
-    
-    # Get team members
-    team_members = {
-        'client': project.client,
-        'freelancer': project.assigned_freelancer
-    }
-    
-    context = {
-        'project': project,
-        'milestones': milestones,
-        'recent_activities': recent_activities,
-        'project_files': project_files,
-        'team_members': team_members,
-        'is_client': project.client == user_profile,
-        'is_freelancer': project.assigned_freelancer == user_profile,
-    }
-    return render(request, 'projects/workspace.html', context)
 
 @login_required
 def upload_project_file(request, project_id):
@@ -615,3 +617,160 @@ def upload_project_file(request, project_id):
         messages.error(request, 'No file was provided')
     
     return redirect('project_workspace', project_id=project_id)
+
+@login_required
+def chat_room(request, project_id):
+    project = get_object_or_404(Project, id=project_id)
+    user_profile = request.user.userprofile
+    
+    # Check if user has access to this project
+    if user_profile != project.client and user_profile != project.assigned_freelancer:
+        messages.error(request, "You don't have access to this chat room.")
+        return redirect('project_workspace', project_id=project_id)
+    
+    # Get or create chat room
+    chat_room, created = ChatRoom.objects.get_or_create(project=project)
+    
+    # Get messages
+    messages_list = ChatMessage.objects.filter(room=chat_room).order_by('created_at')
+    
+    # Mark messages as read
+    ChatMessage.objects.filter(
+        room=chat_room,
+        sender__in=[project.client, project.assigned_freelancer],
+        sender__user__is_active=True,
+        is_read=False
+    ).exclude(sender=user_profile).update(is_read=True)
+    
+    return render(request, 'chat/chat_room.html', {
+        'project': project,
+        'messages': messages_list,
+        'chat_room': chat_room
+    })
+
+@login_required
+@require_POST
+def send_message(request, project_id):
+    project = get_object_or_404(Project, id=project_id)
+    user_profile = request.user.userprofile
+    
+    # Check if user has access to this project
+    if user_profile != project.client and user_profile != project.assigned_freelancer:
+        return JsonResponse({'error': 'Access denied'}, status=403)
+    
+    # Get or create chat room
+    chat_room, created = ChatRoom.objects.get_or_create(project=project)
+    
+    message_text = request.POST.get('message', '').strip()
+    file = request.FILES.get('file')
+    
+    if not message_text and not file:
+        return JsonResponse({'error': 'No message or file provided'}, status=400)
+    
+    # Save file if provided
+    file_url = None
+    if file:
+        file_path = f'chat_files/{project_id}/{file.name}'
+        file_url = default_storage.save(file_path, ContentFile(file.read()))
+    
+    # Create message
+    message = ChatMessage.objects.create(
+        room=chat_room,
+        sender=user_profile,
+        message=message_text,
+        file=file_url
+    )
+    
+    # Update last message timestamp
+    chat_room.last_message_at = timezone.now()
+    chat_room.save()
+    
+    return JsonResponse({
+        'id': message.id,
+        'message': message.message,
+        'sender_id': message.sender.id,
+        'sender_name': message.sender.user.username,
+        'created_at': message.created_at.strftime('%b %d, %Y %H:%M'),
+        'file_url': message.file.url if message.file else None
+    })
+
+@login_required
+def get_messages(request, project_id):
+    project = get_object_or_404(Project, id=project_id)
+    user_profile = request.user.userprofile
+    
+    # Check if user has access to this project
+    if user_profile != project.client and user_profile != project.assigned_freelancer:
+        return JsonResponse({'error': 'Access denied'}, status=403)
+    
+    # Get chat room
+    chat_room = get_object_or_404(ChatRoom, project=project)
+    
+    # Get messages
+    messages_list = ChatMessage.objects.filter(room=chat_room).order_by('created_at')
+    
+    # Mark messages as read
+    ChatMessage.objects.filter(
+        room=chat_room,
+        sender__in=[project.client, project.assigned_freelancer],
+        sender__user__is_active=True,
+        is_read=False
+    ).exclude(sender=user_profile).update(is_read=True)
+    
+    messages_data = [{
+        'id': msg.id,
+        'message': msg.message,
+        'sender_id': msg.sender.id,
+        'sender_name': msg.sender.user.username,
+        'created_at': msg.created_at.strftime('%b %d, %Y %H:%M'),
+        'file_url': msg.file.url if msg.file else None
+    } for msg in messages_list]
+    
+    return JsonResponse({'messages': messages_data})
+
+@login_required
+def mark_message_read(request, project_id, message_id):
+    project = get_object_or_404(Project, id=project_id)
+    user_profile = request.user.userprofile
+    
+    # Check if user has access to this project
+    if user_profile != project.client and user_profile != project.assigned_freelancer:
+        return JsonResponse({'error': 'Access denied'}, status=403)
+    
+    # Get message
+    message = get_object_or_404(ChatMessage, id=message_id, room__project=project)
+    
+    # Mark message as read
+    if message.sender != user_profile:
+        message.is_read = True
+        message.save()
+    
+    return JsonResponse({'status': 'success'})
+
+@login_required
+def edit_project(request, project_id):
+    project = get_object_or_404(Project, id=project_id)
+    
+    # Check if the user is the client who created the project
+    if project.client != request.user:
+        messages.error(request, "You don't have permission to edit this project.")
+        return redirect('project_detail', project_id=project_id)
+    
+    if request.method == 'POST':
+        # Update project fields
+        project.title = request.POST.get('title')
+        project.description = request.POST.get('description')
+        project.required_skills = request.POST.get('required_skills')
+        project.budget_min = request.POST.get('budget_min')
+        project.budget_max = request.POST.get('budget_max')
+        project.duration = request.POST.get('duration')
+        project.experience_level = request.POST.get('experience_level')
+        project.save()
+        
+        messages.success(request, 'Project updated successfully!')
+        return redirect('project_detail', project_id=project_id)
+    
+    context = {
+        'project': project,
+    }
+    return render(request, 'projects/edit_project.html', context)

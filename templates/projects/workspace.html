@@ -1,138 +1,144 @@
 {% extends 'base.html' %}
+{% load static %}
 
 {% block title %}{{ project.title }} - Workspace{% endblock %}
 
 {% block content %}
-<div class="container py-4">
+<div class="container-fluid">
     <!-- Project Header -->
-    <div class="d-flex justify-content-between align-items-start mb-4">
-        <div>
-            <h1 class="h3 mb-2">{{ project.title }}</h1>
-            <p class="text-muted mb-0">Project Status: 
-                <span class="badge {% if project.status == 'in_progress' %}bg-primary{% elif project.status == 'completed' %}bg-success{% else %}bg-warning{% endif %}">
-                    {{ project.get_status_display }}
-                </span>
-            </p>
-        </div>
-        <div class="progress" style="width: 200px; height: 30px;">
-            <div class="progress-bar" role="progressbar" style="width: {{ project.progress }}%;" 
-                 aria-valuenow="{{ project.progress }}" aria-valuemin="0" aria-valuemax="100">
-                {{ project.progress }}%
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <h2>{{ project.title }}</h2>
+                <div>
+                    {% if is_client %}
+                        <a href="{% url 'edit_project' project.id %}" class="btn btn-outline-primary me-2">
+                            <i class="fas fa-edit"></i> Edit Project
+                        </a>
+                    {% endif %}
+                    <a href="{% url 'chat_room' project.id %}" class="btn btn-primary">
+                        <i class="fas fa-comments"></i> Open Chat
+                    </a>
+                </div>
             </div>
         </div>
     </div>
 
-    <div class="row">
-        <!-- Left Column -->
-        <div class="col-md-8">
-            <!-- Milestone Progress -->
-            <div class="card border-0 shadow-sm mb-4">
+    <!-- Project Status -->
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <div class="card">
                 <div class="card-body">
-                    <h5 class="card-title mb-4">Milestones</h5>
-                    {% for milestone in milestones %}
-                    <div class="milestone-item {% if not forloop.last %}border-bottom pb-3 mb-3{% endif %}">
-                        <div class="d-flex justify-content-between align-items-center">
-                            <div>
-                                <h6 class="mb-1">{{ milestone.title }}</h6>
-                                <p class="text-muted mb-0 small">Due: {{ milestone.due_date|date:"M d, Y" }}</p>
-                            </div>
-                            <div class="d-flex align-items-center gap-3">
-                                <span class="badge {% if milestone.is_completed %}bg-success{% else %}bg-warning{% endif %}">
-                                    {% if milestone.is_completed %}Completed{% else %}Pending{% endif %}
-                                </span>
-                                <span class="text-muted">${{ milestone.amount }}</span>
-                            </div>
-                        </div>
+                    <h5 class="card-title">Project Status</h5>
+                    <p class="card-text">
+                        Status: <span class="badge bg-{{ project.status_color }}">{{ project.get_status_display }}</span>
+                    </p>
+                    <p class="card-text">
+                        Progress: {{ project.progress }}%
+                    </p>
+                    <div class="progress mb-3">
+                        <div class="progress-bar" role="progressbar" style="width: {{ project.progress }}%"></div>
                     </div>
-                    {% empty %}
-                    <p class="text-muted mb-0">No milestones defined yet.</p>
-                    {% endfor %}
-                </div>
-            </div>
-
-            <!-- Recent Activities -->
-            <div class="card border-0 shadow-sm mb-4">
-                <div class="card-body">
-                    <h5 class="card-title mb-4">Recent Activities</h5>
-                    {% for activity in recent_activities %}
-                    <div class="activity-item {% if not forloop.last %}border-bottom pb-3 mb-3{% endif %}">
-                        <div class="d-flex gap-3">
-                            <div class="activity-icon">
-                                {% if activity.activity_type == 'milestone_completed' %}
-                                    <i class="bi bi-check-circle text-success"></i>
-                                {% elif activity.activity_type == 'file_uploaded' %}
-                                    <i class="bi bi-file-earmark-arrow-up text-primary"></i>
-                                {% elif activity.activity_type == 'message_sent' %}
-                                    <i class="bi bi-chat-dots text-info"></i>
-                                {% else %}
-                                    <i class="bi bi-activity text-warning"></i>
-                                {% endif %}
-                            </div>
-                            <div>
-                                <p class="mb-1">{{ activity.description }}</p>
-                                <p class="text-muted small mb-0">
-                                    {{ activity.user.get_full_name }} - {{ activity.created_at|timesince }} ago
-                                </p>
-                            </div>
-                        </div>
-                    </div>
-                    {% empty %}
-                    <p class="text-muted mb-0">No recent activities.</p>
-                    {% endfor %}
                 </div>
             </div>
         </div>
-
-        <!-- Right Column -->
-        <div class="col-md-4">
-            <!-- Team Members -->
-            <div class="card border-0 shadow-sm mb-4">
+        <div class="col-md-6">
+            <div class="card">
                 <div class="card-body">
-                    <h5 class="card-title mb-4">Team Members</h5>
-                    <div class="team-member mb-3">
-                        <h6 class="mb-1">Client</h6>
-                        <p class="mb-0">{{ team_members.client.user.get_full_name }}</p>
-                    </div>
-                    <div class="team-member">
-                        <h6 class="mb-1">Freelancer</h6>
-                        <p class="mb-0">{{ team_members.freelancer.user.get_full_name }}</p>
-                    </div>
+                    <h5 class="card-title">Project Details</h5>
+                    <p class="card-text">
+                        <strong>Client:</strong> {{ project.client.user.username }}
+                    </p>
+                    {% if project.assigned_freelancer %}
+                    <p class="card-text">
+                        <strong>Freelancer:</strong> {{ project.assigned_freelancer.user.username }}
+                    </p>
+                    {% endif %}
+                    <p class="card-text">
+                        <strong>Budget:</strong> ${{ project.budget_min }} - ${{ project.budget_max }}
+                    </p>
+                    <p class="card-text">
+                        <strong>Deadline:</strong> {{ project.deadline|date:"M d, Y" }}
+                    </p>
                 </div>
             </div>
+        </div>
+    </div>
 
-            <!-- Project Files -->
-            <div class="card border-0 shadow-sm mb-4">
-                <div class="card-body">
-                    <h5 class="card-title mb-4">Project Files</h5>
-                    {% if is_client or is_freelancer %}
-                    <form method="post" action="{% url 'upload_file' project.id %}" enctype="multipart/form-data" class="mb-3">
+    <!-- Project Files -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">Project Files</h5>
+                    <form method="post" action="{% url 'upload_file' project.id %}" enctype="multipart/form-data" class="d-flex">
                         {% csrf_token %}
-                        <div class="input-group">
-                            <input type="file" class="form-control" name="file" required>
-                            <button type="submit" class="btn btn-primary">Upload</button>
-                        </div>
+                        <input type="file" name="file" class="form-control me-2" required>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-upload"></i> Upload
+                        </button>
                     </form>
-                    {% endif %}
-                    
-                    {% for file in project_files %}
-                    <div class="file-item {% if not forloop.last %}border-bottom pb-2 mb-2{% endif %}">
-                        <div class="d-flex justify-content-between align-items-center">
-                            <div>
-                                <a href="{{ file.file.url }}" class="text-decoration-none">
-                                    <i class="bi bi-file-earmark me-2"></i>{{ file.file_name }}
-                                </a>
-                                <p class="text-muted small mb-0">
-                                    Uploaded by {{ file.uploaded_by.get_full_name }} - {{ file.uploaded_at|timesince }} ago
-                                </p>
-                            </div>
-                            <a href="{{ file.file.url }}" class="btn btn-sm btn-outline-primary" download>
-                                <i class="bi bi-download"></i>
-                            </a>
+                </div>
+                <div class="card-body">
+                    {% if project_files %}
+                        <div class="table-responsive">
+                            <table class="table">
+                                <thead>
+                                    <tr>
+                                        <th>File Name</th>
+                                        <th>Uploaded By</th>
+                                        <th>Upload Date</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for file in project_files %}
+                                    <tr>
+                                        <td>{{ file.file_name }}</td>
+                                        <td>{{ file.uploaded_by.username }}</td>
+                                        <td>{{ file.uploaded_at|date:"M d, Y H:i" }}</td>
+                                        <td>
+                                            <a href="{{ file.file.url }}" class="btn btn-sm btn-outline-primary" target="_blank">
+                                                <i class="fas fa-download"></i> Download
+                                            </a>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
                         </div>
-                    </div>
-                    {% empty %}
-                    <p class="text-muted mb-0">No files uploaded yet.</p>
-                    {% endfor %}
+                    {% else %}
+                        <p class="text-muted">No files uploaded yet.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Project Activities -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Recent Activities</h5>
+                </div>
+                <div class="card-body">
+                    {% if activities %}
+                        <div class="list-group">
+                            {% for activity in activities %}
+                            <div class="list-group-item">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <strong>{{ activity.user.username }}</strong> {{ activity.description }}
+                                    </div>
+                                    <small class="text-muted">{{ activity.created_at|date:"M d, Y H:i" }}</small>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <p class="text-muted">No recent activities.</p>
+                    {% endif %}
                 </div>
             </div>
         </div>

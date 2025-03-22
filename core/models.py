@@ -204,3 +204,40 @@ class ProjectFile(models.Model):
 
     def __str__(self):
         return self.file_name
+
+class ChatRoom(models.Model):
+    project = models.ForeignKey('Project', on_delete=models.CASCADE, related_name='chat_rooms')
+    created_at = models.DateTimeField(auto_now_add=True)
+    last_message_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        ordering = ['-last_message_at']
+    
+    def __str__(self):
+        return f"Chat Room for {self.project.title}"
+
+class ChatMessage(models.Model):
+    room = models.ForeignKey(ChatRoom, on_delete=models.CASCADE, related_name='messages')
+    sender = models.ForeignKey(UserProfile, on_delete=models.CASCADE)
+    message = models.TextField()
+    file = models.FileField(upload_to='chat_files/', null=True, blank=True)
+    is_read = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+    
+    class Meta:
+        ordering = ['created_at']
+    
+    def __str__(self):
+        return f"Message from {self.sender.user.username} in {self.room.project.title}"
+
+class ChatParticipant(models.Model):
+    room = models.ForeignKey(ChatRoom, on_delete=models.CASCADE, related_name='participants')
+    user = models.ForeignKey(UserProfile, on_delete=models.CASCADE)
+    joined_at = models.DateTimeField(auto_now_add=True)
+    last_read_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        unique_together = ['room', 'user']
+    
+    def __str__(self):
+        return f"{self.user.user.username} in {self.room.project.title}"
