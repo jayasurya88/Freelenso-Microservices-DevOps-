@@ -26,4 +26,19 @@ urlpatterns = [
     path('projects/<int:project_id>/chat/send/', views.send_message, name='send_message'),
     path('projects/<int:project_id>/chat/messages/', views.get_messages, name='get_messages'),
     path('projects/<int:project_id>/chat/messages/<int:message_id>/read/', views.mark_message_read, name='mark_message_read'),
+    path('messages/', views.message_list, name='message_list'),
+    path('messages/cleanup/', views.cleanup_messages, name='cleanup_messages'),
+    
+    # Notification URLs
+    path('notifications/', views.notifications, name='notifications'),
+    path('notifications/<int:notification_id>/read/', views.mark_notification_read, name='mark_notification_read'),
+    
+    # Milestone management
+    path('projects/<int:project_id>/milestones/', views.project_milestones, name='project_milestones'),
+    path('projects/<int:project_id>/milestones/create/', views.create_milestone, name='create_milestone'),
+    path('projects/<int:project_id>/milestones/<int:milestone_id>/edit/', views.edit_milestone, name='edit_milestone'),
+    path('projects/<int:project_id>/milestones/<int:milestone_id>/delete/', views.delete_milestone, name='delete_milestone'),
+    path('projects/<int:project_id>/milestones/<int:milestone_id>/complete/', views.complete_milestone, name='complete_milestone'),
+    path('projects/<int:project_id>/milestones/<int:milestone_id>/approve/', views.approve_milestone, name='approve_milestone'),
+    path('projects/<int:project_id>/milestones/<int:milestone_id>/reject/', views.reject_milestone, name='reject_milestone'),
 ]

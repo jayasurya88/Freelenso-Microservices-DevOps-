@@ -177,6 +177,10 @@ class ProjectActivity(models.Model):
     activity_type = models.CharField(max_length=50, choices=[
         ('milestone_created', 'Milestone Created'),
         ('milestone_completed', 'Milestone Completed'),
+        ('milestone_approved', 'Milestone Approved'),
+        ('milestone_rejected', 'Milestone Rejected'),
+        ('milestone_updated', 'Milestone Updated'),
+        ('milestone_deleted', 'Milestone Deleted'),
         ('file_uploaded', 'File Uploaded'),
         ('message_sent', 'Message Sent'),
         ('status_updated', 'Status Updated'),
@@ -228,7 +232,9 @@ class ChatMessage(models.Model):
         ordering = ['created_at']
     
     def __str__(self):
-        return f"Message from {self.sender.user.username} in {self.room.project.title}"
+        # Truncate long messages for display
+        short_message = self.message[:30] + "..." if len(self.message) > 30 else self.message
+        return f"{short_message} - {self.sender.user.username}"
 
 class ChatParticipant(models.Model):
     room = models.ForeignKey(ChatRoom, on_delete=models.CASCADE, related_name='participants')
@@ -241,3 +247,26 @@ class ChatParticipant(models.Model):
     
     def __str__(self):
         return f"{self.user.user.username} in {self.room.project.title}"
+
+class Notification(models.Model):
+    NOTIFICATION_TYPES = [
+        ('message', 'New Message'),
+        ('application', 'Project Application'),
+        ('milestone', 'Milestone Update'),
+        ('project', 'Project Update'),
+        ('payment', 'Payment Update'),
+    ]
+    
+    recipient = models.ForeignKey(UserProfile, on_delete=models.CASCADE, related_name='notifications')
+    sender = models.ForeignKey(UserProfile, on_delete=models.CASCADE, related_name='sent_notifications', null=True, blank=True)
+    notification_type = models.CharField(max_length=20, choices=NOTIFICATION_TYPES)
+    project = models.ForeignKey(Project, on_delete=models.CASCADE, null=True, blank=True)
+    message = models.TextField()
+    is_read = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+    
+    class Meta:
+        ordering = ['-created_at']
+    
+    def __str__(self):
+        return f"{self.notification_type} notification for {self.recipient.user.username}"

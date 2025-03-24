@@ -116,7 +116,14 @@
 
             {% if project.milestones.exists %}
                 <!-- Project Milestones -->
-                <h5 class="mb-3">Project Milestones</h5>
+                <h5 class="mb-3">
+                    Project Milestones
+                    {% if user.userprofile == project.client or user.userprofile == project.assigned_freelancer %}
+                    <a href="{% url 'project_milestones' project_id=project.id %}" class="btn btn-sm btn-outline-primary float-end">
+                        <i class="bi bi-list-check"></i> Manage Milestones
+                    </a>
+                    {% endif %}
+                </h5>
                 <div class="table-responsive">
                     <table class="table">
                         <thead>

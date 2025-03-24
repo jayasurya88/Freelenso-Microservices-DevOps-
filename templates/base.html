@@ -189,6 +189,22 @@
                                 <i class="bi bi-speedometer2 me-1"></i> Dashboard
                             </a>
                         </li>
+                        <li class="nav-item me-2">
+                            <a class="nav-link position-relative" href="{% url 'notifications' %}">
+                                <i class="bi bi-bell me-1"></i> Notifications
+                                {% if unread_notifications_count > 0 %}
+                                <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
+                                    {{ unread_notifications_count }}
+                                    <span class="visually-hidden">unread notifications</span>
+                                </span>
+                                {% endif %}
+                            </a>
+                        </li>
+                        <li class="nav-item me-2">
+                            <a class="nav-link" href="{% url 'message_list' %}">
+                                <i class="bi bi-chat-text me-1"></i> Messages
+                            </a>
+                        </li>
                         {% if user.userprofile.is_client %}
                         <li class="nav-item me-2">
                             <a class="nav-link" href="{% url 'create_project' %}">
@@ -241,7 +257,7 @@
     {% if messages %}
         <div class="container mt-4">
             {% for message in messages %}
-                <div class="alert alert-{{ message.tags }} d-flex align-items-center" role="alert">
+                <div class="alert alert-{% if message.tags %}{{ message.tags }}{% else %}info{% endif %} d-flex align-items-center" role="alert">
                     {% if message.tags == 'success' %}
                         <i class="bi bi-check-circle-fill me-2"></i>
                     {% elif message.tags == 'error' %}
@@ -250,8 +266,10 @@
                         <i class="bi bi-exclamation-triangle-fill me-2"></i>
                     {% elif message.tags == 'info' %}
                         <i class="bi bi-info-circle-fill me-2"></i>
+                    {% else %}
+                        <i class="bi bi-info-circle-fill me-2"></i>
                     {% endif %}
-                    {{ message }}
+                    <div>{{ message }}</div>
                 </div>
             {% endfor %}
         </div>

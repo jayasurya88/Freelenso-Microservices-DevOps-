@@ -83,6 +83,13 @@
     color: white;
     text-decoration: underline;
 }
+
+/* Hide the info alerts above the chat */
+.alert-info, 
+div[role="alert"] i.bi-info-circle-fill,
+.alert:has(i.bi-info-circle-fill) {
+    display: none !important;
+}
 </style>
 
 <script>
@@ -102,7 +109,8 @@ document.addEventListener('DOMContentLoaded', function() {
     // Add message to chat
     function addMessage(message) {
         const messageDiv = document.createElement('div');
-        messageDiv.className = `message ${message.sender_id === {{ request.user.userprofile.id }} ? 'sent' : 'received'} mb-3`;
+        const isSent = message.sender_id == {{ request.user.userprofile.id }};
+        messageDiv.className = `message ${isSent ? 'sent' : 'received'} mb-3`;
         messageDiv.innerHTML = `
             <div class="message-content p-2 rounded">
                 <div class="message-text">${message.message}</div>

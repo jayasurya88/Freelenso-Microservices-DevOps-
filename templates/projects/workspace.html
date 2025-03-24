@@ -13,11 +13,14 @@
                 <div>
                     {% if is_client %}
                         <a href="{% url 'edit_project' project.id %}" class="btn btn-outline-primary me-2">
-                            <i class="fas fa-edit"></i> Edit Project
+                            <i class="bi bi-pencil"></i> Edit Project
                         </a>
                     {% endif %}
+                    <a href="{% url 'project_milestones' project_id=project.id %}" class="btn btn-outline-success me-2">
+                        <i class="bi bi-list-check"></i> Milestones
+                    </a>
                     <a href="{% url 'chat_room' project.id %}" class="btn btn-primary">
-                        <i class="fas fa-comments"></i> Open Chat
+                        <i class="bi bi-chat"></i> Open Chat
                     </a>
                 </div>
             </div>

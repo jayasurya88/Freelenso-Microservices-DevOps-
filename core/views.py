@@ -1,20 +1,21 @@
 from django.shortcuts import render, redirect, get_object_or_404
+from django.http import JsonResponse, HttpResponse
 from django.contrib.auth.models import User
 from django.contrib.auth import login, logout, authenticate
 from django.contrib.auth.decorators import login_required
-from .models import UserProfile, Project, ProjectApplication, ProjectMilestone, ProjectAttachment, ProjectFile, ProjectActivity, ChatRoom, ChatMessage, ChatParticipant
+from .models import UserProfile, Project, ProjectApplication, ProjectMilestone, ProjectAttachment, ProjectFile, ProjectActivity, ChatRoom, ChatMessage, ChatParticipant, Notification
 from django.contrib import messages
 from django.conf import settings
 from django.db.models import Q
 import os
-from django.http import JsonResponse
-import json
 from django.views.decorators.http import require_POST
 from django.utils import timezone
 from django.core.paginator import Paginator
 from django.utils.text import slugify
 from django.core.files.storage import default_storage
 from django.core.files.base import ContentFile
+from django.views.decorators.csrf import csrf_exempt
+from django.core.exceptions import ValidationError
 
 # Create your views here.
 def index(request):
@@ -631,8 +632,11 @@ def chat_room(request, project_id):
     # Get or create chat room
     chat_room, created = ChatRoom.objects.get_or_create(project=project)
     
-    # Get messages
-    messages_list = ChatMessage.objects.filter(room=chat_room).order_by('created_at')
+    # Get messages, excluding ones that match the pattern
+    messages_list = ChatMessage.objects.filter(room=chat_room).exclude(
+        Q(message__contains=' - client') | 
+        Q(message__contains=' - freelancer')
+    ).order_by('created_at')
     
     # Mark messages as read
     ChatMessage.objects.filter(
@@ -649,50 +653,58 @@ def chat_room(request, project_id):
     })
 
 @login_required
-@require_POST
 def send_message(request, project_id):
-    project = get_object_or_404(Project, id=project_id)
-    user_profile = request.user.userprofile
+    """Send a message to the chat room"""
+    if request.method == 'POST':
+        project = get_object_or_404(Project, id=project_id)
+        
+        # Check if the user has access to the project
+        if request.user.userprofile != project.client and request.user.userprofile != project.assigned_freelancer:
+            return JsonResponse({'status': 'error', 'message': 'Access denied'}, status=403)
+        
+        message_text = request.POST.get('message', '').strip()
+        file = request.FILES.get('file', None)
+        
+        if not message_text and not file:
+            return JsonResponse({'status': 'error', 'message': 'Message cannot be empty'}, status=400)
+        
+        # Get or create chat room
+        chat_room, created = ChatRoom.objects.get_or_create(project=project)
+        
+        # Save message
+        chat_message = ChatMessage.objects.create(
+            room=chat_room,
+            sender=request.user.userprofile,
+            message=message_text,
+            file=file
+        )
+        
+        # Create a notification for the recipient
+        recipient = project.client if request.user.userprofile == project.assigned_freelancer else project.assigned_freelancer
+        if recipient:
+            create_notification(
+                recipient=recipient,
+                notification_type='message',
+                message=f"New message from {request.user.username} in project '{project.title}'",
+                sender=request.user.userprofile,
+                project=project
+            )
+        
+        # Update last message timestamp for the room
+        chat_room.save()  # This will update the auto_now field
+        
+        response_data = {
+            'id': chat_message.id,
+            'message': chat_message.message,
+            'sender_id': chat_message.sender.id,
+            'sender_name': chat_message.sender.user.username,
+            'created_at': chat_message.created_at.strftime('%b %d, %Y %H:%M'),
+            'file_url': chat_message.file.url if chat_message.file else None
+        }
+        
+        return JsonResponse(response_data)
     
-    # Check if user has access to this project
-    if user_profile != project.client and user_profile != project.assigned_freelancer:
-        return JsonResponse({'error': 'Access denied'}, status=403)
-    
-    # Get or create chat room
-    chat_room, created = ChatRoom.objects.get_or_create(project=project)
-    
-    message_text = request.POST.get('message', '').strip()
-    file = request.FILES.get('file')
-    
-    if not message_text and not file:
-        return JsonResponse({'error': 'No message or file provided'}, status=400)
-    
-    # Save file if provided
-    file_url = None
-    if file:
-        file_path = f'chat_files/{project_id}/{file.name}'
-        file_url = default_storage.save(file_path, ContentFile(file.read()))
-    
-    # Create message
-    message = ChatMessage.objects.create(
-        room=chat_room,
-        sender=user_profile,
-        message=message_text,
-        file=file_url
-    )
-    
-    # Update last message timestamp
-    chat_room.last_message_at = timezone.now()
-    chat_room.save()
-    
-    return JsonResponse({
-        'id': message.id,
-        'message': message.message,
-        'sender_id': message.sender.id,
-        'sender_name': message.sender.user.username,
-        'created_at': message.created_at.strftime('%b %d, %Y %H:%M'),
-        'file_url': message.file.url if message.file else None
-    })
+    return JsonResponse({'status': 'error', 'message': 'Invalid request'}, status=400)
 
 @login_required
 def get_messages(request, project_id):
@@ -706,8 +718,11 @@ def get_messages(request, project_id):
     # Get chat room
     chat_room = get_object_or_404(ChatRoom, project=project)
     
-    # Get messages
-    messages_list = ChatMessage.objects.filter(room=chat_room).order_by('created_at')
+    # Get messages, exclude improperly formatted ones
+    messages_list = ChatMessage.objects.filter(room=chat_room).exclude(
+        Q(message__contains=' - client') | 
+        Q(message__contains=' - freelancer')
+    ).order_by('created_at')
     
     # Mark messages as read
     ChatMessage.objects.filter(
@@ -774,3 +789,427 @@ def edit_project(request, project_id):
         'project': project,
     }
     return render(request, 'projects/edit_project.html', context)
+
+@login_required
+def notifications(request):
+    """View to display user notifications"""
+    user_profile = request.user.userprofile
+    notifications = Notification.objects.filter(recipient=user_profile)
+    
+    # Mark all as read if specified
+    if request.GET.get('mark_read'):
+        notifications.update(is_read=True)
+    
+    context = {
+        'notifications': notifications,
+    }
+    return render(request, 'notifications/notification_list.html', context)
+
+@login_required
+def mark_notification_read(request, notification_id):
+    """Mark a specific notification as read"""
+    notification = get_object_or_404(Notification, id=notification_id, recipient=request.user.userprofile)
+    notification.is_read = True
+    notification.save()
+    return JsonResponse({'status': 'success'})
+
+def get_unread_notifications_count(user_profile):
+    """Helper function to get unread notification count"""
+    return Notification.objects.filter(recipient=user_profile, is_read=False).count()
+
+# Update context processor to add notifications to all views
+def add_notifications_to_context(request):
+    """Add unread notifications count to context for all views"""
+    if request.user.is_authenticated:
+        try:
+            unread_count = get_unread_notifications_count(request.user.userprofile)
+            return {'unread_notifications_count': unread_count}
+        except:
+            return {}
+    return {}
+
+# Helper function to create a notification
+def create_notification(recipient, notification_type, message, sender=None, project=None):
+    """Create a new notification"""
+    notification = Notification.objects.create(
+        recipient=recipient,
+        sender=sender,
+        notification_type=notification_type,
+        project=project,
+        message=message
+    )
+    return notification
+
+@login_required
+def message_list(request):
+    """View to display a list of all chat rooms for a user"""
+    user_profile = request.user.userprofile
+    
+    # Get all chat rooms where the user is client or freelancer
+    chat_rooms = ChatRoom.objects.filter(
+        Q(project__client=user_profile) | Q(project__assigned_freelancer=user_profile)
+    ).select_related('project', 'project__client', 'project__assigned_freelancer').order_by('-last_message_at')
+    
+    # Enhance chat rooms with last message and unread count
+    for room in chat_rooms:
+        # Get last message
+        last_message = ChatMessage.objects.filter(room=room).order_by('-created_at').first()
+        room.last_message = last_message
+        
+        # Count unread messages
+        room.unread_count = ChatMessage.objects.filter(
+            room=room,
+            is_read=False
+        ).exclude(sender=user_profile).count()
+    
+    context = {
+        'chat_rooms': chat_rooms,
+    }
+    return render(request, 'chat/message_list.html', context)
+
+@login_required
+def cleanup_messages(request):
+    """Administrative view to automatically clean up improperly formatted messages"""
+    user_profile = request.user.userprofile
+    
+    # Find messages that match the pattern (containing ' - client' or ' - freelancer')
+    improper_messages = ChatMessage.objects.filter(
+        Q(message__contains=' - client') | 
+        Q(message__contains=' - freelancer')
+    )
+    
+    # Delete the improper messages immediately
+    count = improper_messages.count()
+    improper_messages.delete()
+    
+    messages.success(request, f"Successfully deleted {count} improperly formatted messages.")
+    return redirect('message_list')
+
+@login_required
+def create_milestone(request, project_id):
+    """Add a new milestone to an existing project"""
+    project = get_object_or_404(Project, id=project_id)
+    
+    # Check if user is the client
+    if request.user.userprofile != project.client:
+        messages.error(request, "Only the project owner can add milestones.")
+        return redirect('project_detail', project_id=project_id)
+    
+    # Check if project is in appropriate status
+    if project.status not in ['open', 'in_progress']:
+        messages.error(request, "Cannot add milestones to completed or cancelled projects.")
+        return redirect('project_detail', project_id=project_id)
+    
+    if request.method == 'POST':
+        title = request.POST.get('title')
+        description = request.POST.get('description')
+        amount = request.POST.get('amount')
+        due_date = request.POST.get('due_date')
+        
+        if title and amount and due_date:
+            milestone = ProjectMilestone.objects.create(
+                project=project,
+                title=title,
+                description=description,
+                amount=float(amount),
+                due_date=due_date
+            )
+            
+            # Update project total milestones
+            project.total_milestones += 1
+            project.save()
+            project.update_progress()
+            
+            # Record activity
+            ProjectActivity.objects.create(
+                project=project,
+                user=request.user,
+                activity_type='milestone_created',
+                description=f"Added milestone: {title}"
+            )
+            
+            # Create notification for freelancer if assigned
+            if project.assigned_freelancer:
+                create_notification(
+                    recipient=project.assigned_freelancer,
+                    notification_type='milestone',
+                    message=f"New milestone added to project '{project.title}': {title}",
+                    sender=request.user.userprofile,
+                    project=project
+                )
+            
+            messages.success(request, "Milestone added successfully.")
+            return redirect('project_milestones', project_id=project_id)
+    
+    return render(request, 'projects/milestone_form.html', {
+        'project': project,
+        'action': 'Create'
+    })
+
+@login_required
+def edit_milestone(request, project_id, milestone_id):
+    """Edit an existing milestone"""
+    project = get_object_or_404(Project, id=project_id)
+    milestone = get_object_or_404(ProjectMilestone, id=milestone_id, project=project)
+    
+    # Check if user is the client
+    if request.user.userprofile != project.client:
+        messages.error(request, "Only the project owner can edit milestones.")
+        return redirect('project_milestones', project_id=project_id)
+    
+    # Check if milestone can be edited (only pending ones)
+    if milestone.status != 'pending':
+        messages.error(request, "Cannot edit milestones that are already completed or approved.")
+        return redirect('project_milestones', project_id=project_id)
+    
+    if request.method == 'POST':
+        title = request.POST.get('title')
+        description = request.POST.get('description')
+        amount = request.POST.get('amount')
+        due_date = request.POST.get('due_date')
+        
+        if title and amount and due_date:
+            milestone.title = title
+            milestone.description = description
+            milestone.amount = float(amount)
+            milestone.due_date = due_date
+            milestone.save()
+            
+            # Record activity
+            ProjectActivity.objects.create(
+                project=project,
+                user=request.user,
+                activity_type='milestone_updated',
+                description=f"Updated milestone: {title}"
+            )
+            
+            # Create notification for freelancer if assigned
+            if project.assigned_freelancer:
+                create_notification(
+                    recipient=project.assigned_freelancer,
+                    notification_type='milestone',
+                    message=f"Milestone updated in project '{project.title}': {title}",
+                    sender=request.user.userprofile,
+                    project=project
+                )
+            
+            messages.success(request, "Milestone updated successfully.")
+            return redirect('project_milestones', project_id=project_id)
+    
+    return render(request, 'projects/milestone_form.html', {
+        'project': project,
+        'milestone': milestone,
+        'action': 'Edit'
+    })
+
+@login_required
+def delete_milestone(request, project_id, milestone_id):
+    """Delete a milestone"""
+    project = get_object_or_404(Project, id=project_id)
+    milestone = get_object_or_404(ProjectMilestone, id=milestone_id, project=project)
+    
+    # Check if user is the client
+    if request.user.userprofile != project.client:
+        messages.error(request, "Only the project owner can delete milestones.")
+        return redirect('project_milestones', project_id=project_id)
+    
+    # Check if milestone can be deleted (only pending ones)
+    if milestone.status != 'pending':
+        messages.error(request, "Cannot delete milestones that are already completed or approved.")
+        return redirect('project_milestones', project_id=project_id)
+    
+    if request.method == 'POST' and request.POST.get('confirm_delete') == 'yes':
+        milestone_title = milestone.title
+        
+        # Reduce total milestones count
+        project.total_milestones -= 1
+        if project.total_milestones < 0:
+            project.total_milestones = 0
+        project.save()
+        project.update_progress()
+        
+        # Delete the milestone
+        milestone.delete()
+        
+        # Record activity
+        ProjectActivity.objects.create(
+            project=project,
+            user=request.user,
+            activity_type='milestone_deleted',
+            description=f"Removed milestone: {milestone_title}"
+        )
+        
+        messages.success(request, "Milestone deleted successfully.")
+        return redirect('project_milestones', project_id=project_id)
+    
+    return render(request, 'projects/confirm_delete_milestone.html', {
+        'project': project,
+        'milestone': milestone
+    })
+
+@login_required
+def project_milestones(request, project_id):
+    """View all milestones for a project"""
+    project = get_object_or_404(Project, id=project_id)
+    
+    # Check if user has access to this project
+    if request.user.userprofile != project.client and request.user.userprofile != project.assigned_freelancer:
+        messages.error(request, "You don't have access to this project.")
+        return redirect('dashboard')
+    
+    milestones = project.milestones.all().order_by('due_date')
+    
+    is_client = request.user.userprofile == project.client
+    is_freelancer = request.user.userprofile == project.assigned_freelancer
+    
+    return render(request, 'projects/milestones.html', {
+        'project': project,
+        'milestones': milestones,
+        'is_client': is_client,
+        'is_freelancer': is_freelancer
+    })
+
+@login_required
+def complete_milestone(request, project_id, milestone_id):
+    """Mark a milestone as completed (by freelancer)"""
+    project = get_object_or_404(Project, id=project_id)
+    milestone = get_object_or_404(ProjectMilestone, id=milestone_id, project=project)
+    
+    # Check if user is the assigned freelancer
+    if request.user.userprofile != project.assigned_freelancer:
+        messages.error(request, "Only the assigned freelancer can mark milestones as completed.")
+        return redirect('project_milestones', project_id=project_id)
+    
+    # Check if milestone is in pending status
+    if milestone.status != 'pending':
+        messages.error(request, "This milestone is already completed or approved.")
+        return redirect('project_milestones', project_id=project_id)
+    
+    if request.method == 'POST':
+        # Update milestone status
+        milestone.status = 'completed'
+        milestone.save()
+        
+        # Record activity
+        ProjectActivity.objects.create(
+            project=project,
+            user=request.user,
+            activity_type='milestone_completed',
+            description=f"Marked milestone as completed: {milestone.title}"
+        )
+        
+        # Create notification for client
+        create_notification(
+            recipient=project.client,
+            notification_type='milestone',
+            message=f"Milestone marked as completed in project '{project.title}': {milestone.title}",
+            sender=request.user.userprofile,
+            project=project
+        )
+        
+        messages.success(request, "Milestone marked as completed. Waiting for client approval.")
+        return redirect('project_milestones', project_id=project_id)
+    
+    return render(request, 'projects/complete_milestone.html', {
+        'project': project,
+        'milestone': milestone
+    })
+
+@login_required
+def approve_milestone(request, project_id, milestone_id):
+    """Approve a completed milestone (by client)"""
+    project = get_object_or_404(Project, id=project_id)
+    milestone = get_object_or_404(ProjectMilestone, id=milestone_id, project=project)
+    
+    # Check if user is the client
+    if request.user.userprofile != project.client:
+        messages.error(request, "Only the project owner can approve milestones.")
+        return redirect('project_milestones', project_id=project_id)
+    
+    # Check if milestone is in completed status
+    if milestone.status != 'completed':
+        messages.error(request, "Only completed milestones can be approved.")
+        return redirect('project_milestones', project_id=project_id)
+    
+    if request.method == 'POST':
+        # Update milestone status
+        milestone.status = 'approved'
+        milestone.save()
+        
+        # Update project progress
+        project.completed_milestones += 1
+        project.save()
+        project.update_progress()
+        
+        # Record activity
+        ProjectActivity.objects.create(
+            project=project,
+            user=request.user,
+            activity_type='milestone_approved',
+            description=f"Approved milestone: {milestone.title}"
+        )
+        
+        # Create notification for freelancer
+        create_notification(
+            recipient=project.assigned_freelancer,
+            notification_type='milestone',
+            message=f"Milestone approved in project '{project.title}': {milestone.title}",
+            sender=request.user.userprofile,
+            project=project
+        )
+        
+        messages.success(request, "Milestone approved successfully.")
+        return redirect('project_milestones', project_id=project_id)
+    
+    return render(request, 'projects/approve_milestone.html', {
+        'project': project,
+        'milestone': milestone
+    })
+
+@login_required
+def reject_milestone(request, project_id, milestone_id):
+    """Reject a completed milestone (by client)"""
+    project = get_object_or_404(Project, id=project_id)
+    milestone = get_object_or_404(ProjectMilestone, id=milestone_id, project=project)
+    
+    # Check if user is the client
+    if request.user.userprofile != project.client:
+        messages.error(request, "Only the project owner can reject milestones.")
+        return redirect('project_milestones', project_id=project_id)
+    
+    # Check if milestone is in completed status
+    if milestone.status != 'completed':
+        messages.error(request, "Only completed milestones can be rejected.")
+        return redirect('project_milestones', project_id=project_id)
+    
+    if request.method == 'POST':
+        feedback = request.POST.get('feedback', '')
+        
+        # Update milestone status
+        milestone.status = 'rejected'
+        milestone.save()
+        
+        # Record activity
+        ProjectActivity.objects.create(
+            project=project,
+            user=request.user,
+            activity_type='milestone_rejected',
+            description=f"Rejected milestone: {milestone.title}"
+        )
+        
+        # Create notification for freelancer
+        create_notification(
+            recipient=project.assigned_freelancer,
+            notification_type='milestone',
+            message=f"Milestone rejected in project '{project.title}': {milestone.title}. Feedback: {feedback}",
+            sender=request.user.userprofile,
+            project=project
+        )
+        
+        messages.success(request, "Milestone rejected. The freelancer has been notified.")
+        return redirect('project_milestones', project_id=project_id)
+    
+    return render(request, 'projects/reject_milestone.html', {
+        'project': project,
+        'milestone': milestone
+    })

@@ -1,0 +1,116 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row mb-4">
+        <div class="col-12">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{% url 'dashboard' %}">Dashboard</a></li>
+                    <li class="breadcrumb-item"><a href="{% url 'project_detail' project_id=project.id %}">{{ project.title }}</a></li>
+                    <li class="breadcrumb-item"><a href="{% url 'project_milestones' project_id=project.id %}">Milestones</a></li>
+                    <li class="breadcrumb-item active">Reject Milestone</li>
+                </ol>
+            </nav>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-8 mx-auto">
+            <div class="card">
+                <div class="card-header bg-white">
+                    <h4 class="mb-0">Reject Milestone</h4>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-warning mb-4">
+                        <i class="bi bi-exclamation-triangle"></i> You are about to reject this milestone. Please provide detailed feedback to help the freelancer understand what needs to be improved.
+                    </div>
+                    
+                    <div class="card mb-4">
+                        <div class="card-body">
+                            <h5 class="card-title">{{ milestone.title }}</h5>
+                            {% if milestone.description %}
+                            <p class="card-text">{{ milestone.description }}</p>
+                            {% endif %}
+                            <ul class="list-group list-group-flush mt-3">
+                                <li class="list-group-item d-flex justify-content-between align-items-center">
+                                    <span><strong>Amount:</strong></span>
+                                    <span>${{ milestone.amount }}</span>
+                                </li>
+                                <li class="list-group-item d-flex justify-content-between align-items-center">
+                                    <span><strong>Due Date:</strong></span>
+                                    <span>{{ milestone.due_date|date:"M d, Y" }}</span>
+                                </li>
+                                <li class="list-group-item d-flex justify-content-between align-items-center">
+                                    <span><strong>Status:</strong></span>
+                                    <span class="badge bg-info">Completed</span>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                    
+                    <form method="post" class="needs-validation" novalidate>
+                        {% csrf_token %}
+                        
+                        <div class="mb-4">
+                            <label for="feedback" class="form-label">Feedback <span class="text-danger">*</span></label>
+                            <textarea class="form-control" id="feedback" name="feedback" rows="4" placeholder="Explain why you're rejecting this milestone..." required></textarea>
+                            <div class="invalid-feedback">
+                                Please provide detailed feedback explaining why you're rejecting this milestone.
+                            </div>
+                            <div class="form-text">
+                                Be specific about what needs to be improved or fixed.
+                            </div>
+                        </div>
+                        
+                        <div class="form-check mb-4">
+                            <input class="form-check-input" type="checkbox" value="1" id="confirm_rejection" name="confirm_rejection" required>
+                            <label class="form-check-label" for="confirm_rejection">
+                                I confirm that I am rejecting this milestone and have provided clear feedback.
+                            </label>
+                            <div class="invalid-feedback">
+                                You must confirm that you're rejecting this milestone.
+                            </div>
+                        </div>
+                        
+                        <div class="d-flex justify-content-between">
+                            <a href="{% url 'project_milestones' project_id=project.id %}" class="btn btn-outline-secondary">
+                                <i class="bi bi-arrow-left"></i> Back to Milestones
+                            </a>
+                            <button type="submit" class="btn btn-danger">
+                                <i class="bi bi-x-circle"></i> Reject Milestone
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% block extra_js %}
+<script>
+    // Form validation
+    (function() {
+        'use strict';
+        
+        // Fetch all the forms we want to apply custom Bootstrap validation styles to
+        var forms = document.querySelectorAll('.needs-validation');
+        
+        // Loop over them and prevent submission
+        Array.prototype.slice.call(forms)
+            .forEach(function(form) {
+                form.addEventListener('submit', function(event) {
+                    if (!form.checkValidity()) {
+                        event.preventDefault();
+                        event.stopPropagation();
+                    }
+                    
+                    form.classList.add('was-validated');
+                }, false);
+            });
+    })();
+</script>
+{% endblock %}
+{% endblock %} 

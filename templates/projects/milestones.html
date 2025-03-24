@@ -1,0 +1,129 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row mb-4">
+        <div class="col-12">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{% url 'dashboard' %}">Dashboard</a></li>
+                    <li class="breadcrumb-item"><a href="{% url 'project_detail' project_id=project.id %}">{{ project.title }}</a></li>
+                    <li class="breadcrumb-item active">Milestones</li>
+                </ol>
+            </nav>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header d-flex justify-content-between align-items-center bg-white">
+            <h4 class="mb-0">Project Milestones</h4>
+            {% if is_client %}
+            <a href="{% url 'create_milestone' project_id=project.id %}" class="btn btn-primary">
+                <i class="bi bi-plus-circle"></i> Add Milestone
+            </a>
+            {% endif %}
+        </div>
+        <div class="card-body">
+            <!-- Project Info Banner -->
+            <div class="alert alert-light border mb-4">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h5>{{ project.title }}</h5>
+                        <p class="mb-0 text-muted">
+                            <strong>Status:</strong> 
+                            <span class="badge {% if project.status == 'completed' %}bg-success{% elif project.status == 'in_progress' %}bg-primary{% elif project.status == 'open' %}bg-warning{% else %}bg-secondary{% endif %}">
+                                {{ project.get_status_display }}
+                            </span>
+                        </p>
+                    </div>
+                    <div class="col-md-6 text-md-end">
+                        <p class="mb-0">
+                            <strong>Progress:</strong>
+                            <span class="badge bg-info">{{ project.progress }}%</span>
+                        </p>
+                        <p class="mb-0 text-muted">
+                            <strong>Completed:</strong> {{ project.completed_milestones }} of {{ project.total_milestones }} milestones
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            {% if milestones %}
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Milestone</th>
+                            <th>Due Date</th>
+                            <th>Amount</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for milestone in milestones %}
+                        <tr>
+                            <td>
+                                <strong>{{ milestone.title }}</strong>
+                                {% if milestone.description %}
+                                <p class="text-muted small mb-0">{{ milestone.description }}</p>
+                                {% endif %}
+                            </td>
+                            <td>{{ milestone.due_date|date:"M d, Y" }}</td>
+                            <td>${{ milestone.amount }}</td>
+                            <td>
+                                {% if milestone.status == 'pending' %}
+                                <span class="badge bg-warning text-dark">Pending</span>
+                                {% elif milestone.status == 'completed' %}
+                                <span class="badge bg-info">Completed</span>
+                                {% elif milestone.status == 'approved' %}
+                                <span class="badge bg-success">Approved</span>
+                                {% elif milestone.status == 'rejected' %}
+                                <span class="badge bg-danger">Rejected</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <div class="btn-group btn-group-sm">
+                                    {% if is_client %}
+                                        {% if milestone.status == 'pending' %}
+                                            <a href="{% url 'edit_milestone' project_id=project.id milestone_id=milestone.id %}" class="btn btn-outline-primary">
+                                                <i class="bi bi-pencil"></i>
+                                            </a>
+                                            <a href="{% url 'delete_milestone' project_id=project.id milestone_id=milestone.id %}" class="btn btn-outline-danger">
+                                                <i class="bi bi-trash"></i>
+                                            </a>
+                                        {% elif milestone.status == 'completed' %}
+                                            <a href="{% url 'approve_milestone' project_id=project.id milestone_id=milestone.id %}" class="btn btn-success">
+                                                <i class="bi bi-check-circle"></i> Approve
+                                            </a>
+                                            <a href="{% url 'reject_milestone' project_id=project.id milestone_id=milestone.id %}" class="btn btn-outline-danger">
+                                                <i class="bi bi-x-circle"></i> Reject
+                                            </a>
+                                        {% endif %}
+                                    {% endif %}
+                                    
+                                    {% if is_freelancer and milestone.status == 'pending' %}
+                                        <a href="{% url 'complete_milestone' project_id=project.id milestone_id=milestone.id %}" class="btn btn-primary">
+                                            <i class="bi bi-check"></i> Mark Complete
+                                        </a>
+                                    {% endif %}
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="alert alert-info">
+                <i class="bi bi-info-circle"></i> No milestones have been created for this project yet.
+                {% if is_client %}
+                <a href="{% url 'create_milestone' project_id=project.id %}" class="alert-link">Click here to add a milestone</a>.
+                {% endif %}
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %} 

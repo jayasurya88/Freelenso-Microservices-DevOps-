@@ -1,0 +1,91 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row mb-4">
+        <div class="col-12">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{% url 'dashboard' %}">Dashboard</a></li>
+                    <li class="breadcrumb-item"><a href="{% url 'project_detail' project_id=project.id %}">{{ project.title }}</a></li>
+                    <li class="breadcrumb-item"><a href="{% url 'project_milestones' project_id=project.id %}">Milestones</a></li>
+                    <li class="breadcrumb-item active">Delete Milestone</li>
+                </ol>
+            </nav>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-8 mx-auto">
+            <div class="card">
+                <div class="card-header bg-white">
+                    <h4 class="mb-0">Delete Milestone</h4>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-danger mb-4">
+                        <i class="bi bi-exclamation-triangle"></i> Warning! You are about to delete this milestone. This action cannot be undone.
+                    </div>
+                    
+                    <div class="card mb-4">
+                        <div class="card-body">
+                            <h5 class="card-title">{{ milestone.title }}</h5>
+                            {% if milestone.description %}
+                            <p class="card-text">{{ milestone.description }}</p>
+                            {% endif %}
+                            <ul class="list-group list-group-flush mt-3">
+                                <li class="list-group-item d-flex justify-content-between align-items-center">
+                                    <span><strong>Amount:</strong></span>
+                                    <span>${{ milestone.amount }}</span>
+                                </li>
+                                <li class="list-group-item d-flex justify-content-between align-items-center">
+                                    <span><strong>Due Date:</strong></span>
+                                    <span>{{ milestone.due_date|date:"M d, Y" }}</span>
+                                </li>
+                                <li class="list-group-item d-flex justify-content-between align-items-center">
+                                    <span><strong>Status:</strong></span>
+                                    <span class="badge bg-warning text-dark">Pending</span>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                    
+                    <form method="post">
+                        {% csrf_token %}
+                        <input type="hidden" name="confirm_delete" value="yes">
+                        
+                        <div class="form-check mb-4">
+                            <input class="form-check-input" type="checkbox" value="1" id="confirm" required>
+                            <label class="form-check-label" for="confirm">
+                                I understand that this action cannot be undone and confirm that I want to delete this milestone.
+                            </label>
+                        </div>
+                        
+                        <div class="d-flex justify-content-between">
+                            <a href="{% url 'project_milestones' project_id=project.id %}" class="btn btn-outline-secondary">
+                                <i class="bi bi-arrow-left"></i> Cancel
+                            </a>
+                            <button type="submit" class="btn btn-danger" id="deleteBtn" disabled>
+                                <i class="bi bi-trash"></i> Delete Milestone
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const confirmCheckbox = document.getElementById('confirm');
+        const deleteBtn = document.getElementById('deleteBtn');
+        
+        confirmCheckbox.addEventListener('change', function() {
+            deleteBtn.disabled = !confirmCheckbox.checked;
+        });
+    });
+</script>
+{% endblock %}
+{% endblock %} 
