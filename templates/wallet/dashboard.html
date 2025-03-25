@@ -1,0 +1,236 @@
+{% extends 'base.html' %}
+
+{% block title %}Wallet Dashboard{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <h1 class="mb-4">Wallet Dashboard</h1>
+    
+    {% if messages %}
+    <div class="row">
+        <div class="col-12">
+            {% for message in messages %}
+            <div class="alert alert-{{ message.tags }}">
+                {{ message }}
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+    <div class="row">
+        <!-- Wallet Balance Section -->
+        <div class="col-md-4 mb-4">
+            <div class="card shadow h-100">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">Wallet Balance</h5>
+                </div>
+                <div class="card-body">
+                    <h2 class="display-5 text-primary text-center mb-3">{{ wallet.balance }} {{ wallet.currency }}</h2>
+                    <div class="text-center mb-4">
+                        <span class="badge bg-info me-2">Escrow: {{ wallet.escrow_balance }} {{ wallet.currency }}</span>
+                        <span class="badge bg-secondary">Total: {{ total_funds }} {{ wallet.currency }}</span>
+                    </div>
+                    <div class="d-grid gap-2">
+                        <a href="{% url 'wallet_deposit' %}" class="btn btn-success">Deposit Funds</a>
+                        <a href="{% url 'wallet_withdraw' %}" class="btn btn-outline-primary">Withdraw Funds</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Stats Section -->
+        <div class="col-md-4 mb-4">
+            <div class="card shadow h-100">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">{% if user.userprofile.is_freelancer %}Earnings{% else %}Project Funds{% endif %} Stats</h5>
+                </div>
+                <div class="card-body">
+                    {% if user.userprofile.is_freelancer %}
+                    <div class="d-flex justify-content-between mb-3">
+                        <div>This Month</div>
+                        <div class="fw-bold">{{ earnings_this_month }} {{ wallet.currency }}</div>
+                    </div>
+                    <div class="d-flex justify-content-between mb-3">
+                        <div>Completed Milestones</div>
+                        <div class="fw-bold">{{ completed_milestones_count }}</div>
+                    </div>
+                    {% elif user.userprofile.is_client %}
+                    <div class="d-flex justify-content-between mb-3">
+                        <div>Active Projects</div>
+                        <div class="fw-bold">{{ active_projects_count }}</div>
+                    </div>
+                    <div class="d-flex justify-content-between mb-3">
+                        <div>Total Escrowed</div>
+                        <div class="fw-bold">{{ total_escrowed }} {{ wallet.currency }}</div>
+                    </div>
+                    {% endif %}
+                    
+                    <div class="alert alert-info mt-3">
+                        <i class="fas fa-info-circle me-2"></i>
+                        {% if user.userprofile.is_freelancer %}
+                            Payments are released after milestone approval
+                        {% else %}
+                            Funds in escrow are released only when milestones are approved
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Quick Links Section -->
+        <div class="col-md-4 mb-4">
+            <div class="card shadow h-100">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">Quick Links</h5>
+                </div>
+                <div class="card-body">
+                    <div class="list-group">
+                        <a href="{% url 'wallet_transactions' %}" class="list-group-item list-group-item-action">
+                            <i class="fas fa-history me-2"></i> Transaction History
+                        </a>
+                        <a href="{% url 'payment_methods' %}" class="list-group-item list-group-item-action">
+                            <i class="fas fa-credit-card me-2"></i> Payment Methods
+                        </a>
+                        {% if user.userprofile.is_freelancer %}
+                        <a href="{% url 'my_projects' %}" class="list-group-item list-group-item-action">
+                            <i class="fas fa-project-diagram me-2"></i> My Projects
+                        </a>
+                        {% elif user.userprofile.is_client %}
+                        <a href="{% url 'my_projects' %}" class="list-group-item list-group-item-action">
+                            <i class="fas fa-project-diagram me-2"></i> My Projects
+                        </a>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Transactions -->
+    <div class="row mt-3">
+        <div class="col-12">
+            <div class="card shadow">
+                <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">Recent Transactions</h5>
+                    <a href="{% url 'wallet_transactions' %}" class="btn btn-sm btn-light">View All</a>
+                </div>
+                <div class="card-body">
+                    {% if recent_transactions %}
+                    <div class="table-responsive">
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Description</th>
+                                    <th>Amount</th>
+                                    <th>Type</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for transaction in recent_transactions %}
+                                <tr>
+                                    <td>{{ transaction.created_at|date:"M d, Y" }}</td>
+                                    <td>{{ transaction.description }}</td>
+                                    <td class="{% if transaction.transaction_type == 'deposit' or transaction.transaction_type == 'release' %}text-success{% elif transaction.transaction_type == 'withdrawal' or transaction.transaction_type == 'escrow' or transaction.transaction_type == 'fee' %}text-danger{% endif %}">
+                                        {% if transaction.transaction_type == 'deposit' or transaction.transaction_type == 'release' %}+{% elif transaction.transaction_type == 'withdrawal' or transaction.transaction_type == 'escrow' or transaction.transaction_type == 'fee' %}-{% endif %}
+                                        {{ transaction.amount }} {{ wallet.currency }}
+                                    </td>
+                                    <td>
+                                        {% if transaction.transaction_type == 'deposit' %}
+                                        <span class="badge bg-success">Deposit</span>
+                                        {% elif transaction.transaction_type == 'withdrawal' %}
+                                        <span class="badge bg-warning text-dark">Withdrawal</span>
+                                        {% elif transaction.transaction_type == 'escrow' %}
+                                        <span class="badge bg-info">Escrow</span>
+                                        {% elif transaction.transaction_type == 'release' %}
+                                        <span class="badge bg-primary">Release</span>
+                                        {% elif transaction.transaction_type == 'refund' %}
+                                        <span class="badge bg-secondary">Refund</span>
+                                        {% elif transaction.transaction_type == 'fee' %}
+                                        <span class="badge bg-dark">Fee</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if transaction.status == 'pending' %}
+                                        <span class="badge bg-warning text-dark">Pending</span>
+                                        {% elif transaction.status == 'completed' %}
+                                        <span class="badge bg-success">Completed</span>
+                                        {% elif transaction.status == 'failed' %}
+                                        <span class="badge bg-danger">Failed</span>
+                                        {% elif transaction.status == 'cancelled' %}
+                                        <span class="badge bg-secondary">Cancelled</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="text-center py-4">
+                        <p class="mb-0 text-muted">No transactions yet</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Active Withdrawals -->
+    {% if active_withdrawals %}
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card shadow">
+                <div class="card-header bg-warning text-dark">
+                    <h5 class="mb-0">Pending Withdrawals</h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Amount</th>
+                                    <th>Fee</th>
+                                    <th>Net Amount</th>
+                                    <th>Method</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for withdrawal in active_withdrawals %}
+                                <tr>
+                                    <td>{{ withdrawal.created_at|date:"M d, Y" }}</td>
+                                    <td>{{ withdrawal.amount }} {{ wallet.currency }}</td>
+                                    <td>{{ withdrawal.fee }} {{ wallet.currency }}</td>
+                                    <td>{{ withdrawal.amount|add:"-"|add:withdrawal.fee }} {{ wallet.currency }}</td>
+                                    <td>
+                                        {% if withdrawal.withdrawal_method == 'bank' %}
+                                        <span class="badge bg-primary">Bank Transfer</span>
+                                        {% elif withdrawal.withdrawal_method == 'upi' %}
+                                        <span class="badge bg-success">UPI</span>
+                                        {% elif withdrawal.withdrawal_method == 'paypal' %}
+                                        <span class="badge bg-info">PayPal</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if withdrawal.status == 'pending' %}
+                                        <span class="badge bg-warning text-dark">Pending</span>
+                                        {% elif withdrawal.status == 'processing' %}
+                                        <span class="badge bg-info">Processing</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %} 

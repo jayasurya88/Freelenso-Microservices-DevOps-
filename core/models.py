@@ -161,6 +161,9 @@ class ProjectMilestone(models.Model):
     amount = models.DecimalField(max_digits=10, decimal_places=2, validators=[MinValueValidator(Decimal('0.00'))])
     due_date = models.DateField()
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
+    completion_notes = models.TextField(blank=True, null=True)
+    completed_at = models.DateTimeField(null=True, blank=True)
+    feedback = models.TextField(blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -201,6 +204,7 @@ class ProjectFile(models.Model):
     file_name = models.CharField(max_length=255)
     file_type = models.CharField(max_length=50)
     description = models.TextField(blank=True)
+    milestone = models.ForeignKey(ProjectMilestone, on_delete=models.SET_NULL, null=True, blank=True, related_name='deliverable_files')
     uploaded_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -270,3 +274,148 @@ class Notification(models.Model):
     
     def __str__(self):
         return f"{self.notification_type} notification for {self.recipient.user.username}"
+
+class Wallet(models.Model):
+    """Model for user wallet"""
+    user = models.OneToOneField(UserProfile, on_delete=models.CASCADE, related_name='wallet')
+    balance = models.DecimalField(max_digits=10, decimal_places=2, default=0.00, validators=[MinValueValidator(Decimal('0.00'))])
+    escrow_balance = models.DecimalField(max_digits=10, decimal_places=2, default=0.00, validators=[MinValueValidator(Decimal('0.00'))])
+    currency = models.CharField(max_length=3, default='USD')
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"{self.user.user.username}'s Wallet ({self.balance} {self.currency})"
+
+class Transaction(models.Model):
+    """Model for tracking all financial transactions"""
+    TRANSACTION_TYPES = [
+        ('deposit', 'Wallet Deposit'),
+        ('withdrawal', 'Wallet Withdrawal'),
+        ('escrow', 'Fund Escrow'),
+        ('release', 'Release to Freelancer'),
+        ('refund', 'Refund to Client'),
+        ('fee', 'Platform Fee'),
+    ]
+
+    PAYMENT_METHODS = [
+        ('wallet', 'Wallet Balance'),
+        ('bank', 'Bank Transfer'),
+        ('upi', 'UPI'),
+        ('card', 'Credit/Debit Card'),
+    ]
+
+    STATUS_CHOICES = [
+        ('pending', 'Pending'),
+        ('completed', 'Completed'),
+        ('failed', 'Failed'),
+        ('cancelled', 'Cancelled'),
+    ]
+
+    transaction_id = models.CharField(max_length=100, unique=True)
+    wallet = models.ForeignKey(Wallet, on_delete=models.CASCADE, related_name='transactions')
+    project = models.ForeignKey(Project, on_delete=models.SET_NULL, null=True, blank=True, related_name='transactions')
+    milestone = models.ForeignKey(ProjectMilestone, on_delete=models.SET_NULL, null=True, blank=True, related_name='transactions')
+    amount = models.DecimalField(max_digits=10, decimal_places=2, validators=[MinValueValidator(Decimal('0.01'))])
+    fee_amount = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
+    transaction_type = models.CharField(max_length=20, choices=TRANSACTION_TYPES)
+    payment_method = models.CharField(max_length=20, choices=PAYMENT_METHODS)
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
+    description = models.TextField(blank=True)
+    reference_id = models.CharField(max_length=100, blank=True)  # For external payment references
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    def __str__(self):
+        return f"{self.transaction_id} - {self.transaction_type} - {self.amount}"
+
+    def save(self, *args, **kwargs):
+        # Generate transaction ID if not provided
+        if not self.transaction_id:
+            import uuid
+            self.transaction_id = f"TRX-{uuid.uuid4().hex[:12].upper()}"
+        super().save(*args, **kwargs)
+
+    class Meta:
+        ordering = ['-created_at']
+
+class WithdrawalRequest(models.Model):
+    """Model for withdrawal requests"""
+    STATUS_CHOICES = [
+        ('pending', 'Pending'),
+        ('processing', 'Processing'),
+        ('completed', 'Completed'),
+        ('rejected', 'Rejected'),
+    ]
+
+    WITHDRAWAL_METHODS = [
+        ('bank', 'Bank Transfer'),
+        ('upi', 'UPI'),
+        ('paypal', 'PayPal'),
+    ]
+
+    wallet = models.ForeignKey(Wallet, on_delete=models.CASCADE, related_name='withdrawal_requests')
+    amount = models.DecimalField(max_digits=10, decimal_places=2, validators=[MinValueValidator(Decimal('0.01'))])
+    fee = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
+    withdrawal_method = models.CharField(max_length=20, choices=WITHDRAWAL_METHODS)
+    bank_name = models.CharField(max_length=100, blank=True, null=True)
+    account_number = models.CharField(max_length=30, blank=True, null=True)
+    ifsc_code = models.CharField(max_length=20, blank=True, null=True)
+    upi_id = models.CharField(max_length=50, blank=True, null=True)
+    paypal_email = models.EmailField(blank=True, null=True)
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
+    notes = models.TextField(blank=True)
+    reference_id = models.CharField(max_length=100, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    processed_at = models.DateTimeField(null=True, blank=True)
+    
+    def __str__(self):
+        return f"{self.wallet.user.user.username}'s withdrawal of {self.amount} ({self.status})"
+
+    class Meta:
+        ordering = ['-created_at']
+
+class PaymentMethod(models.Model):
+    """Model for storing user payment methods"""
+    PAYMENT_METHOD_TYPES = [
+        ('bank', 'Bank Account'),
+        ('upi', 'UPI'),
+        ('card', 'Credit/Debit Card'),
+        ('paypal', 'PayPal'),
+    ]
+
+    user = models.ForeignKey(UserProfile, on_delete=models.CASCADE, related_name='payment_methods')
+    method_type = models.CharField(max_length=20, choices=PAYMENT_METHOD_TYPES)
+    is_default = models.BooleanField(default=False)
+    
+    # Bank details
+    bank_name = models.CharField(max_length=100, blank=True, null=True)
+    account_holder = models.CharField(max_length=100, blank=True, null=True)
+    account_number = models.CharField(max_length=30, blank=True, null=True)
+    ifsc_code = models.CharField(max_length=20, blank=True, null=True)
+    
+    # UPI details
+    upi_id = models.CharField(max_length=50, blank=True, null=True)
+    
+    # Card details (tokenized or masked)
+    card_last_digits = models.CharField(max_length=4, blank=True, null=True)
+    card_type = models.CharField(max_length=20, blank=True, null=True)
+    card_expiry = models.CharField(max_length=7, blank=True, null=True)
+    
+    # PayPal details
+    paypal_email = models.EmailField(blank=True, null=True)
+    
+    is_verified = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    def __str__(self):
+        method_name = dict(self.PAYMENT_METHOD_TYPES)[self.method_type]
+        return f"{self.user.user.username}'s {method_name}"
+
+    class Meta:
+        unique_together = [['user', 'method_type', 'account_number'], 
+                          ['user', 'method_type', 'upi_id'],
+                          ['user', 'method_type', 'card_last_digits', 'card_expiry'],
+                          ['user', 'method_type', 'paypal_email']]

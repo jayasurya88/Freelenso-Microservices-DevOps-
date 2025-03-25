@@ -1,0 +1,209 @@
+{% extends 'base.html' %}
+
+{% block title %}Add Payment Method{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card shadow">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">Add Payment Method</h5>
+                </div>
+                <div class="card-body">
+                    {% if messages %}
+                    {% for message in messages %}
+                    <div class="alert alert-{{ message.tags }}">
+                        {{ message }}
+                    </div>
+                    {% endfor %}
+                    {% endif %}
+
+                    <form method="post" action="{% url 'add_payment_method' %}">
+                        {% csrf_token %}
+                        
+                        <div class="mb-4">
+                            <label class="form-label">Payment Method Type</label>
+                            <div class="row g-3">
+                                {% for method_id, method_name in method_types %}
+                                <div class="col-md-3">
+                                    <div class="form-check payment-method-option">
+                                        <input class="form-check-input" type="radio" name="method_type" id="{{ method_id }}" value="{{ method_id }}" {% if forloop.first %}checked{% endif %}>
+                                        <label class="form-check-label payment-method-label" for="{{ method_id }}">
+                                            <div class="card h-100 text-center p-3">
+                                                {% if method_id == 'bank' %}
+                                                <i class="fas fa-university fs-3 mb-2 text-primary"></i>
+                                                {% elif method_id == 'upi' %}
+                                                <i class="fas fa-mobile-alt fs-3 mb-2 text-success"></i>
+                                                {% elif method_id == 'card' %}
+                                                <i class="fas fa-credit-card fs-3 mb-2 text-info"></i>
+                                                {% elif method_id == 'paypal' %}
+                                                <i class="fab fa-paypal fs-3 mb-2 text-primary"></i>
+                                                {% endif %}
+                                                <span>{{ method_name }}</span>
+                                            </div>
+                                        </label>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+
+                        <!-- Bank Account Form -->
+                        <div id="bank-form" class="method-form mb-4">
+                            <div class="card">
+                                <div class="card-header bg-light">
+                                    <h6 class="mb-0"><i class="fas fa-university text-primary me-2"></i>Bank Account Details</h6>
+                                </div>
+                                <div class="card-body">
+                                    <div class="mb-3">
+                                        <label for="bank_name" class="form-label">Bank Name</label>
+                                        <input type="text" class="form-control" id="bank_name" name="bank_name" required>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label for="account_holder" class="form-label">Account Holder Name</label>
+                                        <input type="text" class="form-control" id="account_holder" name="account_holder" required>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label for="account_number" class="form-label">Account Number</label>
+                                        <input type="text" class="form-control" id="account_number" name="account_number" required>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label for="ifsc_code" class="form-label">IFSC Code</label>
+                                        <input type="text" class="form-control" id="ifsc_code" name="ifsc_code" required>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- UPI Form -->
+                        <div id="upi-form" class="method-form mb-4 d-none">
+                            <div class="card">
+                                <div class="card-header bg-light">
+                                    <h6 class="mb-0"><i class="fas fa-mobile-alt text-success me-2"></i>UPI Details</h6>
+                                </div>
+                                <div class="card-body">
+                                    <div class="mb-3">
+                                        <label for="upi_id" class="form-label">UPI ID</label>
+                                        <input type="text" class="form-control" id="upi_id" name="upi_id" placeholder="example@upi">
+                                        <div class="form-text">Enter your UPI ID in the format username@bank or phone_number@upi</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Card Form -->
+                        <div id="card-form" class="method-form mb-4 d-none">
+                            <div class="card">
+                                <div class="card-header bg-light">
+                                    <h6 class="mb-0"><i class="fas fa-credit-card text-info me-2"></i>Card Details</h6>
+                                </div>
+                                <div class="card-body">
+                                    <div class="mb-3">
+                                        <label for="card_number" class="form-label">Card Number</label>
+                                        <input type="text" class="form-control" id="card_number" name="card_number" placeholder="1234 5678 9012 3456">
+                                    </div>
+                                    <div class="row">
+                                        <div class="col-md-6 mb-3">
+                                            <label for="card_expiry" class="form-label">Expiry Date</label>
+                                            <input type="text" class="form-control" id="card_expiry" name="card_expiry" placeholder="MM/YY">
+                                        </div>
+                                        <div class="col-md-6 mb-3">
+                                            <label for="card_cvv" class="form-label">CVV</label>
+                                            <input type="password" class="form-control" id="card_cvv" name="card_cvv" placeholder="123">
+                                        </div>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label for="card_type" class="form-label">Card Type</label>
+                                        <select class="form-select" id="card_type" name="card_type">
+                                            <option value="Visa">Visa</option>
+                                            <option value="Mastercard">Mastercard</option>
+                                            <option value="RuPay">RuPay</option>
+                                            <option value="American Express">American Express</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- PayPal Form -->
+                        <div id="paypal-form" class="method-form mb-4 d-none">
+                            <div class="card">
+                                <div class="card-header bg-light">
+                                    <h6 class="mb-0"><i class="fab fa-paypal text-primary me-2"></i>PayPal Details</h6>
+                                </div>
+                                <div class="card-body">
+                                    <div class="mb-3">
+                                        <label for="paypal_email" class="form-label">PayPal Email</label>
+                                        <input type="email" class="form-control" id="paypal_email" name="paypal_email" placeholder="your.email@example.com">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mb-3 form-check">
+                            <input type="checkbox" class="form-check-input" id="is_default" name="is_default">
+                            <label class="form-check-label" for="is_default">Set as default payment method</label>
+                        </div>
+
+                        <div class="alert alert-info mb-4">
+                            <i class="fas fa-shield-alt me-2"></i>
+                            Your payment information is encrypted and stored securely. We adhere to the highest security standards.
+                        </div>
+
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-primary btn-lg">Add Payment Method</button>
+                            <a href="{% url 'payment_methods' %}" class="btn btn-outline-secondary">Cancel</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .payment-method-option {
+        margin-bottom: 0;
+    }
+    
+    .payment-method-option input {
+        display: none;
+    }
+    
+    .payment-method-label {
+        display: block;
+        cursor: pointer;
+        width: 100%;
+    }
+    
+    .payment-method-option input:checked + .payment-method-label .card {
+        border: 2px solid #007bff;
+        background-color: #f8f9fa;
+    }
+</style>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const methodTypes = document.querySelectorAll('input[name="method_type"]');
+        const methodForms = document.querySelectorAll('.method-form');
+        
+        function showSelectedForm() {
+            const selected = document.querySelector('input[name="method_type"]:checked').value;
+            
+            methodForms.forEach(form => {
+                form.classList.add('d-none');
+            });
+            
+            document.getElementById(`${selected}-form`).classList.remove('d-none');
+        }
+        
+        methodTypes.forEach(method => {
+            method.addEventListener('change', showSelectedForm);
+        });
+        
+        // Initialize form visibility
+        showSelectedForm();
+    });
+</script>
+{% endblock %} 

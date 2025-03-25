@@ -41,4 +41,18 @@ urlpatterns = [
     path('projects/<int:project_id>/milestones/<int:milestone_id>/complete/', views.complete_milestone, name='complete_milestone'),
     path('projects/<int:project_id>/milestones/<int:milestone_id>/approve/', views.approve_milestone, name='approve_milestone'),
     path('projects/<int:project_id>/milestones/<int:milestone_id>/reject/', views.reject_milestone, name='reject_milestone'),
+    
+    # Wallet URLs
+    path('wallet/', views.wallet_dashboard, name='wallet_dashboard'),
+    path('wallet/deposit/', views.wallet_deposit, name='wallet_deposit'),
+    path('wallet/deposit/confirm/', views.wallet_deposit_confirm, name='wallet_deposit_confirm'),
+    path('wallet/withdraw/', views.wallet_withdraw, name='wallet_withdraw'),
+    path('wallet/transactions/', views.wallet_transactions, name='wallet_transactions'),
+    path('wallet/payment-methods/', views.payment_methods, name='payment_methods'),
+    path('wallet/payment-methods/add/', views.add_payment_method, name='add_payment_method'),
+    path('wallet/payment-methods/<int:method_id>/delete/', views.delete_payment_method, name='delete_payment_method'),
+    path('wallet/payment-methods/<int:method_id>/set-default/', views.set_default_payment_method, name='set_default_payment_method'),
+    
+    # Escrow and project payments
+    path('projects/<int:project_id>/fund-milestone/<int:milestone_id>/', views.fund_milestone, name='fund_milestone'),
 ]

@@ -3,10 +3,10 @@ from django.http import JsonResponse, HttpResponse
 from django.contrib.auth.models import User
 from django.contrib.auth import login, logout, authenticate
 from django.contrib.auth.decorators import login_required
-from .models import UserProfile, Project, ProjectApplication, ProjectMilestone, ProjectAttachment, ProjectFile, ProjectActivity, ChatRoom, ChatMessage, ChatParticipant, Notification
+from .models import UserProfile, Project, ProjectApplication, ProjectMilestone, ProjectAttachment, ProjectFile, ProjectActivity, ChatRoom, ChatMessage, ChatParticipant, Notification, Wallet, Transaction, WithdrawalRequest, PaymentMethod
 from django.contrib import messages
 from django.conf import settings
-from django.db.models import Q
+from django.db.models import Q, Sum
 import os
 from django.views.decorators.http import require_POST
 from django.utils import timezone
@@ -16,6 +16,7 @@ from django.core.files.storage import default_storage
 from django.core.files.base import ContentFile
 from django.views.decorators.csrf import csrf_exempt
 from django.core.exceptions import ValidationError
+from decimal import Decimal
 
 # Create your views here.
 def index(request):
@@ -1086,9 +1087,27 @@ def complete_milestone(request, project_id, milestone_id):
         return redirect('project_milestones', project_id=project_id)
     
     if request.method == 'POST':
-        # Update milestone status
+        # Get form data
+        completion_notes = request.POST.get('completion_notes', '')
+        
+        # Update milestone status and add completion notes
         milestone.status = 'completed'
+        milestone.completion_notes = completion_notes
+        milestone.completed_at = timezone.now()
         milestone.save()
+        
+        # Handle file uploads
+        files = request.FILES.getlist('deliverable_files')
+        for file in files:
+            ProjectFile.objects.create(
+                project=project,
+                uploaded_by=request.user,
+                file=file,
+                file_name=file.name,
+                file_type=file.content_type,
+                description=f"Milestone completion: {milestone.title}",
+                milestone=milestone
+            )
         
         # Record activity
         ProjectActivity.objects.create(
@@ -1117,54 +1136,114 @@ def complete_milestone(request, project_id, milestone_id):
 
 @login_required
 def approve_milestone(request, project_id, milestone_id):
-    """Approve a completed milestone (by client)"""
-    project = get_object_or_404(Project, id=project_id)
+    """
+    Approve a completed milestone and release payment to freelancer
+    """
+    # Verify user is the project client
+    user_profile = get_object_or_404(UserProfile, user=request.user)
+    project = get_object_or_404(Project, id=project_id, client=user_profile)
     milestone = get_object_or_404(ProjectMilestone, id=milestone_id, project=project)
     
-    # Check if user is the client
-    if request.user.userprofile != project.client:
-        messages.error(request, "Only the project owner can approve milestones.")
-        return redirect('project_milestones', project_id=project_id)
-    
-    # Check if milestone is in completed status
     if milestone.status != 'completed':
-        messages.error(request, "Only completed milestones can be approved.")
-        return redirect('project_milestones', project_id=project_id)
+        messages.error(request, 'Only completed milestones can be approved.')
+        return redirect('project_milestones', project_id=project.id)
     
     if request.method == 'POST':
+        feedback = request.POST.get('feedback', '')
+        
         # Update milestone status
         milestone.status = 'approved'
+        milestone.feedback = feedback
         milestone.save()
         
-        # Update project progress
-        project.completed_milestones += 1
-        project.save()
-        project.update_progress()
+        # Get client and freelancer wallets
+        client_wallet = get_object_or_404(Wallet, user=user_profile)
+        freelancer_wallet, created = Wallet.objects.get_or_create(
+            user=project.assigned_freelancer,
+            defaults={'currency': 'USD'}
+        )
         
-        # Record activity
+        # Calculate platform fee
+        platform_fee = milestone.amount * Decimal('0.05')  # 5% fee example
+        freelancer_amount = milestone.amount - platform_fee
+        
+        # Update wallet balances
+        client_wallet.escrow_balance -= milestone.amount
+        client_wallet.save()
+        
+        freelancer_wallet.balance += freelancer_amount
+        freelancer_wallet.save()
+        
+        # Create transaction records
+        # 1. Release from escrow transaction
+        Transaction.objects.create(
+            wallet=client_wallet,
+            project=project,
+            milestone=milestone,
+            amount=milestone.amount,
+            transaction_type='release',
+            payment_method='wallet',
+            status='completed',
+            description=f'Payment released for milestone: {milestone.title}'
+        )
+        
+        # 2. Payment received by freelancer
+        Transaction.objects.create(
+            wallet=freelancer_wallet,
+            project=project,
+            milestone=milestone,
+            amount=freelancer_amount,
+            fee_amount=platform_fee,
+            transaction_type='release',
+            payment_method='wallet',
+            status='completed',
+            description=f'Payment received for milestone: {milestone.title}'
+        )
+        
+        # 3. Platform fee transaction
+        Transaction.objects.create(
+            wallet=freelancer_wallet,
+            project=project,
+            milestone=milestone,
+            amount=platform_fee,
+            transaction_type='fee',
+            payment_method='wallet',
+            status='completed',
+            description=f'Platform fee for milestone: {milestone.title}'
+        )
+        
+        # Create project activity
         ProjectActivity.objects.create(
             project=project,
             user=request.user,
             activity_type='milestone_approved',
-            description=f"Approved milestone: {milestone.title}"
+            description=f'Milestone "{milestone.title}" has been approved and payment of {milestone.amount} released'
         )
+        
+        # Update project progress
+        project.completed_milestones += 1
+        project.update_progress()
+        project.update_last_activity()
         
         # Create notification for freelancer
-        create_notification(
+        freelancer_user = project.assigned_freelancer.user
+        Notification.objects.create(
             recipient=project.assigned_freelancer,
-            notification_type='milestone',
-            message=f"Milestone approved in project '{project.title}': {milestone.title}",
-            sender=request.user.userprofile,
-            project=project
+            notification_type='payment',
+            related_project=project,
+            message=f'Payment of {freelancer_amount} has been released for milestone: {milestone.title}',
+            is_read=False
         )
         
-        messages.success(request, "Milestone approved successfully.")
-        return redirect('project_milestones', project_id=project_id)
+        messages.success(request, f'Milestone approved and payment of {milestone.amount} released.')
+        return redirect('project_milestones', project_id=project.id)
     
-    return render(request, 'projects/approve_milestone.html', {
+    context = {
         'project': project,
-        'milestone': milestone
-    })
+        'milestone': milestone,
+    }
+    
+    return render(request, 'projects/approve_milestone.html', context)
 
 @login_required
 def reject_milestone(request, project_id, milestone_id):
@@ -1182,11 +1261,15 @@ def reject_milestone(request, project_id, milestone_id):
         messages.error(request, "Only completed milestones can be rejected.")
         return redirect('project_milestones', project_id=project_id)
     
+    # Get deliverable files for this milestone
+    deliverable_files = ProjectFile.objects.filter(project=project, milestone=milestone)
+    
     if request.method == 'POST':
         feedback = request.POST.get('feedback', '')
         
         # Update milestone status
         milestone.status = 'rejected'
+        milestone.feedback = feedback
         milestone.save()
         
         # Record activity
@@ -1211,5 +1294,442 @@ def reject_milestone(request, project_id, milestone_id):
     
     return render(request, 'projects/reject_milestone.html', {
         'project': project,
-        'milestone': milestone
+        'milestone': milestone,
+        'deliverable_files': deliverable_files
     })
+
+# Wallet Views
+@login_required
+def wallet_dashboard(request):
+    """
+    Display wallet dashboard with balance and recent transactions
+    """
+    user_profile = get_object_or_404(UserProfile, user=request.user)
+    
+    # Create wallet if it doesn't exist
+    wallet, created = Wallet.objects.get_or_create(
+        user=user_profile,
+        defaults={'currency': 'USD'}
+    )
+    
+    # Get recent transactions
+    recent_transactions = Transaction.objects.filter(wallet=wallet).order_by('-created_at')[:5]
+    
+    # Get active withdrawal requests
+    active_withdrawals = WithdrawalRequest.objects.filter(
+        wallet=wallet, 
+        status__in=['pending', 'processing']
+    )
+    
+    # Calculate total funds (balance + escrow)
+    total_funds = wallet.balance + wallet.escrow_balance
+    
+    context = {
+        'wallet': wallet,
+        'recent_transactions': recent_transactions,
+        'active_withdrawals': active_withdrawals,
+        'total_funds': total_funds,
+    }
+    
+    if user_profile.is_freelancer:
+        # Get project-specific stats for freelancers
+        completed_milestones = ProjectMilestone.objects.filter(
+            project__assigned_freelancer=user_profile,
+            status='approved'
+        )
+        earnings_this_month = completed_milestones.filter(
+            completed_at__month=timezone.now().month,
+            completed_at__year=timezone.now().year
+        ).aggregate(total=Sum('amount'))['total'] or 0
+        
+        context.update({
+            'earnings_this_month': earnings_this_month,
+            'completed_milestones_count': completed_milestones.count(),
+        })
+    
+    if user_profile.is_client:
+        # Get project-specific stats for clients
+        active_projects = Project.objects.filter(
+            client=user_profile,
+            status='in_progress'
+        )
+        total_escrowed = wallet.escrow_balance
+        
+        context.update({
+            'active_projects_count': active_projects.count(),
+            'total_escrowed': total_escrowed,
+        })
+    
+    return render(request, 'wallet/dashboard.html', context)
+
+@login_required
+def wallet_transactions(request):
+    """
+    Display all wallet transactions with filtering
+    """
+    user_profile = get_object_or_404(UserProfile, user=request.user)
+    wallet = get_object_or_404(Wallet, user=user_profile)
+    
+    transaction_type = request.GET.get('type', '')
+    status = request.GET.get('status', '')
+    
+    transactions = Transaction.objects.filter(wallet=wallet)
+    
+    # Apply filters
+    if transaction_type:
+        transactions = transactions.filter(transaction_type=transaction_type)
+    
+    if status:
+        transactions = transactions.filter(status=status)
+    
+    # Pagination
+    paginator = Paginator(transactions, 15)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+    
+    context = {
+        'wallet': wallet,
+        'page_obj': page_obj,
+        'transaction_type': transaction_type,
+        'status': status,
+        'transaction_types': Transaction.TRANSACTION_TYPES,
+        'status_choices': Transaction.STATUS_CHOICES,
+    }
+    
+    return render(request, 'wallet/transactions.html', context)
+
+@login_required
+def wallet_deposit(request):
+    """
+    Handle wallet deposit process
+    """
+    user_profile = get_object_or_404(UserProfile, user=request.user)
+    wallet, created = Wallet.objects.get_or_create(user=user_profile)
+    
+    # Get user's payment methods
+    payment_methods = PaymentMethod.objects.filter(user=user_profile)
+    
+    if request.method == 'POST':
+        amount = Decimal(request.POST.get('amount', 0))
+        payment_method_id = request.POST.get('payment_method')
+        
+        if amount <= 0:
+            messages.error(request, 'Please enter a valid amount.')
+            return redirect('wallet_deposit')
+        
+        # In a real implementation, you would integrate with a payment gateway here
+        # For demonstration, we'll create a pending transaction
+        transaction = Transaction.objects.create(
+            wallet=wallet,
+            amount=amount,
+            transaction_type='deposit',
+            payment_method='upi',  # Default to UPI for this example
+            status='pending',
+            description=f'Deposit of {amount} to wallet',
+        )
+        
+        # Redirect to confirmation page
+        return redirect('wallet_deposit_confirm')
+    
+    context = {
+        'wallet': wallet,
+        'payment_methods': payment_methods,
+    }
+    
+    return render(request, 'wallet/deposit.html', context)
+
+@login_required
+def wallet_deposit_confirm(request):
+    """
+    Confirm wallet deposit and process payment
+    """
+    user_profile = get_object_or_404(UserProfile, user=request.user)
+    wallet = get_object_or_404(Wallet, user=user_profile)
+    
+    # Get latest pending deposit transaction
+    transaction = Transaction.objects.filter(
+        wallet=wallet,
+        transaction_type='deposit',
+        status='pending'
+    ).order_by('-created_at').first()
+    
+    if not transaction:
+        messages.error(request, 'No pending deposit found.')
+        return redirect('wallet_dashboard')
+    
+    if request.method == 'POST':
+        # In a real implementation, this would verify the payment was received
+        # For demonstration, we'll just mark it as completed and add to balance
+        
+        # Update transaction status
+        transaction.status = 'completed'
+        transaction.save()
+        
+        # Update wallet balance
+        wallet.balance += transaction.amount
+        wallet.updated_at = timezone.now()
+        wallet.save()
+        
+        messages.success(request, f'Successfully deposited {transaction.amount} to your wallet.')
+        return redirect('wallet_dashboard')
+    
+    context = {
+        'wallet': wallet,
+        'transaction': transaction,
+    }
+    
+    return render(request, 'wallet/deposit_confirm.html', context)
+
+@login_required
+def wallet_withdraw(request):
+    """
+    Handle withdrawal requests from wallet
+    """
+    user_profile = get_object_or_404(UserProfile, user=request.user)
+    wallet = get_object_or_404(Wallet, user=user_profile)
+    
+    # Get user's payment methods
+    payment_methods = PaymentMethod.objects.filter(user=user_profile)
+    default_method = payment_methods.filter(is_default=True).first()
+    
+    if request.method == 'POST':
+        amount = Decimal(request.POST.get('amount', 0))
+        withdrawal_method = request.POST.get('withdrawal_method')
+        payment_method_id = request.POST.get('payment_method')
+        
+        # Validate withdrawal amount
+        if amount <= 0:
+            messages.error(request, 'Please enter a valid amount.')
+            return redirect('wallet_withdraw')
+        
+        if amount > wallet.balance:
+            messages.error(request, 'Insufficient balance for this withdrawal.')
+            return redirect('wallet_withdraw')
+        
+        # Calculate fee (if any)
+        fee = amount * Decimal('0.01')  # 1% fee as an example
+        net_amount = amount - fee
+        
+        if net_amount <= 0:
+            messages.error(request, 'Withdrawal amount is too small after fees.')
+            return redirect('wallet_withdraw')
+        
+        # Create withdrawal request
+        withdrawal = WithdrawalRequest.objects.create(
+            wallet=wallet,
+            amount=amount,
+            fee=fee,
+            withdrawal_method=withdrawal_method,
+            status='pending',
+        )
+        
+        # Add payment method details if available
+        if payment_method_id:
+            method = PaymentMethod.objects.get(id=payment_method_id)
+            if method.method_type == 'bank':
+                withdrawal.bank_name = method.bank_name
+                withdrawal.account_number = method.account_number
+                withdrawal.ifsc_code = method.ifsc_code
+            elif method.method_type == 'upi':
+                withdrawal.upi_id = method.upi_id
+            elif method.method_type == 'paypal':
+                withdrawal.paypal_email = method.paypal_email
+            withdrawal.save()
+        
+        # Deduct from wallet balance
+        wallet.balance -= amount
+        wallet.save()
+        
+        # Create transaction record
+        Transaction.objects.create(
+            wallet=wallet,
+            amount=amount,
+            fee_amount=fee,
+            transaction_type='withdrawal',
+            payment_method=withdrawal_method,
+            status='pending',
+            description=f'Withdrawal of {amount} from wallet',
+            reference_id=withdrawal.id
+        )
+        
+        messages.success(request, f'Withdrawal request of {amount} submitted successfully. It will be processed within 1-3 business days.')
+        return redirect('wallet_dashboard')
+    
+    context = {
+        'wallet': wallet,
+        'payment_methods': payment_methods,
+        'default_method': default_method,
+        'min_withdrawal': 10.00,  # Minimum withdrawal amount
+        'withdrawal_methods': WithdrawalRequest.WITHDRAWAL_METHODS,
+    }
+    
+    return render(request, 'wallet/withdraw.html', context)
+
+@login_required
+def payment_methods(request):
+    """
+    Display and manage user's payment methods
+    """
+    user_profile = get_object_or_404(UserProfile, user=request.user)
+    payment_methods = PaymentMethod.objects.filter(user=user_profile)
+    
+    context = {
+        'payment_methods': payment_methods,
+    }
+    
+    return render(request, 'wallet/payment_methods.html', context)
+
+@login_required
+def add_payment_method(request):
+    """
+    Add a new payment method
+    """
+    user_profile = get_object_or_404(UserProfile, user=request.user)
+    
+    if request.method == 'POST':
+        method_type = request.POST.get('method_type')
+        is_default = request.POST.get('is_default') == 'on'
+        
+        # If setting as default, clear other defaults
+        if is_default:
+            PaymentMethod.objects.filter(user=user_profile, is_default=True).update(is_default=False)
+        
+        # Create payment method based on type
+        method = PaymentMethod(
+            user=user_profile,
+            method_type=method_type,
+            is_default=is_default
+        )
+        
+        if method_type == 'bank':
+            method.bank_name = request.POST.get('bank_name')
+            method.account_holder = request.POST.get('account_holder')
+            method.account_number = request.POST.get('account_number')
+            method.ifsc_code = request.POST.get('ifsc_code')
+        elif method_type == 'upi':
+            method.upi_id = request.POST.get('upi_id')
+        elif method_type == 'card':
+            method.card_last_digits = request.POST.get('card_number')[-4:] if request.POST.get('card_number') else ''
+            method.card_type = request.POST.get('card_type')
+            method.card_expiry = request.POST.get('card_expiry')
+        elif method_type == 'paypal':
+            method.paypal_email = request.POST.get('paypal_email')
+        
+        method.save()
+        messages.success(request, 'Payment method added successfully.')
+        return redirect('payment_methods')
+    
+    context = {
+        'method_types': PaymentMethod.PAYMENT_METHOD_TYPES,
+    }
+    
+    return render(request, 'wallet/add_payment_method.html', context)
+
+@login_required
+def delete_payment_method(request, method_id):
+    """
+    Delete a payment method
+    """
+    user_profile = get_object_or_404(UserProfile, user=request.user)
+    payment_method = get_object_or_404(PaymentMethod, id=method_id, user=user_profile)
+    
+    if request.method == 'POST':
+        # Check if it's the default method
+        if payment_method.is_default:
+            # Find another method to make default if available
+            alternate_method = PaymentMethod.objects.filter(user=user_profile).exclude(id=method_id).first()
+            if alternate_method:
+                alternate_method.is_default = True
+                alternate_method.save()
+        
+        payment_method.delete()
+        messages.success(request, 'Payment method deleted successfully.')
+        return redirect('payment_methods')
+    
+    context = {
+        'payment_method': payment_method,
+    }
+    
+    return render(request, 'wallet/delete_payment_method.html', context)
+
+@login_required
+def set_default_payment_method(request, method_id):
+    """
+    Set a payment method as default
+    """
+    user_profile = get_object_or_404(UserProfile, user=request.user)
+    payment_method = get_object_or_404(PaymentMethod, id=method_id, user=user_profile)
+    
+    # Clear existing defaults
+    PaymentMethod.objects.filter(user=user_profile, is_default=True).update(is_default=False)
+    
+    # Set new default
+    payment_method.is_default = True
+    payment_method.save()
+    
+    messages.success(request, f'{payment_method} set as your default payment method.')
+    return redirect('payment_methods')
+
+@login_required
+def fund_milestone(request, project_id, milestone_id):
+    """
+    Fund a project milestone from client wallet (escrow)
+    """
+    # Verify user is the project client
+    user_profile = get_object_or_404(UserProfile, user=request.user)
+    project = get_object_or_404(Project, id=project_id, client=user_profile)
+    milestone = get_object_or_404(ProjectMilestone, id=milestone_id, project=project)
+    
+    # Get client wallet
+    wallet, created = Wallet.objects.get_or_create(user=user_profile)
+    
+    if milestone.status != 'pending':
+        messages.error(request, 'This milestone has already been funded or completed.')
+        return redirect('project_milestones', project_id=project.id)
+    
+    if request.method == 'POST':
+        # Check if client has enough balance
+        if wallet.balance < milestone.amount:
+            messages.error(request, f'Insufficient wallet balance. Please add funds to your wallet.')
+            return redirect('wallet_deposit')
+        
+        # Move funds from balance to escrow
+        wallet.balance -= milestone.amount
+        wallet.escrow_balance += milestone.amount
+        wallet.save()
+        
+        # Create escrow transaction
+        Transaction.objects.create(
+            wallet=wallet,
+            project=project,
+            milestone=milestone,
+            amount=milestone.amount,
+            transaction_type='escrow',
+            payment_method='wallet',
+            status='completed',
+            description=f'Escrow for milestone: {milestone.title}'
+        )
+        
+        # Update milestone status if needed
+        milestone.status = 'pending'
+        milestone.save()
+        
+        # Add project activity
+        ProjectActivity.objects.create(
+            project=project,
+            user=request.user,
+            activity_type='milestone_created',
+            description=f'Milestone "{milestone.title}" has been funded with {milestone.amount}'
+        )
+        
+        messages.success(request, f'Successfully funded milestone: {milestone.title}')
+        return redirect('project_milestones', project_id=project.id)
+    
+    context = {
+        'project': project,
+        'milestone': milestone,
+        'wallet': wallet,
+        'insufficient_funds': wallet.balance < milestone.amount
+    }
+    
+    return render(request, 'wallet/fund_milestone.html', context)

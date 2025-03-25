@@ -69,6 +69,47 @@
                                 {% if milestone.description %}
                                 <p class="text-muted small mb-0">{{ milestone.description }}</p>
                                 {% endif %}
+                                
+                                {% if milestone.status == 'completed' or milestone.status == 'approved' or milestone.status == 'rejected' %}
+                                <div class="mt-2">
+                                    <button class="btn btn-sm btn-outline-secondary" type="button" data-bs-toggle="collapse" data-bs-target="#milestone-details-{{ milestone.id }}" aria-expanded="false">
+                                        <i class="bi bi-info-circle"></i> Details
+                                    </button>
+                                </div>
+                                
+                                <div class="collapse mt-2" id="milestone-details-{{ milestone.id }}">
+                                    <div class="card card-body bg-light">
+                                        {% if milestone.completion_notes %}
+                                            <h6 class="text-muted small">Completion Notes:</h6>
+                                            <p class="small mb-2">{{ milestone.completion_notes|linebreaks }}</p>
+                                        {% endif %}
+                                        
+                                        {% if milestone.feedback %}
+                                            <h6 class="text-muted small">Feedback:</h6>
+                                            <p class="small mb-2">{{ milestone.feedback|linebreaks }}</p>
+                                        {% endif %}
+                                        
+                                        {% if milestone.completed_at %}
+                                            <p class="small text-muted mb-0">Submitted: {{ milestone.completed_at|date:"M d, Y H:i" }}</p>
+                                        {% endif %}
+                                        
+                                        {% with deliverable_files=milestone.deliverable_files.all %}
+                                            {% if deliverable_files %}
+                                                <h6 class="text-muted small mt-2">Files:</h6>
+                                                <ul class="list-unstyled mb-0">
+                                                    {% for file in deliverable_files %}
+                                                        <li class="small">
+                                                            <a href="{{ file.file.url }}" target="_blank">
+                                                                <i class="bi bi-file-earmark"></i> {{ file.file_name }}
+                                                            </a>
+                                                        </li>
+                                                    {% endfor %}
+                                                </ul>
+                                            {% endif %}
+                                        {% endwith %}
+                                    </div>
+                                </div>
+                                {% endif %}
                             </td>
                             <td>{{ milestone.due_date|date:"M d, Y" }}</td>
                             <td>${{ milestone.amount }}</td>

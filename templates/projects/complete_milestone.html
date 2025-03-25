@@ -24,7 +24,7 @@
                 </div>
                 <div class="card-body">
                     <div class="alert alert-info mb-4">
-                        <i class="bi bi-info-circle"></i> You are about to mark the milestone as completed. The client will be notified and will need to approve your work.
+                        <i class="bi bi-info-circle"></i> You are about to mark the milestone as completed. Please provide details about your work and any files that demonstrate the milestone completion. The client will review your submission.
                     </div>
                     
                     <div class="card mb-4">
@@ -50,22 +50,37 @@
                         </div>
                     </div>
                     
-                    <form method="post">
+                    <form method="post" enctype="multipart/form-data">
                         {% csrf_token %}
                         
                         <div class="mb-4">
-                            <label for="comments" class="form-label">Completion Notes (Optional)</label>
-                            <textarea class="form-control" id="comments" name="comments" rows="3" placeholder="Add any notes or comments about this milestone completion..."></textarea>
+                            <label for="completion_notes" class="form-label">Completion Notes <span class="text-danger">*</span></label>
+                            <textarea class="form-control" id="completion_notes" name="completion_notes" rows="4" placeholder="Describe what you've accomplished for this milestone, how it meets requirements, etc." required></textarea>
                             <div class="form-text">
-                                Provide any notes or details about the completed work.
+                                Provide detailed notes about your work. This helps the client understand what you've delivered.
                             </div>
+                        </div>
+
+                        <div class="mb-4">
+                            <label for="deliverable_files" class="form-label">Deliverable Files</label>
+                            <input class="form-control" type="file" id="deliverable_files" name="deliverable_files" multiple>
+                            <div class="form-text">
+                                Upload any files that demonstrate your completed work (documents, screenshots, code, etc.).
+                            </div>
+                        </div>
+                        
+                        <div class="form-check mb-4">
+                            <input class="form-check-input" type="checkbox" id="confirm_completion" required>
+                            <label class="form-check-label" for="confirm_completion">
+                                I confirm that I have completed all the requirements for this milestone as specified.
+                            </label>
                         </div>
                         
                         <div class="d-flex justify-content-between">
                             <a href="{% url 'project_milestones' project_id=project.id %}" class="btn btn-outline-secondary">
                                 <i class="bi bi-arrow-left"></i> Back to Milestones
                             </a>
-                            <button type="submit" class="btn btn-primary">
+                            <button type="submit" class="btn btn-primary" id="submitBtn" disabled>
                                 <i class="bi bi-check-circle"></i> Mark as Completed
                             </button>
                         </div>
@@ -75,4 +90,17 @@
         </div>
     </div>
 </div>
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const confirmCheckbox = document.getElementById('confirm_completion');
+        const submitBtn = document.getElementById('submitBtn');
+        
+        confirmCheckbox.addEventListener('change', function() {
+            submitBtn.disabled = !confirmCheckbox.checked;
+        });
+    });
+</script>
+{% endblock %}
 {% endblock %} 

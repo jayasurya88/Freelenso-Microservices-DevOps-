@@ -1,0 +1,159 @@
+{% extends 'base.html' %}
+
+{% block title %}Deposit Funds{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card shadow">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">Deposit Funds</h5>
+                </div>
+                <div class="card-body">
+                    {% if messages %}
+                    {% for message in messages %}
+                    <div class="alert alert-{{ message.tags }}">
+                        {{ message }}
+                    </div>
+                    {% endfor %}
+                    {% endif %}
+
+                    <div class="alert alert-info mb-4">
+                        <i class="fas fa-info-circle me-2"></i>
+                        Current wallet balance: <strong>{{ wallet.balance }} {{ wallet.currency }}</strong>
+                    </div>
+
+                    <form method="post" action="{% url 'wallet_deposit' %}">
+                        {% csrf_token %}
+                        
+                        <div class="mb-3">
+                            <label for="amount" class="form-label">Amount to Deposit ({{ wallet.currency }})</label>
+                            <input type="number" class="form-control form-control-lg" id="amount" name="amount" min="10" step="0.01" required>
+                            <div class="form-text">Minimum deposit amount is 10 {{ wallet.currency }}</div>
+                        </div>
+
+                        <div class="mb-4">
+                            <label class="form-label">Payment Method</label>
+                            <div class="d-flex flex-wrap gap-3">
+                                <div class="form-check payment-method-radio">
+                                    <input class="form-check-input" type="radio" name="payment_method" id="upi" value="upi" checked>
+                                    <label class="form-check-label payment-method-label" for="upi">
+                                        <div class="card shadow-sm p-3 text-center">
+                                            <i class="fas fa-mobile-alt fs-3 mb-2 text-success"></i>
+                                            <span>UPI</span>
+                                        </div>
+                                    </label>
+                                </div>
+                                
+                                <div class="form-check payment-method-radio">
+                                    <input class="form-check-input" type="radio" name="payment_method" id="card" value="card">
+                                    <label class="form-check-label payment-method-label" for="card">
+                                        <div class="card shadow-sm p-3 text-center">
+                                            <i class="fas fa-credit-card fs-3 mb-2 text-primary"></i>
+                                            <span>Card</span>
+                                        </div>
+                                    </label>
+                                </div>
+                                
+                                <div class="form-check payment-method-radio">
+                                    <input class="form-check-input" type="radio" name="payment_method" id="bank" value="bank">
+                                    <label class="form-check-label payment-method-label" for="bank">
+                                        <div class="card shadow-sm p-3 text-center">
+                                            <i class="fas fa-university fs-3 mb-2 text-secondary"></i>
+                                            <span>Bank</span>
+                                        </div>
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Payment method specific forms - will be shown/hidden via JavaScript -->
+                        <div id="upi-form" class="payment-method-form mb-4">
+                            <div class="alert alert-success">
+                                <div class="d-flex align-items-center">
+                                    <i class="fas fa-mobile-alt fs-3 me-3"></i>
+                                    <div>
+                                        <h6 class="mb-1">UPI Payment</h6>
+                                        <p class="mb-0">Pay using any UPI app like Google Pay, PhonePe, Paytm, etc.</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div id="card-form" class="payment-method-form mb-4 d-none">
+                            <div class="alert alert-primary">
+                                <div class="d-flex align-items-center">
+                                    <i class="fas fa-credit-card fs-3 me-3"></i>
+                                    <div>
+                                        <h6 class="mb-1">Card Payment</h6>
+                                        <p class="mb-0">Pay securely using credit or debit card</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <!-- Card form fields would go here in a real implementation -->
+                        </div>
+
+                        <div id="bank-form" class="payment-method-form mb-4 d-none">
+                            <div class="alert alert-secondary">
+                                <div class="d-flex align-items-center">
+                                    <i class="fas fa-university fs-3 me-3"></i>
+                                    <div>
+                                        <h6 class="mb-1">Bank Transfer</h6>
+                                        <p class="mb-0">Direct bank transfer to our account</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <!-- Bank transfer instructions would go here -->
+                        </div>
+
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-primary btn-lg">Continue to Payment</button>
+                            <a href="{% url 'wallet_dashboard' %}" class="btn btn-outline-secondary">Cancel</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .payment-method-radio {
+        flex: 1;
+        min-width: 100px;
+    }
+    
+    .payment-method-radio input {
+        display: none;
+    }
+    
+    .payment-method-label {
+        display: block;
+        cursor: pointer;
+        width: 100%;
+    }
+    
+    .payment-method-radio input:checked + .payment-method-label .card {
+        border: 2px solid #007bff;
+        background-color: #f8f9fa;
+    }
+</style>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const paymentMethods = document.querySelectorAll('input[name="payment_method"]');
+        const methodForms = document.querySelectorAll('.payment-method-form');
+        
+        paymentMethods.forEach(method => {
+            method.addEventListener('change', function() {
+                methodForms.forEach(form => {
+                    form.classList.add('d-none');
+                });
+                
+                document.getElementById(`${this.value}-form`).classList.remove('d-none');
+            });
+        });
+    });
+</script>
+{% endblock %} 
