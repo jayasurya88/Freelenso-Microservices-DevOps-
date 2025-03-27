@@ -1,0 +1,347 @@
+{% extends 'admin/admin_base.html' %}
+
+{% block title %}Dashboard{% endblock %}
+
+{% block page_title %}Dashboard{% endblock %}
+{% block page_subtitle %}Overview of platform metrics and recent activity{% endblock %}
+
+{% block content %}
+<!-- Stats Cards Row -->
+<div class="row">
+    <!-- Users Stats -->
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="stat-card">
+            <div class="stat-card-header">
+                <div class="stat-card-icon" style="background-color: var(--primary);">
+                    <i class="bi bi-people-fill"></i>
+                </div>
+            </div>
+            <div class="stat-card-body">
+                <div class="stat-card-title">Total Users</div>
+                <div class="stat-card-value">{{ total_users }}</div>
+                <div class="stat-card-info d-flex justify-content-between">
+                    <span>Active: {{ active_users }}</span>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Freelancers/Clients Stats -->
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="stat-card">
+            <div class="stat-card-header">
+                <div class="stat-card-icon" style="background-color: var(--success);">
+                    <i class="bi bi-person-badge-fill"></i>
+                </div>
+            </div>
+            <div class="stat-card-body">
+                <div class="stat-card-title">User Types</div>
+                <div class="stat-card-value">{{ total_user_types }}</div>
+                <div class="stat-card-info d-flex justify-content-between">
+                    <span>Freelancers: {{ total_freelancers }}</span>
+                    <span>Clients: {{ total_clients }}</span>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Projects Stats -->
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="stat-card">
+            <div class="stat-card-header">
+                <div class="stat-card-icon" style="background-color: var(--warning);">
+                    <i class="bi bi-kanban-fill"></i>
+                </div>
+            </div>
+            <div class="stat-card-body">
+                <div class="stat-card-title">Projects</div>
+                <div class="stat-card-value">{{ total_projects }}</div>
+                <div class="stat-card-info d-flex justify-content-between">
+                    <span>Open: {{ open_projects }}</span>
+                    <span>In Progress: {{ in_progress_projects }}</span>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Financial Stats -->
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="stat-card">
+            <div class="stat-card-header">
+                <div class="stat-card-icon" style="background-color: var(--info);">
+                    <i class="bi bi-cash-stack"></i>
+                </div>
+            </div>
+            <div class="stat-card-body">
+                <div class="stat-card-title">Wallet Balance</div>
+                <div class="stat-card-value">${{ total_wallet_balance }}</div>
+                <div class="stat-card-info d-flex justify-content-between">
+                    <span>Escrow: ${{ total_escrow_balance }}</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Transaction Chart -->
+<div class="row">
+    <div class="col-lg-12 mb-4">
+        <div class="data-card">
+            <div class="data-card-header">
+                <h5 class="data-card-title">Transaction Volume (Last 7 Days)</h5>
+            </div>
+            <div class="chart-container">
+                <canvas id="transactionChart"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Recent Activity Row -->
+<div class="row">
+    <!-- Recent Transactions -->
+    <div class="col-lg-6 mb-4">
+        <div class="data-card">
+            <div class="data-card-header">
+                <h5 class="data-card-title">Recent Transactions</h5>
+                <a href="{% url 'admin_transactions' %}" class="btn btn-sm btn-outline-primary">View All</a>
+            </div>
+            <div class="table-responsive">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>User</th>
+                            <th>Type</th>
+                            <th>Amount</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for transaction in recent_transactions %}
+                        <tr>
+                            <td><small class="text-muted">{{ transaction.transaction_id }}</small></td>
+                            <td>{{ transaction.wallet.user.user.username }}</td>
+                            <td>
+                                {% if transaction.transaction_type == 'deposit' %}
+                                <span class="badge bg-success">Deposit</span>
+                                {% elif transaction.transaction_type == 'withdrawal' %}
+                                <span class="badge bg-warning">Withdrawal</span>
+                                {% elif transaction.transaction_type == 'escrow' %}
+                                <span class="badge bg-info">Escrow</span>
+                                {% elif transaction.transaction_type == 'release' %}
+                                <span class="badge bg-primary">Release</span>
+                                {% elif transaction.transaction_type == 'fee' %}
+                                <span class="badge bg-secondary">Fee</span>
+                                {% else %}
+                                <span class="badge bg-dark">{{ transaction.transaction_type }}</span>
+                                {% endif %}
+                            </td>
+                            <td>${{ transaction.amount }}</td>
+                            <td>
+                                {% if transaction.status == 'completed' %}
+                                <span class="badge bg-success">Completed</span>
+                                {% elif transaction.status == 'pending' %}
+                                <span class="badge bg-warning">Pending</span>
+                                {% elif transaction.status == 'failed' %}
+                                <span class="badge bg-danger">Failed</span>
+                                {% else %}
+                                <span class="badge bg-secondary">{{ transaction.status }}</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="5" class="text-center">No transactions found</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Recent Projects -->
+    <div class="col-lg-6 mb-4">
+        <div class="data-card">
+            <div class="data-card-header">
+                <h5 class="data-card-title">Recent Projects</h5>
+                <a href="{% url 'admin_projects' %}" class="btn btn-sm btn-outline-primary">View All</a>
+            </div>
+            <div class="table-responsive">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Project Title</th>
+                            <th>Client</th>
+                            <th>Status</th>
+                            <th>Budget</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for project in recent_projects %}
+                        <tr>
+                            <td>{{ project.title }}</td>
+                            <td>{{ project.client.user.username }}</td>
+                            <td>
+                                {% if project.status == 'open' %}
+                                <span class="badge bg-success">Open</span>
+                                {% elif project.status == 'in_progress' %}
+                                <span class="badge bg-primary">In Progress</span>
+                                {% elif project.status == 'completed' %}
+                                <span class="badge bg-info">Completed</span>
+                                {% elif project.status == 'cancelled' %}
+                                <span class="badge bg-danger">Cancelled</span>
+                                {% else %}
+                                <span class="badge bg-secondary">{{ project.status }}</span>
+                                {% endif %}
+                            </td>
+                            <td>${{ project.budget_min }}-${{ project.budget_max }}</td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="4" class="text-center">No projects found</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Recent Users -->
+<div class="row">
+    <div class="col-lg-12 mb-4">
+        <div class="data-card">
+            <div class="data-card-header">
+                <h5 class="data-card-title">Recent Users</h5>
+                <a href="{% url 'admin_users' %}" class="btn btn-sm btn-outline-primary">View All</a>
+            </div>
+            <div class="table-responsive">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Username</th>
+                            <th>Email</th>
+                            <th>Type</th>
+                            <th>Date Joined</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for user in recent_users %}
+                        <tr>
+                            <td>{{ user.username }}</td>
+                            <td>{{ user.email }}</td>
+                            <td>
+                                {% if user.userprofile.is_freelancer %}
+                                <span class="badge bg-info">Freelancer</span>
+                                {% elif user.userprofile.is_client %}
+                                <span class="badge bg-primary">Client</span>
+                                {% elif user.is_superuser %}
+                                <span class="badge bg-warning">Admin</span>
+                                {% else %}
+                                <span class="badge bg-secondary">User</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ user.date_joined|date:"M d, Y" }}</td>
+                            <td>
+                                {% if user.is_active %}
+                                <span class="badge bg-success">Active</span>
+                                {% else %}
+                                <span class="badge bg-danger">Inactive</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="5" class="text-center">No users found</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Parse chart data from the server
+        const chartData = JSON.parse('{{ chart_data|safe }}');
+        
+        // Create the transaction chart
+        const ctx = document.getElementById('transactionChart').getContext('2d');
+        new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: chartData.labels,
+                datasets: [
+                    {
+                        label: 'Deposits',
+                        data: chartData.deposits,
+                        backgroundColor: '#4cc9f0', // var(--success)
+                        borderColor: '#4cc9f0',
+                        borderWidth: 1
+                    },
+                    {
+                        label: 'Withdrawals',
+                        data: chartData.withdrawals,
+                        backgroundColor: '#f72585', // var(--warning)
+                        borderColor: '#f72585',
+                        borderWidth: 1
+                    },
+                    {
+                        label: 'Escrow',
+                        data: chartData.escrow,
+                        backgroundColor: '#4895ef', // var(--info)
+                        borderColor: '#4895ef',
+                        borderWidth: 1
+                    },
+                    {
+                        label: 'Releases',
+                        data: chartData.releases,
+                        backgroundColor: '#4361ee', // var(--primary)
+                        borderColor: '#4361ee',
+                        borderWidth: 1
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            callback: function(value) {
+                                return '$' + value;
+                            }
+                        }
+                    }
+                },
+                plugins: {
+                    legend: {
+                        position: 'top',
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                let label = context.dataset.label || '';
+                                if (label) {
+                                    label += ': ';
+                                }
+                                label += '$' + context.raw;
+                                return label;
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    });
+</script>
+{% endblock %} 

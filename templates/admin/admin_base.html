@@ -1,0 +1,622 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Freelenso Admin - {% block title %}Dashboard{% endblock %}</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Custom CSS -->
+    <style>
+        :root {
+            --primary: #4361ee;
+            --secondary: #3f37c9;
+            --success: #4cc9f0;
+            --info: #4895ef;
+            --warning: #f72585;
+            --danger: #e63946;
+            --light: #f8f9fa;
+            --dark: #212529;
+            --gray: #6c757d;
+            --sidebar-width: 280px;
+            --topbar-height: 70px;
+        }
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            background-color: #f7f9fc;
+            color: #333;
+            overflow-x: hidden;
+        }
+
+        /* Sidebar */
+        .admin-sidebar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: var(--sidebar-width);
+            height: 100vh;
+            background: linear-gradient(180deg, var(--primary), var(--secondary));
+            color: white;
+            z-index: 1000;
+            transition: all 0.3s;
+            box-shadow: 0 0 20px rgba(0,0,0,0.1);
+            overflow-y: auto;
+        }
+
+        .admin-sidebar.collapsed {
+            width: 80px;
+        }
+
+        .admin-sidebar::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .admin-sidebar::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .admin-sidebar::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.5);
+            border-radius: 10px;
+        }
+
+        .sidebar-header {
+            height: var(--topbar-height);
+            display: flex;
+            align-items: center;
+            padding: 0 20px;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .sidebar-brand {
+            color: white;
+            font-size: 1.5rem;
+            font-weight: 700;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            white-space: nowrap;
+            overflow: hidden;
+        }
+
+        .sidebar-brand-icon {
+            font-size: 1.8rem;
+            margin-right: 10px;
+        }
+
+        .sidebar-brand-text {
+            transition: opacity 0.3s;
+        }
+
+        .collapsed .sidebar-brand-text {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .toggle-sidebar {
+            background: transparent;
+            border: none;
+            color: white;
+            cursor: pointer;
+            font-size: 1.2rem;
+            padding: 5px;
+            margin-left: auto;
+            transition: transform 0.3s;
+        }
+
+        .collapsed .toggle-sidebar {
+            transform: rotate(180deg);
+        }
+
+        .sidebar-nav {
+            padding: 20px 0;
+        }
+
+        .sidebar-heading {
+            font-size: 0.8rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: rgba(255,255,255,0.6);
+            padding: 15px 20px 5px;
+            white-space: nowrap;
+            overflow: hidden;
+            transition: opacity 0.3s;
+        }
+
+        .collapsed .sidebar-heading {
+            opacity: 0;
+            height: 0;
+            padding: 0;
+        }
+
+        .nav-item {
+            margin: 5px 15px;
+            border-radius: 8px;
+            transition: background-color 0.3s;
+        }
+
+        .nav-item:hover {
+            background-color: rgba(255, 255, 255, 0.1);
+        }
+
+        .nav-item.active {
+            background-color: rgba(255, 255, 255, 0.2);
+        }
+
+        .nav-link {
+            display: flex;
+            align-items: center;
+            padding: 12px 15px;
+            color: rgba(255, 255, 255, 0.8);
+            text-decoration: none;
+            transition: all 0.3s;
+            white-space: nowrap;
+            overflow: hidden;
+        }
+
+        .nav-link:hover {
+            color: white;
+        }
+
+        .nav-link.active {
+            color: white;
+            font-weight: 500;
+        }
+
+        .nav-icon {
+            font-size: 1.2rem;
+            margin-right: 10px;
+            min-width: 25px;
+            text-align: center;
+        }
+
+        .nav-text {
+            transition: opacity 0.3s;
+        }
+
+        .collapsed .nav-text {
+            opacity: 0;
+            width: 0;
+        }
+
+        /* Content Area */
+        .admin-content {
+            margin-left: var(--sidebar-width);
+            padding: 0;
+            min-height: 100vh;
+            transition: margin-left 0.3s;
+        }
+
+        .admin-content.expanded {
+            margin-left: 80px;
+        }
+
+        .admin-topbar {
+            background: white;
+            height: var(--topbar-height);
+            padding: 0 25px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            position: sticky;
+            top: 0;
+            z-index: 999;
+        }
+
+        .topbar-search {
+            position: relative;
+            max-width: 350px;
+            margin-right: auto;
+            margin-left: 20px;
+        }
+
+        .search-icon {
+            position: absolute;
+            top: 50%;
+            left: 15px;
+            transform: translateY(-50%);
+            color: var(--gray);
+        }
+
+        .search-input {
+            background-color: #f8f9fa;
+            border: none;
+            border-radius: 30px;
+            padding: 10px 20px 10px 45px;
+            width: 100%;
+            transition: all 0.3s;
+        }
+
+        .search-input:focus {
+            background-color: white;
+            box-shadow: 0 0 10px rgba(67, 97, 238, 0.2);
+            outline: none;
+        }
+
+        .topbar-divider {
+            height: 30px;
+            width: 1px;
+            background-color: #eaeaea;
+            margin: 0 15px;
+        }
+
+        .user-dropdown {
+            display: flex;
+            align-items: center;
+            position: relative;
+        }
+
+        .user-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background-color: var(--primary);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 500;
+            margin-right: 10px;
+        }
+
+        .user-info {
+            line-height: 1.2;
+        }
+
+        .user-name {
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+
+        .user-role {
+            color: var(--gray);
+            font-size: 0.8rem;
+        }
+
+        .content-wrapper {
+            padding: 30px;
+        }
+
+        .page-header {
+            margin-bottom: 25px;
+        }
+
+        .page-title {
+            font-size: 1.8rem;
+            font-weight: 600;
+            color: var(--dark);
+            margin-bottom: 10px;
+        }
+
+        .page-subtitle {
+            color: var(--gray);
+            font-size: 1rem;
+        }
+
+        /* Cards */
+        .stat-card {
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+            padding: 25px;
+            margin-bottom: 25px;
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+        }
+
+        .stat-card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 15px;
+        }
+
+        .stat-card-icon {
+            width: 60px;
+            height: 60px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.8rem;
+            color: white;
+        }
+
+        .stat-card-body {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .stat-card-title {
+            font-size: 0.9rem;
+            color: var(--gray);
+            margin-bottom: 5px;
+        }
+
+        .stat-card-value {
+            font-size: 1.8rem;
+            font-weight: 600;
+            color: var(--dark);
+        }
+
+        .stat-card-change {
+            margin-top: 5px;
+            font-size: 0.8rem;
+            display: flex;
+            align-items: center;
+        }
+
+        .change-positive {
+            color: #22c55e;
+        }
+
+        .change-negative {
+            color: #ef4444;
+        }
+
+        /* Data Tables */
+        .data-card {
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+            padding: 25px;
+            margin-bottom: 25px;
+        }
+
+        .data-card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .data-card-title {
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: var(--dark);
+        }
+
+        .table {
+            margin-bottom: 0;
+        }
+
+        .table th {
+            font-weight: 500;
+            color: var(--gray);
+            border-bottom-width: 1px;
+            font-size: 0.9rem;
+        }
+
+        .table td {
+            vertical-align: middle;
+            padding: 15px 10px;
+        }
+
+        .status-badge {
+            padding: 6px 12px;
+            border-radius: 30px;
+            font-size: 0.75rem;
+            font-weight: 500;
+        }
+
+        /* Alerts and Notifications */
+        .admin-alert {
+            border-radius: 10px;
+            border: none;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+            padding: 15px 20px;
+        }
+
+        /* Charts */
+        .chart-container {
+            position: relative;
+            height: 300px;
+            margin-top: 20px;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .admin-sidebar {
+                transform: translateX(-100%);
+                box-shadow: none;
+            }
+            
+            .admin-sidebar.mobile-visible {
+                transform: translateX(0);
+                box-shadow: 0 0 20px rgba(0,0,0,0.1);
+            }
+            
+            .admin-content {
+                margin-left: 0;
+            }
+            
+            .admin-content.expanded {
+                margin-left: 0;
+            }
+            
+            .mobile-toggle {
+                display: block;
+            }
+        }
+    </style>
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+    <!-- Sidebar -->
+    <div class="admin-sidebar" id="adminSidebar">
+        <div class="sidebar-header">
+            <a href="{% url 'admin_dashboard' %}" class="sidebar-brand">
+                <i class="bi bi-gear-fill sidebar-brand-icon"></i>
+                <span class="sidebar-brand-text">Freelenso Admin</span>
+            </a>
+            <button class="toggle-sidebar" id="toggleSidebar">
+                <i class="bi bi-chevron-left"></i>
+            </button>
+        </div>
+        
+        <div class="sidebar-nav">
+            <div class="sidebar-heading">Main</div>
+            <div class="nav-item {% if request.path == '/admin-dashboard/' %}active{% endif %}">
+                <a class="nav-link {% if request.path == '/admin-dashboard/' %}active{% endif %}" href="{% url 'admin_dashboard' %}">
+                    <i class="bi bi-speedometer2 nav-icon"></i>
+                    <span class="nav-text">Dashboard</span>
+                </a>
+            </div>
+            
+            <div class="sidebar-heading">Management</div>
+            <div class="nav-item {% if '/admin-dashboard/users/' in request.path %}active{% endif %}">
+                <a class="nav-link {% if '/admin-dashboard/users/' in request.path %}active{% endif %}" href="{% url 'admin_users' %}">
+                    <i class="bi bi-people-fill nav-icon"></i>
+                    <span class="nav-text">Users</span>
+                </a>
+            </div>
+            <div class="nav-item {% if '/admin-dashboard/projects/' in request.path %}active{% endif %}">
+                <a class="nav-link {% if '/admin-dashboard/projects/' in request.path %}active{% endif %}" href="{% url 'admin_projects' %}">
+                    <i class="bi bi-kanban-fill nav-icon"></i>
+                    <span class="nav-text">Projects</span>
+                </a>
+            </div>
+            
+            <div class="sidebar-heading">Finance</div>
+            <div class="nav-item {% if '/admin-dashboard/transactions/' in request.path %}active{% endif %}">
+                <a class="nav-link {% if '/admin-dashboard/transactions/' in request.path %}active{% endif %}" href="{% url 'admin_transactions' %}">
+                    <i class="bi bi-currency-exchange nav-icon"></i>
+                    <span class="nav-text">Transactions</span>
+                </a>
+            </div>
+            <div class="nav-item {% if '/admin-dashboard/withdrawals/' in request.path %}active{% endif %}">
+                <a class="nav-link {% if '/admin-dashboard/withdrawals/' in request.path %}active{% endif %}" href="{% url 'admin_withdrawals' %}">
+                    <i class="bi bi-cash-stack nav-icon"></i>
+                    <span class="nav-text">Withdrawals</span>
+                </a>
+            </div>
+            
+            <div class="sidebar-heading">Reports</div>
+            <div class="nav-item {% if '/admin-dashboard/stats/' in request.path %}active{% endif %}">
+                <a class="nav-link {% if '/admin-dashboard/stats/' in request.path %}active{% endif %}" href="{% url 'admin_system_stats' %}">
+                    <i class="bi bi-bar-chart-fill nav-icon"></i>
+                    <span class="nav-text">System Statistics</span>
+                </a>
+            </div>
+            
+            <div class="sidebar-heading">System</div>
+            <div class="nav-item">
+                <a class="nav-link" href="/admin/" target="_blank">
+                    <i class="bi bi-tools nav-icon"></i>
+                    <span class="nav-text">Django Admin</span>
+                </a>
+            </div>
+            <div class="nav-item">
+                <a class="nav-link" href="{% url 'index' %}">
+                    <i class="bi bi-house-door-fill nav-icon"></i>
+                    <span class="nav-text">Main Site</span>
+                </a>
+            </div>
+            <div class="nav-item">
+                <a class="nav-link" href="{% url 'logout' %}">
+                    <i class="bi bi-box-arrow-right nav-icon"></i>
+                    <span class="nav-text">Log Out</span>
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Content Area -->
+    <div class="admin-content" id="adminContent">
+        <div class="admin-topbar">
+            <button class="mobile-toggle d-md-none" id="mobileToggle">
+                <i class="bi bi-list"></i>
+            </button>
+            
+            <div class="topbar-search d-none d-md-block">
+                <i class="bi bi-search search-icon"></i>
+                <input type="text" class="search-input" placeholder="Search...">
+            </div>
+            
+            <div class="d-flex align-items-center">
+                <div class="topbar-divider"></div>
+                <div class="user-dropdown">
+                    <div class="user-avatar">
+                        {{ request.user.username|slice:":1"|upper }}
+                    </div>
+                    <div class="user-info">
+                        <div class="user-name">{{ request.user.get_full_name|default:request.user.username }}</div>
+                        <div class="user-role">Administrator</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="content-wrapper">
+            {% if messages %}
+                {% for message in messages %}
+                    <div class="admin-alert alert {% if message.tags %}alert-{{ message.tags }}{% endif %} alert-dismissible fade show" role="alert">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                {% endfor %}
+            {% endif %}
+            
+            <div class="page-header">
+                <h1 class="page-title">{% block page_title %}Dashboard{% endblock %}</h1>
+                <p class="page-subtitle">{% block page_subtitle %}Welcome to Freelenso Admin Dashboard{% endblock %}</p>
+            </div>
+            
+            {% block content %}{% endblock %}
+        </div>
+    </div>
+
+    <!-- Bootstrap Bundle with Popper -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- Custom JavaScript -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const sidebar = document.getElementById('adminSidebar');
+            const content = document.getElementById('adminContent');
+            const toggleBtn = document.getElementById('toggleSidebar');
+            const mobileToggle = document.getElementById('mobileToggle');
+            
+            // Toggle sidebar
+            if (toggleBtn) {
+                toggleBtn.addEventListener('click', function() {
+                    sidebar.classList.toggle('collapsed');
+                    content.classList.toggle('expanded');
+                });
+            }
+            
+            // Mobile toggle
+            if (mobileToggle) {
+                mobileToggle.addEventListener('click', function() {
+                    sidebar.classList.toggle('mobile-visible');
+                });
+            }
+            
+            // Add responsive behavior
+            function checkWidth() {
+                if (window.innerWidth < 768) {
+                    sidebar.classList.remove('collapsed');
+                    content.classList.remove('expanded');
+                }
+            }
+            
+            window.addEventListener('resize', checkWidth);
+            checkWidth(); // Initial check
+        });
+    </script>
+    {% block extra_js %}{% endblock %}
+</body>
+</html> 

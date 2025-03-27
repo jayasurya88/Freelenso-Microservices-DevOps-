@@ -17,6 +17,7 @@ from django.core.files.base import ContentFile
 from django.views.decorators.csrf import csrf_exempt
 from django.core.exceptions import ValidationError
 from decimal import Decimal
+from django.db import transaction
 
 # Create your views here.
 def index(request):
@@ -67,6 +68,11 @@ def login_user(request):
         
         if user is not None:
             login(request, user)
+            
+            # Redirect admin users to admin dashboard
+            if user.is_superuser:
+                return redirect('admin_dashboard')
+                
             profile = UserProfile.objects.get(user=user)
             
             if profile.is_freelancer:
@@ -91,7 +97,12 @@ def logout_user(request):
 @login_required
 def dashboard(request):
     """View for user dashboard"""
-    user_profile = UserProfile.objects.get(user=request.user)
+    # For admin users, redirect to admin dashboard
+    if request.user.is_superuser:
+        return redirect('admin_dashboard')
+        
+    # Get or create user profile (ensures all users have profiles)
+    user_profile, created = UserProfile.objects.get_or_create(user=request.user)
     
     if user_profile.is_client:
         # Get client's projects
@@ -111,9 +122,28 @@ def dashboard(request):
         }
         return render(request, 'freelancer_dashboard.html', context)
 
+# Helper function to get user profile safely
+def get_user_profile(user):
+    """Helper function to get or create user profile while handling superusers"""
+    if user.is_superuser:
+        # For superusers, get or create an admin profile
+        profile, created = UserProfile.objects.get_or_create(
+            user=user,
+            defaults={'is_client': False, 'is_freelancer': False}
+        )
+        return profile
+    
+    # For regular users, get or create a profile
+    profile, created = UserProfile.objects.get_or_create(user=user)
+    return profile
+
 @login_required
 def profile_view(request):
-    profile = UserProfile.objects.get(user=request.user)
+    # For admin users, redirect to admin dashboard
+    if request.user.is_superuser:
+        return redirect('admin_dashboard')
+        
+    profile = get_user_profile(request.user)
     context = {
         'profile': profile,
         'MEDIA_URL': settings.MEDIA_URL,
@@ -122,7 +152,11 @@ def profile_view(request):
 
 @login_required
 def edit_profile(request):
-    profile = UserProfile.objects.get(user=request.user)
+    # For admin users, redirect to admin dashboard
+    if request.user.is_superuser:
+        return redirect('admin_dashboard')
+        
+    profile = get_user_profile(request.user)
     
     if request.method == 'POST':
         # Update User model
@@ -822,12 +856,19 @@ def get_unread_notifications_count(user_profile):
 def add_notifications_to_context(request):
     """Add unread notifications count to context for all views"""
     if request.user.is_authenticated:
+        # Handle superusers separately since they might not have a UserProfile
+        if request.user.is_superuser:
+            return {'unread_notifications_count': 0}
+            
         try:
-            unread_count = get_unread_notifications_count(request.user.userprofile)
+            # Get or create a UserProfile for the user to ensure it exists
+            user_profile, created = UserProfile.objects.get_or_create(user=request.user)
+            unread_count = get_unread_notifications_count(user_profile)
             return {'unread_notifications_count': unread_count}
-        except:
-            return {}
-    return {}
+        except Exception as e:
+            print(f"Error getting notifications count: {str(e)}")
+            return {'unread_notifications_count': 0}
+    return {'unread_notifications_count': 0}
 
 # Helper function to create a notification
 def create_notification(recipient, notification_type, message, sender=None, project=None):
@@ -844,7 +885,12 @@ def create_notification(recipient, notification_type, message, sender=None, proj
 @login_required
 def message_list(request):
     """View to display a list of all chat rooms for a user"""
-    user_profile = request.user.userprofile
+    # Redirect superusers to admin dashboard
+    if request.user.is_superuser:
+        return redirect('admin_dashboard')
+        
+    # Get or create user profile
+    user_profile, created = UserProfile.objects.get_or_create(user=request.user)
     
     # Get all chat rooms where the user is client or freelancer
     chat_rooms = ChatRoom.objects.filter(
@@ -871,7 +917,10 @@ def message_list(request):
 @login_required
 def cleanup_messages(request):
     """Administrative view to automatically clean up improperly formatted messages"""
-    user_profile = request.user.userprofile
+    # Only superusers or staff can use this function
+    if not request.user.is_superuser and not request.user.is_staff:
+        messages.error(request, "You don't have permission to perform this action.")
+        return redirect('message_list')
     
     # Find messages that match the pattern (containing ' - client' or ' - freelancer')
     improper_messages = ChatMessage.objects.filter(
@@ -940,6 +989,9 @@ def create_milestone(request, project_id):
                 )
             
             messages.success(request, "Milestone added successfully.")
+            # Add a message to inform client about funding the milestone
+            messages.info(request, f"Please fund the milestone to release payment to the freelancer when completed. Click 'Fund' next to the milestone.")
+            
             return redirect('project_milestones', project_id=project_id)
     
     return render(request, 'projects/milestone_form.html', {
@@ -1081,9 +1133,14 @@ def complete_milestone(request, project_id, milestone_id):
         messages.error(request, "Only the assigned freelancer can mark milestones as completed.")
         return redirect('project_milestones', project_id=project_id)
     
-    # Check if milestone is in pending status
-    if milestone.status != 'pending':
+    # Check if milestone is in pending or funded status
+    if milestone.status not in ['pending', 'funded']:
         messages.error(request, "This milestone is already completed or approved.")
+        return redirect('project_milestones', project_id=project_id)
+    
+    # If milestone is in pending status, check if it should be funded first
+    if milestone.status == 'pending':
+        messages.warning(request, "This milestone hasn't been funded by the client yet. Please contact the client to fund the milestone before completing it.")
         return redirect('project_milestones', project_id=project_id)
     
     if request.method == 'POST':
@@ -1163,15 +1220,46 @@ def approve_milestone(request, project_id, milestone_id):
             defaults={'currency': 'USD'}
         )
         
-        # Calculate platform fee
-        platform_fee = milestone.amount * Decimal('0.05')  # 5% fee example
-        freelancer_amount = milestone.amount - platform_fee
+        # Cast milestone amount to Decimal to ensure proper calculations
+        milestone_amount = Decimal(str(milestone.amount))
         
-        # Update wallet balances
-        client_wallet.escrow_balance -= milestone.amount
+        # Calculate platform fee
+        platform_fee = milestone_amount * Decimal('0.05')  # 5% fee example
+        freelancer_amount = milestone_amount - platform_fee
+        
+        # Check if this milestone has a corresponding escrow transaction
+        escrow_transaction = Transaction.objects.filter(
+            wallet=client_wallet,
+            project=project,
+            milestone=milestone,
+            transaction_type='escrow',
+            status='completed'
+        ).first()
+        
+        if escrow_transaction:
+            # If previously escrowed, deduct from escrow balance
+            client_wallet.escrow_balance = client_wallet.escrow_balance - milestone_amount
+        else:
+            # If not previously escrowed, deduct from main balance
+            client_wallet.balance = client_wallet.balance - milestone_amount
+            
+            # Create a new escrow transaction to record this
+            Transaction.objects.create(
+                wallet=client_wallet,
+                project=project,
+                milestone=milestone,
+                amount=milestone_amount,
+                transaction_type='escrow',
+                payment_method='wallet',
+                status='completed',
+                description=f'Immediate escrow for milestone approval: {milestone.title}'
+            )
+            
+        # Save client wallet changes
         client_wallet.save()
         
-        freelancer_wallet.balance += freelancer_amount
+        # Update freelancer wallet
+        freelancer_wallet.balance = freelancer_wallet.balance + freelancer_amount
         freelancer_wallet.save()
         
         # Create transaction records
@@ -1180,7 +1268,7 @@ def approve_milestone(request, project_id, milestone_id):
             wallet=client_wallet,
             project=project,
             milestone=milestone,
-            amount=milestone.amount,
+            amount=milestone_amount,
             transaction_type='release',
             payment_method='wallet',
             status='completed',
@@ -1217,7 +1305,7 @@ def approve_milestone(request, project_id, milestone_id):
             project=project,
             user=request.user,
             activity_type='milestone_approved',
-            description=f'Milestone "{milestone.title}" has been approved and payment of {milestone.amount} released'
+            description=f'Milestone "{milestone.title}" has been approved and payment of {milestone_amount} released'
         )
         
         # Update project progress
@@ -1230,12 +1318,12 @@ def approve_milestone(request, project_id, milestone_id):
         Notification.objects.create(
             recipient=project.assigned_freelancer,
             notification_type='payment',
-            related_project=project,
+            project=project,
             message=f'Payment of {freelancer_amount} has been released for milestone: {milestone.title}',
             is_read=False
         )
         
-        messages.success(request, f'Milestone approved and payment of {milestone.amount} released.')
+        messages.success(request, f'Milestone approved and payment of {milestone_amount} released.')
         return redirect('project_milestones', project_id=project.id)
     
     context = {
@@ -1397,6 +1485,77 @@ def wallet_transactions(request):
     }
     
     return render(request, 'wallet/transactions.html', context)
+
+@login_required
+def wallet_escrow_records(request):
+    """
+    Display all escrow records for the current user
+    """
+    user_profile = get_object_or_404(UserProfile, user=request.user)
+    wallet = get_object_or_404(Wallet, user=user_profile)
+    
+    # Get all escrow transactions
+    escrow_transactions = Transaction.objects.filter(
+        wallet=wallet,
+        transaction_type='escrow',
+        status='completed'
+    ).select_related('project', 'milestone').order_by('-created_at')
+    
+    # Get active project milestones with escrow
+    if user_profile.is_client:
+        # For clients, show milestones they're funding
+        active_escrows = []
+        for transaction in escrow_transactions:
+            if transaction.milestone and transaction.milestone.status in ['funded', 'completed']:
+                # Only include milestones that haven't been approved yet
+                if transaction.milestone.status != 'approved':
+                    active_escrows.append({
+                        'transaction': transaction,
+                        'project': transaction.project,
+                        'milestone': transaction.milestone,
+                        'amount': transaction.amount,
+                        'date': transaction.created_at,
+                        'status': transaction.milestone.status
+                    })
+    elif user_profile.is_freelancer:
+        # For freelancers, show milestones funded for their projects
+        active_escrows = []
+        freelancer_projects = Project.objects.filter(assigned_freelancer=user_profile)
+        
+        for project in freelancer_projects:
+            client_wallet = get_object_or_404(Wallet, user=project.client)
+            project_escrows = Transaction.objects.filter(
+                wallet=client_wallet,
+                project=project,
+                transaction_type='escrow',
+                status='completed'
+            ).select_related('milestone')
+            
+            for transaction in project_escrows:
+                if transaction.milestone and transaction.milestone.status in ['funded', 'completed']:
+                    active_escrows.append({
+                        'transaction': transaction,
+                        'project': project,
+                        'milestone': transaction.milestone,
+                        'amount': transaction.amount,
+                        'date': transaction.created_at,
+                        'status': transaction.milestone.status
+                    })
+    
+    # Pagination
+    paginator = Paginator(active_escrows, 10)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+    
+    context = {
+        'wallet': wallet,
+        'page_obj': page_obj,
+        'is_client': user_profile.is_client,
+        'is_freelancer': user_profile.is_freelancer,
+        'total_escrow': wallet.escrow_balance if user_profile.is_client else sum(escrow['amount'] for escrow in active_escrows)
+    }
+    
+    return render(request, 'wallet/escrow_records.html', context)
 
 @login_required
 def wallet_deposit(request):
@@ -1693,34 +1852,49 @@ def fund_milestone(request, project_id, milestone_id):
             messages.error(request, f'Insufficient wallet balance. Please add funds to your wallet.')
             return redirect('wallet_deposit')
         
-        # Move funds from balance to escrow
-        wallet.balance -= milestone.amount
-        wallet.escrow_balance += milestone.amount
-        wallet.save()
+        # Cast amounts to Decimal to ensure proper math operations
+        milestone_amount = Decimal(str(milestone.amount))
         
-        # Create escrow transaction
-        Transaction.objects.create(
-            wallet=wallet,
-            project=project,
-            milestone=milestone,
-            amount=milestone.amount,
-            transaction_type='escrow',
-            payment_method='wallet',
-            status='completed',
-            description=f'Escrow for milestone: {milestone.title}'
-        )
-        
-        # Update milestone status if needed
-        milestone.status = 'pending'
-        milestone.save()
-        
-        # Add project activity
-        ProjectActivity.objects.create(
-            project=project,
-            user=request.user,
-            activity_type='milestone_created',
-            description=f'Milestone "{milestone.title}" has been funded with {milestone.amount}'
-        )
+        # Create a database transaction to ensure atomicity
+        with transaction.atomic():
+            # Move funds from balance to escrow
+            wallet.balance -= milestone_amount
+            wallet.escrow_balance += milestone_amount
+            wallet.save()  # Save the wallet changes immediately
+            
+            # Create escrow transaction record
+            transaction_record = Transaction.objects.create(
+                wallet=wallet,
+                project=project,
+                milestone=milestone,
+                amount=milestone_amount,
+                transaction_type='escrow',
+                payment_method='wallet',
+                status='completed',
+                description=f'Escrow for milestone: {milestone.title}'
+            )
+            
+            # Update milestone status to funded
+            milestone.status = 'funded'
+            milestone.save()
+            
+            # Add project activity
+            ProjectActivity.objects.create(
+                project=project,
+                user=request.user,
+                activity_type='milestone_created',
+                description=f'Milestone "{milestone.title}" has been funded with {milestone_amount}'
+            )
+            
+            # Notify freelancer if assigned
+            if project.assigned_freelancer:
+                Notification.objects.create(
+                    recipient=project.assigned_freelancer,
+                    notification_type='milestone',
+                    project=project,
+                    message=f'Milestone "{milestone.title}" has been funded with {milestone_amount}',
+                    is_read=False
+                )
         
         messages.success(request, f'Successfully funded milestone: {milestone.title}')
         return redirect('project_milestones', project_id=project.id)

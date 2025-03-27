@@ -49,6 +49,25 @@
                 </div>
             </div>
 
+            {% if is_client %}
+            <div class="alert alert-info mb-4">
+                <i class="bi bi-info-circle me-2"></i>
+                <strong>Important:</strong> As a client, you need to fund each milestone before the freelancer can start working on it. 
+                Click the <span class="badge bg-success"><i class="bi bi-wallet2"></i> Fund</span> button next to each pending milestone 
+                to transfer funds from your wallet to the project escrow. The funds will be released to the freelancer only after you approve the completed milestone.
+            </div>
+            {% endif %}
+
+            {% if is_freelancer %}
+            <div class="alert alert-info mb-4">
+                <i class="bi bi-info-circle me-2"></i>
+                <strong>Important:</strong> You can only mark milestones as complete after the client has funded them. 
+                Funded milestones will show with a <span class="badge bg-primary">Funded</span> status, and you'll see a
+                <span class="btn btn-sm btn-primary"><i class="bi bi-check"></i> Mark Complete</span> button next to them.
+                If a milestone is still pending funding, please contact the client.
+            </div>
+            {% endif %}
+
             {% if milestones %}
             <div class="table-responsive">
                 <table class="table table-hover">
@@ -122,12 +141,17 @@
                                 <span class="badge bg-success">Approved</span>
                                 {% elif milestone.status == 'rejected' %}
                                 <span class="badge bg-danger">Rejected</span>
+                                {% elif milestone.status == 'funded' %}
+                                <span class="badge bg-primary">Funded</span>
                                 {% endif %}
                             </td>
                             <td>
                                 <div class="btn-group btn-group-sm">
                                     {% if is_client %}
                                         {% if milestone.status == 'pending' %}
+                                            <a href="{% url 'fund_milestone' project_id=project.id milestone_id=milestone.id %}" class="btn btn-success">
+                                                <i class="bi bi-wallet2"></i> Fund
+                                            </a>
                                             <a href="{% url 'edit_milestone' project_id=project.id milestone_id=milestone.id %}" class="btn btn-outline-primary">
                                                 <i class="bi bi-pencil"></i>
                                             </a>
@@ -144,7 +168,7 @@
                                         {% endif %}
                                     {% endif %}
                                     
-                                    {% if is_freelancer and milestone.status == 'pending' %}
+                                    {% if is_freelancer and milestone.status == 'funded' %}
                                         <a href="{% url 'complete_milestone' project_id=project.id milestone_id=milestone.id %}" class="btn btn-primary">
                                             <i class="bi bi-check"></i> Mark Complete
                                         </a>

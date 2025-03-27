@@ -1,5 +1,6 @@
 from django.urls import path
 from . import views
+from . import admin_views
 
 urlpatterns = [
     path('', views.index, name='index'),
@@ -48,6 +49,7 @@ urlpatterns = [
     path('wallet/deposit/confirm/', views.wallet_deposit_confirm, name='wallet_deposit_confirm'),
     path('wallet/withdraw/', views.wallet_withdraw, name='wallet_withdraw'),
     path('wallet/transactions/', views.wallet_transactions, name='wallet_transactions'),
+    path('wallet/escrow/', views.wallet_escrow_records, name='wallet_escrow_records'),
     path('wallet/payment-methods/', views.payment_methods, name='payment_methods'),
     path('wallet/payment-methods/add/', views.add_payment_method, name='add_payment_method'),
     path('wallet/payment-methods/<int:method_id>/delete/', views.delete_payment_method, name='delete_payment_method'),
@@ -55,4 +57,17 @@ urlpatterns = [
     
     # Escrow and project payments
     path('projects/<int:project_id>/fund-milestone/<int:milestone_id>/', views.fund_milestone, name='fund_milestone'),
+    
+    # Custom Admin Dashboard URLs
+    path('admin-dashboard/', admin_views.admin_dashboard, name='admin_dashboard'),
+    path('admin-dashboard/users/', admin_views.admin_users, name='admin_users'),
+    path('admin-dashboard/users/export/', admin_views.admin_export_users, name='admin_export_users'),
+    path('admin-dashboard/users/<int:user_id>/activate/', admin_views.admin_activate_user, name='admin_activate_user'),
+    path('admin-dashboard/users/<int:user_id>/deactivate/', admin_views.admin_deactivate_user, name='admin_deactivate_user'),
+    path('admin-dashboard/projects/', admin_views.admin_projects, name='admin_projects'),
+    path('admin-dashboard/projects/<int:project_id>/cancel/', admin_views.admin_cancel_project, name='admin_cancel_project'),
+    path('admin-dashboard/transactions/', admin_views.admin_transactions, name='admin_transactions'),
+    path('admin-dashboard/withdrawals/', admin_views.admin_withdrawals, name='admin_withdrawals'),
+    path('admin-dashboard/withdrawals/<int:withdrawal_id>/process/', admin_views.admin_process_withdrawal, name='admin_process_withdrawal'),
+    path('admin-dashboard/stats/', admin_views.admin_system_stats, name='admin_system_stats'),
 ]

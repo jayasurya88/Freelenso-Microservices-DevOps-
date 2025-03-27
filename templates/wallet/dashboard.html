@@ -28,7 +28,7 @@
                 <div class="card-body">
                     <h2 class="display-5 text-primary text-center mb-3">{{ wallet.balance }} {{ wallet.currency }}</h2>
                     <div class="text-center mb-4">
-                        <span class="badge bg-info me-2">Escrow: {{ wallet.escrow_balance }} {{ wallet.currency }}</span>
+                        <a href="{% url 'wallet_escrow_records' %}" class="badge bg-info me-2 text-decoration-none">Escrow: {{ wallet.escrow_balance }} {{ wallet.currency }}</a>
                         <span class="badge bg-secondary">Total: {{ total_funds }} {{ wallet.currency }}</span>
                     </div>
                     <div class="d-grid gap-2">
@@ -88,6 +88,9 @@
                     <div class="list-group">
                         <a href="{% url 'wallet_transactions' %}" class="list-group-item list-group-item-action">
                             <i class="fas fa-history me-2"></i> Transaction History
+                        </a>
+                        <a href="{% url 'wallet_escrow_records' %}" class="list-group-item list-group-item-action">
+                            <i class="fas fa-shield-alt me-2"></i> Escrow Records
                         </a>
                         <a href="{% url 'payment_methods' %}" class="list-group-item list-group-item-action">
                             <i class="fas fa-credit-card me-2"></i> Payment Methods
