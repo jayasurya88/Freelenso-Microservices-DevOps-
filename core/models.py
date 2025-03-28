@@ -102,12 +102,23 @@ class Project(models.Model):
         """Update project progress based on completed milestones"""
         if self.total_milestones > 0:
             self.progress = (self.completed_milestones / self.total_milestones) * 100
-        self.save()
+            self.save()
 
     def update_last_activity(self):
         """Update the last activity timestamp"""
         self.last_activity_date = timezone.now()
         self.save()
+
+    def check_completion(self):
+        """Check if all milestones are completed and update project status"""
+        if self.total_milestones > 0 and self.completed_milestones == self.total_milestones:
+            # Check if all milestones are approved
+            all_milestones_approved = all(milestone.status == 'approved' for milestone in self.milestones.all())
+            if all_milestones_approved and self.status != 'completed':
+                self.status = 'completed'
+                self.save()
+                return True
+        return False
 
     class Meta:
         ordering = ['-created_at']
@@ -419,3 +430,35 @@ class PaymentMethod(models.Model):
                           ['user', 'method_type', 'upi_id'],
                           ['user', 'method_type', 'card_last_digits', 'card_expiry'],
                           ['user', 'method_type', 'paypal_email']]
+
+class ProjectReview(models.Model):
+    RATING_CHOICES = [
+        (1, '1 Star'),
+        (2, '2 Stars'),
+        (3, '3 Stars'),
+        (4, '4 Stars'),
+        (5, '5 Stars'),
+    ]
+
+    project = models.ForeignKey(Project, on_delete=models.CASCADE, related_name='reviews')
+    reviewer = models.ForeignKey(UserProfile, on_delete=models.CASCADE, related_name='given_reviews')
+    reviewed = models.ForeignKey(UserProfile, on_delete=models.CASCADE, related_name='received_reviews')
+    rating = models.IntegerField(choices=RATING_CHOICES)
+    review_text = models.TextField()
+    created_at = models.DateTimeField(auto_now_add=True)
+    is_public = models.BooleanField(default=True)
+
+    class Meta:
+        unique_together = ['project', 'reviewer']  # One review per user per project
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"Review for {self.project.title} by {self.reviewer.user.username}"
+
+    def save(self, *args, **kwargs):
+        # Set the reviewed user based on who is reviewing
+        if self.reviewer == self.project.client:
+            self.reviewed = self.project.assigned_freelancer
+        else:
+            self.reviewed = self.project.client
+        super().save(*args, **kwargs)

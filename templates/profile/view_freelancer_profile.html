@@ -109,6 +109,57 @@
                     {% endif %}
                 </div>
             </div>
+
+            <!-- Reviews Section -->
+            <div class="card border-0 shadow-sm mt-4">
+                <div class="card-body">
+                    <h4 class="card-title mb-4">Reviews</h4>
+                    {% if reviews %}
+                        <!-- Average Rating -->
+                        <div class="text-center mb-4">
+                            <div class="display-4 mb-2">{{ avg_rating }}</div>
+                            <div class="rating mb-3">
+                                {% for i in "12345" %}
+                                    {% if i <= avg_rating %}
+                                        <i class="bi bi-star-fill text-warning"></i>
+                                    {% else %}
+                                        <i class="bi bi-star text-warning"></i>
+                                    {% endif %}
+                                {% endfor %}
+                            </div>
+                            <p class="text-muted mb-0">{{ total_reviews }} reviews</p>
+                        </div>
+
+                        <!-- Reviews List -->
+                        {% for review in reviews %}
+                        <div class="review-item mb-4 pb-4 border-bottom">
+                            <div class="d-flex justify-content-between align-items-start mb-2">
+                                <div>
+                                    <h6 class="mb-1">{{ review.reviewer.user.get_full_name|default:review.reviewer.user.username }}</h6>
+                                    <div class="rating">
+                                        {% for i in "12345" %}
+                                            {% if i <= review.rating %}
+                                                <i class="bi bi-star-fill text-warning"></i>
+                                            {% else %}
+                                                <i class="bi bi-star text-warning"></i>
+                                            {% endif %}
+                                        {% endfor %}
+                                    </div>
+                                </div>
+                                <small class="text-muted">{{ review.created_at|date:"M d, Y" }}</small>
+                            </div>
+                            <p class="mb-2">{{ review.review_text|linebreaks }}</p>
+                            <small class="text-muted">Project: <a href="{% url 'project_detail' review.project.id %}" class="text-decoration-none">{{ review.project.title }}</a></small>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <div class="text-center py-4">
+                            <i class="bi bi-chat-dots display-4 text-muted mb-3"></i>
+                            <p class="text-muted mb-0">No reviews yet.</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
         </div>
     </div>
 

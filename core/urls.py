@@ -70,4 +70,10 @@ urlpatterns = [
     path('admin-dashboard/withdrawals/', admin_views.admin_withdrawals, name='admin_withdrawals'),
     path('admin-dashboard/withdrawals/<int:withdrawal_id>/process/', admin_views.admin_process_withdrawal, name='admin_process_withdrawal'),
     path('admin-dashboard/stats/', admin_views.admin_system_stats, name='admin_system_stats'),
+    
+    # Review URLs
+    path('projects/<int:project_id>/review/', views.leave_project_review, name='leave_review'),
+    path('projects/<int:project_id>/reviews/', views.project_reviews, name='project_reviews'),
+    path('projects/<int:project_id>/reviews/<int:review_id>/edit/', views.edit_review, name='edit_review'),
+    path('projects/<int:project_id>/reviews/<int:review_id>/delete/', views.delete_review, name='delete_review'),
 ]

@@ -3,10 +3,10 @@ from django.http import JsonResponse, HttpResponse
 from django.contrib.auth.models import User
 from django.contrib.auth import login, logout, authenticate
 from django.contrib.auth.decorators import login_required
-from .models import UserProfile, Project, ProjectApplication, ProjectMilestone, ProjectAttachment, ProjectFile, ProjectActivity, ChatRoom, ChatMessage, ChatParticipant, Notification, Wallet, Transaction, WithdrawalRequest, PaymentMethod
+from .models import UserProfile, Project, ProjectApplication, ProjectMilestone, ProjectAttachment, ProjectFile, ProjectActivity, ChatRoom, ChatMessage, ChatParticipant, Notification, Wallet, Transaction, WithdrawalRequest, PaymentMethod, ProjectReview
 from django.contrib import messages
 from django.conf import settings
-from django.db.models import Q, Sum
+from django.db.models import Q, Sum, Avg, Count
 import os
 from django.views.decorators.http import require_POST
 from django.utils import timezone
@@ -144,8 +144,31 @@ def profile_view(request):
         return redirect('admin_dashboard')
         
     profile = get_user_profile(request.user)
+    
+    # Get reviews received by the user
+    reviews = ProjectReview.objects.filter(
+        reviewed=profile,
+        is_public=True
+    ).select_related(
+        'project',
+        'reviewer',
+        'reviewer__user'
+    ).order_by('-created_at')
+    
+    # Calculate average rating
+    avg_rating = reviews.aggregate(Avg('rating'))['rating__avg'] or 0
+    
+    # Get rating distribution
+    rating_distribution = list(reviews.values('rating')
+                             .annotate(count=Count('id'))
+                             .order_by('-rating'))
+    
     context = {
         'profile': profile,
+        'reviews': reviews,
+        'avg_rating': round(avg_rating, 1),
+        'total_reviews': reviews.count(),
+        'rating_distribution': rating_distribution,
         'MEDIA_URL': settings.MEDIA_URL,
     }
     return render(request, 'profile/view_profile.html', context)
@@ -289,6 +312,28 @@ def project_detail(request, project_id):
         else:
             # For closed/in-progress projects, only show the accepted application
             applications = project.applications.filter(status='accepted')
+
+    # Debug logging for review conditions
+    print(f"Project status: {project.status}")
+    print(f"User profile ID: {user_profile.id}")
+    print(f"Project client ID: {project.client.id}")
+    print(f"Project freelancer ID: {project.assigned_freelancer.id if project.assigned_freelancer else 'None'}")
+    print(f"Is user client or freelancer? {user_profile in [project.client, project.assigned_freelancer]}")
+
+    # Check if user can leave a review
+    can_review = False
+    if project.status == 'completed' and user_profile in [project.client, project.assigned_freelancer]:
+        can_review = not ProjectReview.objects.filter(project=project, reviewer=user_profile).exists()
+        print(f"Can review: {can_review}")
+        if not can_review:
+            print("User has already reviewed this project")
+
+    # Get existing review if any
+    user_review = None
+    if user_profile in [project.client, project.assigned_freelancer]:
+        user_review = ProjectReview.objects.filter(project=project, reviewer=user_profile).first()
+        if user_review:
+            print(f"Found existing review: {user_review.id}")
     
     context = {
         'project': project,
@@ -297,6 +342,8 @@ def project_detail(request, project_id):
         'is_owner': project.client == user_profile,
         'active_applications_count': active_applications_count,
         'applications': applications,
+        'can_review': can_review,
+        'user_review': user_review,
     }
     return render(request, 'projects/project_detail.html', context)
 
@@ -338,6 +385,7 @@ def create_project(request):
             milestone_descriptions = request.POST.getlist('milestone_descriptions[]')
             milestone_due_dates = request.POST.getlist('milestone_due_dates[]')
 
+            milestone_count = 0
             for i in range(len(milestone_titles)):
                 if milestone_titles[i] and milestone_amounts[i] and milestone_due_dates[i]:
                     ProjectMilestone.objects.create(
@@ -348,6 +396,11 @@ def create_project(request):
                         due_date=milestone_due_dates[i],
                         status='pending'
                     )
+                    milestone_count += 1
+
+            # Update project's total milestones count
+            project.total_milestones = milestone_count
+            project.save()
 
             messages.success(request, 'Project created successfully!')
             return redirect('project_detail', project_id=project.id)
@@ -514,11 +567,6 @@ def delete_project(request, project_id):
     return redirect('project_detail', project_id=project_id)
 
 @login_required
-def view_profile(request):
-    profile = request.user.userprofile
-    return render(request, 'profile/view_profile.html', {'profile': profile})
-
-@login_required
 def view_freelancer_profile(request, username):
     freelancer = get_object_or_404(UserProfile, user__username=username, is_freelancer=True)
     
@@ -533,11 +581,28 @@ def view_freelancer_profile(request, username):
         freelancer=freelancer,
         status='pending'
     ).count()
+
+    # Get reviews received by the freelancer
+    reviews = ProjectReview.objects.filter(
+        reviewed=freelancer,
+        is_public=True
+    ).select_related(
+        'project',
+        'reviewer',
+        'reviewer__user'
+    ).order_by('-created_at')
+    
+    # Calculate average rating
+    avg_rating = reviews.aggregate(Avg('rating'))['rating__avg'] or 0
     
     context = {
         'freelancer': freelancer,
         'completed_projects': completed_projects,
         'active_applications': active_applications,
+        'reviews': reviews,
+        'avg_rating': round(avg_rating, 1),
+        'total_reviews': reviews.count(),
+        'MEDIA_URL': settings.MEDIA_URL
     }
     return render(request, 'profile/view_freelancer_profile.html', context)
 
@@ -1193,145 +1258,92 @@ def complete_milestone(request, project_id, milestone_id):
 
 @login_required
 def approve_milestone(request, project_id, milestone_id):
-    """
-    Approve a completed milestone and release payment to freelancer
-    """
-    # Verify user is the project client
-    user_profile = get_object_or_404(UserProfile, user=request.user)
-    project = get_object_or_404(Project, id=project_id, client=user_profile)
+    project = get_object_or_404(Project, id=project_id)
     milestone = get_object_or_404(ProjectMilestone, id=milestone_id, project=project)
     
-    if milestone.status != 'completed':
-        messages.error(request, 'Only completed milestones can be approved.')
-        return redirect('project_milestones', project_id=project.id)
+    # Verify user is the project client and milestone is completed
+    if request.user.userprofile != project.client or milestone.status != 'completed':
+        messages.error(request, 'You are not authorized to approve this milestone.')
+        return redirect('project_detail', project_id=project_id)
     
-    if request.method == 'POST':
-        feedback = request.POST.get('feedback', '')
-        
-        # Update milestone status
-        milestone.status = 'approved'
-        milestone.feedback = feedback
-        milestone.save()
-        
-        # Get client and freelancer wallets
-        client_wallet = get_object_or_404(Wallet, user=user_profile)
-        freelancer_wallet, created = Wallet.objects.get_or_create(
-            user=project.assigned_freelancer,
-            defaults={'currency': 'USD'}
-        )
-        
-        # Cast milestone amount to Decimal to ensure proper calculations
-        milestone_amount = Decimal(str(milestone.amount))
-        
-        # Calculate platform fee
-        platform_fee = milestone_amount * Decimal('0.05')  # 5% fee example
-        freelancer_amount = milestone_amount - platform_fee
-        
-        # Check if this milestone has a corresponding escrow transaction
-        escrow_transaction = Transaction.objects.filter(
-            wallet=client_wallet,
-            project=project,
-            milestone=milestone,
-            transaction_type='escrow',
-            status='completed'
-        ).first()
-        
-        if escrow_transaction:
-            # If previously escrowed, deduct from escrow balance
-            client_wallet.escrow_balance = client_wallet.escrow_balance - milestone_amount
-        else:
-            # If not previously escrowed, deduct from main balance
-            client_wallet.balance = client_wallet.balance - milestone_amount
+    try:
+        with transaction.atomic():
+            # Update milestone status
+            milestone.status = 'approved'
+            milestone.save()
             
-            # Create a new escrow transaction to record this
-            Transaction.objects.create(
-                wallet=client_wallet,
-                project=project,
-                milestone=milestone,
-                amount=milestone_amount,
-                transaction_type='escrow',
-                payment_method='wallet',
-                status='completed',
-                description=f'Immediate escrow for milestone approval: {milestone.title}'
-            )
+            # Increment completed milestones count
+            project.completed_milestones += 1
+            project.save()
             
-        # Save client wallet changes
-        client_wallet.save()
-        
-        # Update freelancer wallet
-        freelancer_wallet.balance = freelancer_wallet.balance + freelancer_amount
-        freelancer_wallet.save()
-        
-        # Create transaction records
-        # 1. Release from escrow transaction
-        Transaction.objects.create(
-            wallet=client_wallet,
-            project=project,
-            milestone=milestone,
-            amount=milestone_amount,
-            transaction_type='release',
-            payment_method='wallet',
-            status='completed',
-            description=f'Payment released for milestone: {milestone.title}'
-        )
-        
-        # 2. Payment received by freelancer
-        Transaction.objects.create(
-            wallet=freelancer_wallet,
-            project=project,
-            milestone=milestone,
-            amount=freelancer_amount,
-            fee_amount=platform_fee,
-            transaction_type='release',
-            payment_method='wallet',
-            status='completed',
-            description=f'Payment received for milestone: {milestone.title}'
-        )
-        
-        # 3. Platform fee transaction
-        Transaction.objects.create(
-            wallet=freelancer_wallet,
-            project=project,
-            milestone=milestone,
-            amount=platform_fee,
-            transaction_type='fee',
-            payment_method='wallet',
-            status='completed',
-            description=f'Platform fee for milestone: {milestone.title}'
-        )
-        
-        # Create project activity
-        ProjectActivity.objects.create(
-            project=project,
-            user=request.user,
-            activity_type='milestone_approved',
-            description=f'Milestone "{milestone.title}" has been approved and payment of {milestone_amount} released'
-        )
-        
-        # Update project progress
-        project.completed_milestones += 1
-        project.update_progress()
-        project.update_last_activity()
-        
-        # Create notification for freelancer
-        freelancer_user = project.assigned_freelancer.user
-        Notification.objects.create(
-            recipient=project.assigned_freelancer,
-            notification_type='payment',
-            project=project,
-            message=f'Payment of {freelancer_amount} has been released for milestone: {milestone.title}',
-            is_read=False
-        )
-        
-        messages.success(request, f'Milestone approved and payment of {milestone_amount} released.')
-        return redirect('project_milestones', project_id=project.id)
-    
-    context = {
-        'project': project,
-        'milestone': milestone,
-    }
-    
-    return render(request, 'projects/approve_milestone.html', context)
+            # Check if project is completed
+            if project.completed_milestones == project.total_milestones:
+                project.status = 'completed'
+                project.save()
+                
+                # Create notifications for both client and freelancer
+                Notification.objects.create(
+                    recipient=project.client.user,
+                    title='Project Completed',
+                    message=f'Project "{project.title}" has been completed. You can now leave a review.',
+                    notification_type='project_completed'
+                )
+                
+                Notification.objects.create(
+                    recipient=project.assigned_freelancer.user,
+                    title='Project Completed',
+                    message=f'Project "{project.title}" has been completed. You can now leave a review.',
+                    notification_type='project_completed'
+                )
+                
+                # Handle wallet transactions
+                platform_fee = project.total_budget * Decimal('0.10')  # 10% platform fee
+                freelancer_amount = project.total_budget - platform_fee
+                
+                # Create release transaction for client
+                Transaction.objects.create(
+                    user=project.client.user,
+                    amount=-project.total_budget,
+                    transaction_type='release',
+                    description=f'Released payment for project: {project.title}',
+                    status='completed'
+                )
+                
+                # Create receipt transaction for freelancer
+                Transaction.objects.create(
+                    user=project.assigned_freelancer.user,
+                    amount=freelancer_amount,
+                    transaction_type='receipt',
+                    description=f'Received payment for project: {project.title}',
+                    status='completed'
+                )
+                
+                # Create platform fee transaction
+                Transaction.objects.create(
+                    user=User.objects.get(username='admin'),  # Assuming admin user exists
+                    amount=platform_fee,
+                    transaction_type='platform_fee',
+                    description=f'Platform fee for project: {project.title}',
+                    status='completed'
+                )
+                
+                # Record activity
+                ProjectActivity.objects.create(
+                    project=project,
+                    user=request.user,
+                    activity_type='milestone_approved',
+                    description=f'Project completed - All milestones approved'
+                )
+                
+                messages.success(request, 'Project completed successfully! You can now leave a review.')
+            else:
+                messages.success(request, 'Milestone approved successfully!')
+            
+            return redirect('project_workspace', project_id=project_id)
+            
+    except Exception as e:
+        messages.error(request, f'Error approving milestone: {str(e)}')
+        return redirect('project_detail', project_id=project_id)
 
 @login_required
 def reject_milestone(request, project_id, milestone_id):
@@ -1907,3 +1919,145 @@ def fund_milestone(request, project_id, milestone_id):
     }
     
     return render(request, 'wallet/fund_milestone.html', context)
+
+@login_required
+def leave_project_review(request, project_id):
+    """Leave a review for a completed project"""
+    project = get_object_or_404(Project, id=project_id)
+    user_profile = request.user.userprofile
+    
+    # Check if user is client or freelancer
+    if user_profile not in [project.client, project.assigned_freelancer]:
+        messages.error(request, "Only project participants can leave reviews.")
+        return redirect('project_detail', project_id=project_id)
+    
+    # Check if project is completed
+    if project.status != 'completed':
+        messages.error(request, "Can only review completed projects.")
+        return redirect('project_detail', project_id=project_id)
+    
+    # Check if user has already reviewed
+    if ProjectReview.objects.filter(project=project, reviewer=user_profile).exists():
+        messages.error(request, "You have already reviewed this project.")
+        return redirect('project_detail', project_id=project_id)
+    
+    if request.method == 'POST':
+        rating = request.POST.get('rating')
+        review_text = request.POST.get('review_text')
+        is_public = request.POST.get('is_public') == 'on'
+        
+        if rating and review_text:
+            # Set the reviewed user based on who is leaving the review
+            reviewed_user = project.assigned_freelancer if user_profile == project.client else project.client
+            
+            review = ProjectReview.objects.create(
+                project=project,
+                reviewer=user_profile,
+                reviewed=reviewed_user,
+                rating=rating,
+                review_text=review_text,
+                is_public=is_public
+            )
+            
+            # Create notification for the reviewed user
+            create_notification(
+                recipient=review.reviewed,
+                notification_type='review',
+                message=f"New review received for project '{project.title}'",
+                sender=user_profile,
+                project=project
+            )
+            
+            messages.success(request, "Review submitted successfully!")
+            return redirect('project_detail', project_id=project_id)
+        else:
+            messages.error(request, "Please provide both rating and review text.")
+    
+    return render(request, 'projects/leave_review.html', {
+        'project': project,
+        'reviewer': user_profile
+    })
+
+@login_required
+def project_reviews(request, project_id):
+    """View all reviews for a project"""
+    project = get_object_or_404(Project, id=project_id)
+    reviews = ProjectReview.objects.filter(project=project, is_public=True)
+    
+    # Calculate average rating
+    avg_rating = reviews.aggregate(Avg('rating'))['rating__avg'] or 0
+    
+    # Get rating distribution
+    rating_distribution = reviews.values('rating').annotate(count=Count('id')).order_by('-rating')
+    
+    # Check if user can review
+    can_review = False
+    user_review = None
+    if request.user.is_authenticated:
+        user_profile = request.user.userprofile
+        if project.status == 'completed' and user_profile in [project.client, project.assigned_freelancer]:
+            user_review = ProjectReview.objects.filter(project=project, reviewer=user_profile).first()
+            can_review = not user_review
+    
+    context = {
+        'project': project,
+        'reviews': reviews,
+        'avg_rating': round(avg_rating, 1),
+        'rating_distribution': rating_distribution,
+        'total_reviews': reviews.count(),
+        'can_review': can_review,
+        'user_review': user_review
+    }
+    
+    return render(request, 'projects/project_reviews.html', context)
+
+@login_required
+def edit_review(request, project_id, review_id):
+    """Edit an existing review"""
+    review = get_object_or_404(ProjectReview, id=review_id, project_id=project_id)
+    
+    # Check if user is the reviewer
+    if request.user.userprofile != review.reviewer:
+        messages.error(request, "You can only edit your own reviews.")
+        return redirect('project_reviews', project_id=project_id)
+    
+    if request.method == 'POST':
+        rating = request.POST.get('rating')
+        review_text = request.POST.get('review_text')
+        is_public = request.POST.get('is_public') == 'on'
+        
+        if rating and review_text:
+            review.rating = rating
+            review.review_text = review_text
+            review.is_public = is_public
+            review.save()
+            
+            messages.success(request, "Review updated successfully!")
+            return redirect('project_reviews', project_id=project_id)
+        else:
+            messages.error(request, "Please provide both rating and review text.")
+    
+    return render(request, 'projects/edit_review.html', {
+        'project': review.project,
+        'review': review
+    })
+
+@login_required
+def delete_review(request, project_id, review_id):
+    """Delete a review"""
+    review = get_object_or_404(ProjectReview, id=review_id, project_id=project_id)
+    
+    # Check if user is the reviewer
+    if request.user.userprofile != review.reviewer:
+        messages.error(request, "You can only delete your own reviews.")
+        return redirect('project_reviews', project_id=project_id)
+    
+    if request.method == 'POST' and request.POST.get('confirm_delete') == 'yes':
+        review.delete()
+        messages.success(request, "Review deleted successfully!")
+        return redirect('project_reviews', project_id=project_id)
+    
+    return render(request, 'projects/confirm_delete_review.html', {
+        'project': review.project,
+        'review': review
+    })

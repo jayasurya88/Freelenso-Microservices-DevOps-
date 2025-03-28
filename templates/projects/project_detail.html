@@ -4,6 +4,24 @@
 
 {% block content %}
 <div class="container py-5">
+    <!-- Debug Info -->
+    <div class="alert alert-info">
+        <h5>Debug Info:</h5>
+        <p>Project Status: {{ project.status }}</p>
+        <p>Can Review: {{ can_review }}</p>
+        <p>User Review: {{ user_review }}</p>
+        <p>Is Owner: {{ is_owner }}</p>
+        <p>User Profile: {{ user.userprofile.id }}</p>
+        <p>Client ID: {{ project.client.id }}</p>
+        <p>Freelancer ID: {{ project.assigned_freelancer.id }}</p>
+        <p>Review Button Conditions:</p>
+        <ul>
+            <li>Status is completed: {% if project.status == 'completed' %}True{% else %}False{% endif %}</li>
+            <li>User is client or freelancer: {% if user.userprofile == project.client or user.userprofile == project.assigned_freelancer %}True{% else %}False{% endif %}</li>
+            <li>No existing review: {% if not user_review %}True{% else %}False{% endif %}</li>
+        </ul>
+    </div>
+
     {% if messages %}
         {% for message in messages %}
             <div class="alert alert-{{ message.tags }} alert-dismissible fade show mb-4" role="alert">
@@ -33,7 +51,7 @@
                             <i class="bi bi-trash me-2"></i>Delete Project
                         </button>
                     {% elif project.assigned_freelancer == user.userprofile %}
-                        <a href="{% url 'project_workspace' project.id %}" class="btn btn-primary">
+                        <a href="{% url 'project_workspace' project.id %}" class="btn btn-primary me-2">
                             <i class="bi bi-briefcase me-2"></i>Go to Workspace
                         </a>
                     {% elif has_active_application %}
@@ -48,6 +66,33 @@
                         <div class="alert alert-info mb-0">
                             <i class="bi bi-info-circle me-2"></i>Only freelancers can apply to projects
                         </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Project Status and Review Section -->
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <span class="badge {% if project.status == 'completed' %}bg-success{% elif project.status == 'in_progress' %}bg-primary{% else %}bg-warning{% endif %} p-2">
+                        {{ project.get_status_display }}
+                    </span>
+                </div>
+                <div>
+                    <!-- Review Button Section -->
+                    {% if project.status == 'completed' %}
+                        {% if can_review %}
+                            <a href="{% url 'leave_review' project.id %}" class="btn btn-success">
+                                <i class="bi bi-star me-2"></i>Leave Review
+                            </a>
+                        {% elif user_review %}
+                            <a href="{% url 'project_reviews' project.id %}" class="btn btn-outline-primary">
+                                <i class="bi bi-star-fill me-2"></i>View Reviews
+                            </a>
+                        {% else %}
+                            <a href="{% url 'project_reviews' project.id %}" class="btn btn-outline-secondary">
+                                <i class="bi bi-star me-2"></i>View Reviews
+                            </a>
+                        {% endif %}
                     {% endif %}
                 </div>
             </div>
@@ -84,6 +129,75 @@
             <h5 class="mb-3">Project Description</h5>
             <div class="mb-4">
                 {{ project.description|linebreaks }}
+            </div>
+
+            <!-- Project Reviews Section -->
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">Project Reviews</h5>
+                    {% if can_review %}
+                        <a href="{% url 'leave_review' project.id %}" class="btn btn-primary btn-sm">
+                            <i class="bi bi-plus-circle me-2"></i>Leave a Review
+                        </a>
+                    {% endif %}
+                </div>
+                <div class="card-body">
+                    {% if project.reviews.exists %}
+                        <!-- Average Rating -->
+                        <div class="text-center mb-4">
+                            <div class="display-4 mb-2">{{ avg_rating }}</div>
+                            <div class="rating mb-3">
+                                {% for i in "12345" %}
+                                    {% if forloop.counter <= avg_rating %}
+                                        <i class="bi bi-star-fill text-warning fs-4"></i>
+                                    {% else %}
+                                        <i class="bi bi-star text-warning fs-4"></i>
+                                    {% endif %}
+                                {% endfor %}
+                            </div>
+                            <p class="text-muted mb-0">{{ total_reviews }} reviews</p>
+                        </div>
+
+                        <!-- Reviews List -->
+                        {% for review in project.reviews.all %}
+                            {% if review.is_public %}
+                                <div class="review-item {% if not forloop.last %}mb-4 pb-4 border-bottom{% endif %}">
+                                    <div class="d-flex justify-content-between align-items-start mb-2">
+                                        <div>
+                                            <h6 class="mb-1">{{ review.reviewer.user.get_full_name|default:review.reviewer.user.username }}</h6>
+                                            <div class="rating">
+                                                {% for i in "12345" %}
+                                                    {% if forloop.counter <= review.rating %}
+                                                        <i class="bi bi-star-fill text-warning"></i>
+                                                    {% else %}
+                                                        <i class="bi bi-star text-warning"></i>
+                                                    {% endif %}
+                                                {% endfor %}
+                                            </div>
+                                        </div>
+                                        <small class="text-muted">{{ review.created_at|date:"M d, Y" }}</small>
+                                    </div>
+                                    <p class="mb-2">{{ review.review_text|linebreaks }}</p>
+                                    {% if user.userprofile == review.reviewer %}
+                                        <div class="mt-2">
+                                            <a href="{% url 'edit_review' project_id=project.id review_id=review.id %}" class="btn btn-sm btn-outline-primary">
+                                                <i class="bi bi-pencil me-1"></i>Edit
+                                            </a>
+                                            <a href="{% url 'delete_review' project_id=project.id review_id=review.id %}" class="btn btn-sm btn-outline-danger ms-2">
+                                                <i class="bi bi-trash me-1"></i>Delete
+                                            </a>
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            {% endif %}
+                        {% endfor %}
+                    {% else %}
+                        <div class="text-center py-4">
+                            <i class="bi bi-chat-dots display-4 text-muted mb-3 d-block"></i>
+                            <p class="text-muted mb-0">No reviews yet. Be the first to review this project!</p>
+                        </div>
+                    {% endif %}
+                </div>
             </div>
 
             <!-- Required Skills -->
