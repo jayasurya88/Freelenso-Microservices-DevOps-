@@ -1,0 +1,58 @@
+{% extends 'base.html' %}
+
+{% block title %}Fund Milestone{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body">
+                    <h4 class="card-title mb-4">Fund Milestone</h4>
+                    
+                    <div class="alert alert-info mb-4">
+                        <h5 class="alert-heading">Milestone Details</h5>
+                        <p><strong>Title:</strong> {{ milestone.title }}</p>
+                        <p><strong>Amount:</strong> ₹{{ milestone.amount|floatformat:2 }}</p>
+                        <p><strong>Due Date:</strong> {{ milestone.due_date|date:"M d, Y" }}</p>
+                        <p class="mb-0"><strong>Description:</strong> {{ milestone.description }}</p>
+                    </div>
+                    
+                    <div class="alert alert-{% if wallet_balance >= milestone.amount %}success{% else %}danger{% endif %} mb-4">
+                        <h5 class="alert-heading">Wallet Status</h5>
+                        <p><strong>Your Balance:</strong> ₹{{ wallet_balance|floatformat:2 }}</p>
+                        {% if wallet_balance < milestone.amount %}
+                        <p class="mb-0 text-danger">
+                            <strong>Insufficient balance.</strong> You need to deposit at least ₹{{ milestone.amount|floatformat:2 }} to fund this milestone.
+                            <a href="{% url 'wallet_deposit' %}" class="btn btn-warning btn-sm mt-2">Deposit Funds</a>
+                        </p>
+                        {% else %}
+                        <p class="mb-0 text-success">You have sufficient balance to fund this milestone.</p>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="alert alert-warning mb-4">
+                        <h5 class="alert-heading">Important Information</h5>
+                        <ul class="mb-0">
+                            <li>Funding a milestone puts the money in escrow.</li>
+                            <li>The funds will be released to the freelancer only when you approve the completed milestone.</li>
+                            <li>The freelancer can start working on the milestone once it's funded.</li>
+                        </ul>
+                    </div>
+                    
+                    <form method="post">
+                        {% csrf_token %}
+                        
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-primary" {% if wallet_balance < milestone.amount %}disabled{% endif %}>
+                                Fund Milestone
+                            </button>
+                            <a href="{% url 'project_milestones' project_id=project.id %}" class="btn btn-outline-secondary">Cancel</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

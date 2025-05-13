@@ -143,6 +143,8 @@
                                 <span class="badge bg-danger">Rejected</span>
                                 {% elif milestone.status == 'funded' %}
                                 <span class="badge bg-primary">Funded</span>
+                                {% elif milestone.status == 'delayed' %}
+                                <span class="badge bg-danger">Delayed</span>
                                 {% endif %}
                             </td>
                             <td>
@@ -158,6 +160,9 @@
                                             <a href="{% url 'delete_milestone' project_id=project.id milestone_id=milestone.id %}" class="btn btn-outline-danger">
                                                 <i class="bi bi-trash"></i>
                                             </a>
+                                            <a href="{% url 'check_milestone_delay' milestone_id=milestone.id %}" class="btn btn-outline-warning">
+                                                <i class="bi bi-clock-history"></i> Check Delay
+                                            </a>
                                         {% elif milestone.status == 'completed' %}
                                             <a href="{% url 'approve_milestone' project_id=project.id milestone_id=milestone.id %}" class="btn btn-success">
                                                 <i class="bi bi-check-circle"></i> Approve
@@ -166,11 +171,26 @@
                                                 <i class="bi bi-x-circle"></i> Reject
                                             </a>
                                         {% endif %}
+                                        
+                                        {% if milestone.status == 'delayed' %}
+                                        <a href="{% url 'handle_milestone_delay' milestone_id=milestone.id %}" class="btn btn-warning">
+                                            <i class="bi bi-exclamation-circle"></i> Handle Delay
+                                        </a>
+                                        <a href="{% url 'extend_milestone_deadline' milestone_id=milestone.id %}" class="btn btn-outline-primary">
+                                            <i class="bi bi-calendar-plus"></i> Extend Deadline
+                                        </a>
+                                        {% endif %}
                                     {% endif %}
                                     
                                     {% if is_freelancer and milestone.status == 'funded' %}
                                         <a href="{% url 'complete_milestone' project_id=project.id milestone_id=milestone.id %}" class="btn btn-primary">
                                             <i class="bi bi-check"></i> Mark Complete
+                                        </a>
+                                    {% endif %}
+                                    
+                                    {% if is_freelancer and milestone.status == 'pending' %}
+                                        <a href="{% url 'check_milestone_delay' milestone_id=milestone.id %}" class="btn btn-outline-warning">
+                                            <i class="bi bi-clock-history"></i> Check Delay
                                         </a>
                                     {% endif %}
                                 </div>

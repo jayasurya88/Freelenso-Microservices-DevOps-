@@ -3,158 +3,144 @@
 {% block title %}Withdraw Funds{% endblock %}
 
 {% block content %}
-<div class="container py-5">
+<div class="container py-4">
     <div class="row justify-content-center">
-        <div class="col-md-8">
-            <div class="card shadow">
-                <div class="card-header bg-primary text-white">
-                    <h5 class="mb-0">Withdraw Funds</h5>
-                </div>
-                <div class="card-body">
+        <div class="col-lg-7 col-md-9">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2 class="fw-bold mb-0">
+                    <i class="bi bi-arrow-down-circle-fill me-2 text-primary"></i>Withdraw Funds
+                </h2>
+                <a href="{% url 'wallet_dashboard' %}" class="btn btn-outline-primary">
+                    <i class="bi bi-wallet2 me-2"></i>Back to Wallet
+                </a>
+            </div>
+            
+            <div class="card shadow-sm border-0">
+                <div class="card-body p-4">
                     {% if messages %}
                     {% for message in messages %}
-                    <div class="alert alert-{{ message.tags }}">
+                    <div class="alert alert-{{ message.tags }} shadow-sm border-0">
                         {{ message }}
                     </div>
                     {% endfor %}
                     {% endif %}
-
-                    <div class="alert alert-info mb-4">
-                        <div class="d-flex align-items-center">
-                            <i class="fas fa-info-circle me-3 fs-4"></i>
-                            <div>
-                                <strong>Available Balance:</strong> {{ wallet.balance }} {{ wallet.currency }}
-                                <br>
-                                <small>Minimum withdrawal amount: {{ min_withdrawal }} {{ wallet.currency }}</small>
-                            </div>
+                    
+                    <div class="d-flex align-items-center mb-4 p-3 bg-light rounded-3">
+                        <div class="d-flex align-items-center justify-content-center bg-white rounded-circle me-3 shadow-sm" style="width: 48px; height: 48px;">
+                            <i class="bi bi-wallet2 text-primary fs-4"></i>
+                        </div>
+                        <div>
+                            <div class="text-muted small">Available Balance</div>
+                            <div class="fw-bold fs-5">{{ wallet.balance|floatformat:2 }} <span class="text-muted">₹</span></div>
                         </div>
                     </div>
-
-                    {% if wallet.balance < min_withdrawal %}
-                    <div class="alert alert-warning mb-4">
-                        <i class="fas fa-exclamation-triangle me-2"></i>
-                        You need at least {{ min_withdrawal }} {{ wallet.currency }} in your wallet to make a withdrawal.
-                    </div>
-                    <div class="d-grid gap-2">
-                        <a href="{% url 'wallet_dashboard' %}" class="btn btn-primary">Back to Wallet</a>
-                    </div>
-                    {% else %}
-                    <form method="post" action="{% url 'wallet_withdraw' %}">
+                    
+                    <form method="post">
                         {% csrf_token %}
                         
                         <div class="mb-4">
-                            <label for="amount" class="form-label">Amount to Withdraw ({{ wallet.currency }})</label>
-                            <input type="number" class="form-control form-control-lg" id="amount" name="amount" 
-                                min="{{ min_withdrawal }}" max="{{ wallet.balance }}" step="0.01" required>
-                            <div class="form-text">A 1% withdrawal fee will be applied</div>
+                            <label for="amount" class="form-label fw-medium">Withdrawal Amount</label>
+                            <div class="input-group input-group-lg mb-2">
+                                <span class="input-group-text bg-light border-0">₹</span>
+                                <input type="number" class="form-control form-control-lg border-0 bg-light" 
+                                       id="amount" name="amount" required min="{{ min_withdrawal }}" 
+                                       max="{{ max_withdrawal }}" step="0.01" placeholder="Enter amount">
+                            </div>
+                            <div class="d-flex justify-content-between">
+                                <div class="form-text">
+                                    <i class="bi bi-info-circle me-1"></i> Min: ₹{{ min_withdrawal|floatformat:2 }}
+                                </div>
+                                <div class="form-text">
+                                    Max: ₹{{ max_withdrawal|floatformat:2 }}
+                                </div>
+                            </div>
                         </div>
-
+                        
                         <div class="mb-4">
-                            <label class="form-label">Withdrawal Method</label>
-                            <select class="form-select form-select-lg" name="withdrawal_method" id="withdrawal_method" required>
-                                {% for method_id, method_name in withdrawal_methods %}
-                                <option value="{{ method_id }}">{{ method_name }}</option>
+                            <label for="payment_method" class="form-label fw-medium">Payment Method</label>
+                            <select class="form-select form-select-lg bg-light border-0" id="payment_method" name="payment_method" required>
+                                <option value="">Select a payment method</option>
+                                {% for method in payment_methods %}
+                                <option value="{{ method.id }}">
+                                    {{ method.get_type_display }} - {{ method.details }}
+                                </option>
                                 {% endfor %}
                             </select>
-                        </div>
-
-                        {% if payment_methods %}
-                        <div class="mb-4">
-                            <label class="form-label">Select Payment Method</label>
-                            <div class="list-group">
-                                {% for method in payment_methods %}
-                                <label class="list-group-item list-group-item-action">
-                                    <div class="d-flex w-100 justify-content-between align-items-center">
-                                        <div>
-                                            <input class="form-check-input me-2" type="radio" name="payment_method" 
-                                                value="{{ method.id }}" {% if method.is_default %}checked{% endif %}>
-                                            {% if method.method_type == 'bank' %}
-                                                <i class="fas fa-university text-primary me-2"></i>
-                                                {{ method.bank_name }} - **** {{ method.account_number|slice:"-4:" }}
-                                            {% elif method.method_type == 'upi' %}
-                                                <i class="fas fa-mobile-alt text-success me-2"></i>
-                                                {{ method.upi_id }}
-                                            {% elif method.method_type == 'paypal' %}
-                                                <i class="fab fa-paypal text-info me-2"></i>
-                                                {{ method.paypal_email }}
-                                            {% endif %}
-                                        </div>
-                                        {% if method.is_default %}
-                                        <span class="badge bg-primary">Default</span>
-                                        {% endif %}
+                            
+                            {% if not payment_methods %}
+                            <div class="alert alert-warning mt-3 border-0 shadow-sm">
+                                <div class="d-flex align-items-center">
+                                    <i class="bi bi-exclamation-triangle-fill me-2 text-warning fs-4"></i>
+                                    <div>
+                                        <p class="mb-0 fw-medium">No payment methods found.</p>
+                                        <a href="{% url 'payment_methods' %}" class="btn btn-sm btn-warning mt-2">
+                                            <i class="bi bi-plus-circle me-1"></i> Add Payment Method
+                                        </a>
                                     </div>
-                                </label>
-                                {% endfor %}
-                            </div>
-                        </div>
-                        {% else %}
-                        <div class="alert alert-warning mb-4">
-                            <i class="fas fa-exclamation-triangle me-2"></i>
-                            You need to add a payment method before you can withdraw funds.
-                        </div>
-                        <div class="mb-4">
-                            <a href="{% url 'add_payment_method' %}" class="btn btn-warning">
-                                <i class="fas fa-plus-circle me-2"></i>Add Payment Method
-                            </a>
-                        </div>
-                        {% endif %}
-
-                        <div class="card mb-4">
-                            <div class="card-header bg-light">
-                                <h6 class="mb-0">Withdrawal Summary</h6>
-                            </div>
-                            <div class="card-body">
-                                <div class="d-flex justify-content-between mb-2">
-                                    <span>Amount:</span>
-                                    <span class="withdrawal-amount">0.00 {{ wallet.currency }}</span>
-                                </div>
-                                <div class="d-flex justify-content-between mb-2">
-                                    <span>Fee (1%):</span>
-                                    <span class="withdrawal-fee">0.00 {{ wallet.currency }}</span>
-                                </div>
-                                <hr>
-                                <div class="d-flex justify-content-between fw-bold">
-                                    <span>You will receive:</span>
-                                    <span class="net-amount">0.00 {{ wallet.currency }}</span>
                                 </div>
                             </div>
-                        </div>
-
-                        <div class="d-grid gap-2">
-                            {% if payment_methods %}
-                            <button type="submit" class="btn btn-primary btn-lg">Submit Withdrawal Request</button>
-                            {% else %}
-                            <button type="button" class="btn btn-primary btn-lg" disabled>Submit Withdrawal Request</button>
                             {% endif %}
-                            <a href="{% url 'wallet_dashboard' %}" class="btn btn-outline-secondary">Cancel</a>
+                        </div>
+                        
+                        <div class="alert alert-light bg-light border-0 rounded-3 mb-4">
+                            <h6 class="fw-bold d-flex align-items-center mb-3">
+                                <i class="bi bi-info-circle me-2 text-primary"></i>Important Notes
+                            </h6>
+                            <ul class="mb-0 ps-3">
+                                <li class="mb-2">Withdrawals may take 2-3 business days to process</li>
+                                <li class="mb-2">Minimum withdrawal amount is ₹{{ min_withdrawal|floatformat:2 }}</li>
+                                <li>You cannot withdraw more than your current balance</li>
+                            </ul>
+                        </div>
+                        
+                        <div class="d-grid">
+                            <button type="submit" class="btn btn-primary btn-lg py-3" 
+                                    {% if not payment_methods %}disabled{% endif %}>
+                                <i class="bi bi-cash-coin me-2"></i>Submit Withdrawal Request
+                            </button>
                         </div>
                     </form>
-                    {% endif %}
+                </div>
+            </div>
+            
+            <div class="mt-4 p-3 bg-light rounded-3 shadow-sm border-0">
+                <div class="d-flex align-items-start">
+                    <i class="bi bi-clock-history text-primary fs-4 me-3 mt-1"></i>
+                    <div>
+                        <h6 class="fw-bold mb-2">Processing Times</h6>
+                        <p class="text-muted small mb-0">Withdrawal requests are typically processed within 2-3 business days, depending on your payment method. You can check the status of your withdrawals in your transaction history.</p>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
 </div>
 
-<script>
-    document.addEventListener('DOMContentLoaded', function() {
-        const amountInput = document.getElementById('amount');
-        const withdrawalAmount = document.querySelector('.withdrawal-amount');
-        const withdrawalFee = document.querySelector('.withdrawal-fee');
-        const netAmount = document.querySelector('.net-amount');
-        const currency = '{{ wallet.currency }}';
-        
-        if (amountInput) {
-            amountInput.addEventListener('input', function() {
-                const amount = parseFloat(this.value) || 0;
-                const fee = amount * 0.01; // 1% fee
-                const net = amount - fee;
-                
-                withdrawalAmount.textContent = amount.toFixed(2) + ' ' + currency;
-                withdrawalFee.textContent = fee.toFixed(2) + ' ' + currency;
-                netAmount.textContent = net.toFixed(2) + ' ' + currency;
-            });
-        }
-    });
-</script>
+<style>
+    /* Dark mode adjustments */
+    [data-bs-theme="dark"] .bg-light {
+        background-color: rgba(255, 255, 255, 0.05) !important;
+    }
+    
+    [data-bs-theme="dark"] .bg-white {
+        background-color: #2d3748 !important;
+    }
+    
+    [data-bs-theme="dark"] .card {
+        background-color: #1e293b;
+        border-color: #374151;
+    }
+    
+    [data-bs-theme="dark"] .input-group-text,
+    [data-bs-theme="dark"] input.bg-light,
+    [data-bs-theme="dark"] select.bg-light {
+        background-color: rgba(255, 255, 255, 0.05) !important;
+        color: #e2e8f0;
+    }
+    
+    [data-bs-theme="dark"] .alert-light {
+        background-color: rgba(255, 255, 255, 0.05) !important;
+        color: #e2e8f0;
+    }
+</style>
 {% endblock %} 

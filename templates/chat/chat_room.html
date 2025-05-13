@@ -1,47 +1,141 @@
 {% extends 'base.html' %}
 {% load static %}
 
+{% block title %}Chat | {{ project.title }}{% endblock %}
+
 {% block content %}
-<div class="container-fluid">
-    <div class="row">
-        <div class="col-12">
-            <div class="card">
-                <div class="card-header d-flex justify-content-between align-items-center">
-                    <h5 class="mb-0">Chat with {{ project.client.user.username }}</h5>
-                    <a href="{% url 'project_workspace' project.id %}" class="btn btn-outline-secondary btn-sm">
-                        <i class="fas fa-arrow-left"></i> Back to Workspace
-                    </a>
+<div class="container my-4">
+    <div class="row mb-3">
+        <div class="col-lg-10 mx-auto d-flex justify-content-between align-items-center">
+            <div class="d-flex align-items-center">
+                <a href="{% url 'message_list' %}" class="btn btn-outline-secondary me-3">
+                    <i class="bi bi-arrow-left"></i>
+                </a>
+                <div>
+                    <h4 class="mb-0 fw-bold">{{ project.title }}</h4>
+                    <p class="mb-0 text-muted small">
+                        {% if project.client == request.user.userprofile %}
+                            Chatting with {{ project.assigned_freelancer.user.get_full_name|default:project.assigned_freelancer.user.username }}
+                        {% else %}
+                            Chatting with {{ project.client.user.get_full_name|default:project.client.user.username }}
+                        {% endif %}
+                    </p>
                 </div>
-                <div class="card-body">
-                    <!-- Messages Container -->
-                    <div id="messages-container" class="chat-messages mb-3" style="height: 400px; overflow-y: auto;">
+            </div>
+            <div>
+                <a href="{% url 'project_workspace' project.id %}" class="btn btn-outline-primary">
+                    <i class="bi bi-briefcase me-2"></i>Project Workspace
+                </a>
+            </div>
+        </div>
+    </div>
+    
+    <div class="row">
+        <div class="col-lg-10 mx-auto">
+            <div class="card shadow-sm border-0">
+                <!-- User info and status -->
+                <div class="card-header bg-light py-3">
+                    <div class="d-flex align-items-center">
+                        <div class="chat-avatar rounded-circle me-3 d-flex align-items-center justify-content-center"
+                            style="width: 42px; height: 42px; background-color: rgba(var(--bs-primary-rgb), 0.1); color: var(--primary-color); font-size: 1.25rem;">
+                            {% if project.client == request.user.userprofile %}
+                                {% if project.assigned_freelancer.profile_picture %}
+                                    <img src="{{ project.assigned_freelancer.profile_picture.url }}" alt="{{ project.assigned_freelancer.user.username }}" class="rounded-circle" style="width: 100%; height: 100%; object-fit: cover;">
+                                {% else %}
+                                    <i class="bi bi-person-circle"></i>
+                                {% endif %}
+                            {% else %}
+                                {% if project.client.profile_picture %}
+                                    <img src="{{ project.client.profile_picture.url }}" alt="{{ project.client.user.username }}" class="rounded-circle" style="width: 100%; height: 100%; object-fit: cover;">
+                                {% else %}
+                                    <i class="bi bi-person-circle"></i>
+                                {% endif %}
+                            {% endif %}
+                        </div>
+                        <div>
+                            <h6 class="mb-0 fw-bold">
+                                {% if project.client == request.user.userprofile %}
+                                    {{ project.assigned_freelancer.user.get_full_name|default:project.assigned_freelancer.user.username }}
+                                {% else %}
+                                    {{ project.client.user.get_full_name|default:project.client.user.username }}
+                                {% endif %}
+                            </h6>
+                            <p class="mb-0 small text-success">
+                                <i class="bi bi-circle-fill me-1" style="font-size: 0.5rem;"></i>
+                                {{ project.get_status_display }}
+                            </p>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Messages Container -->
+                <div class="card-body p-0 d-flex flex-column">
+                    <div id="messages-container" class="chat-messages p-3 flex-grow-1" style="height: 100%; overflow-y: auto;">
                         {% for message in messages %}
-                            <div class="message {% if message.sender == request.user.userprofile %}sent{% else %}received{% endif %} mb-3">
-                                <div class="message-content p-2 rounded">
-                                    <div class="message-text">{{ message.message }}</div>
-                                    {% if message.file %}
-                                        <div class="message-file mt-2">
-                                            <a href="{{ message.file.url }}" target="_blank" class="btn btn-sm btn-outline-primary">
-                                                <i class="fas fa-paperclip"></i> Download Attachment
-                                            </a>
+                            <div class="message {% if message.sender == request.user.userprofile %}sent{% else %}received{% endif %} mb-3" data-message-id="{{ message.id }}">
+                                <div class="d-flex {% if message.sender == request.user.userprofile %}justify-content-end{% endif %} align-items-start">
+                                    {% if message.sender != request.user.userprofile %}
+                                        <div class="message-avatar me-2 d-flex flex-shrink-0">
+                                            {% if message.sender.profile_picture %}
+                                                <img src="{{ message.sender.profile_picture.url }}" alt="{{ message.sender.user.username }}" class="rounded-circle" width="32" height="32" style="object-fit: cover;">
+                                            {% else %}
+                                                <div class="rounded-circle bg-light d-flex align-items-center justify-content-center" style="width: 32px; height: 32px;">
+                                                    <i class="bi bi-person text-secondary"></i>
+                                                </div>
+                                            {% endif %}
+                                        </div>
+                                    {% endif %}
+                                    
+                                    <div class="message-wrapper">
+                                        <div class="message-content rounded-3">
+                                            <div class="message-text">{{ message.message }}</div>
+                                            {% if message.file %}
+                                                <div class="message-file mt-2">
+                                                    <a href="{{ message.file.url }}" target="_blank" class="btn btn-sm {% if message.sender == request.user.userprofile %}btn-light{% else %}btn-outline-primary{% endif %}">
+                                                        <i class="bi bi-paperclip me-1"></i> Attachment
+                                                    </a>
+                                                </div>
+                                            {% endif %}
+                                        </div>
+                                        <div class="message-info mt-1 d-flex align-items-center {% if message.sender == request.user.userprofile %}justify-content-end{% endif %}">
+                                            <small class="text-muted">{{ message.created_at|date:"h:i A" }}</small>
+                                            {% if message.sender == request.user.userprofile %}
+                                                <small class="text-primary ms-1"><i class="bi bi-check2-all"></i></small>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                    
+                                    {% if message.sender == request.user.userprofile %}
+                                        <div class="message-avatar ms-2 d-flex flex-shrink-0">
+                                            {% if message.sender.profile_picture %}
+                                                <img src="{{ message.sender.profile_picture.url }}" alt="{{ message.sender.user.username }}" class="rounded-circle" width="32" height="32" style="object-fit: cover;">
+                                            {% else %}
+                                                <div class="rounded-circle bg-primary d-flex align-items-center justify-content-center" style="width: 32px; height: 32px;">
+                                                    <i class="bi bi-person text-white"></i>
+                                                </div>
+                                            {% endif %}
                                         </div>
                                     {% endif %}
                                 </div>
-                                <small class="text-muted">{{ message.created_at|date:"M d, Y H:i" }}</small>
                             </div>
                         {% endfor %}
                     </div>
-
-                    <!-- Message Form -->
-                    <form id="message-form" class="mt-3">
+                </div>
+                
+                <!-- Message Form -->
+                <div class="card-footer border-top py-3 sticky-bottom bg-body border-0 shadow-sm">
+                    <form id="message-form" class="d-flex align-items-center">
                         {% csrf_token %}
+                        <label for="file-input" class="btn btn-outline-secondary rounded-circle me-2" style="width: 40px; height: 40px; padding: 0; display: flex; align-items: center; justify-content: center;">
+                            <i class="bi bi-paperclip"></i>
+                        </label>
+                        <input type="file" id="file-input" class="d-none">
+                        
                         <div class="input-group">
-                            <input type="text" id="message-input" class="form-control" placeholder="Type your message..." required>
-                            <label for="file-input" class="btn btn-outline-secondary">
-                                <i class="fas fa-paperclip"></i>
-                            </label>
-                            <input type="file" id="file-input" class="d-none">
-                            <button type="submit" class="btn btn-primary">Send</button>
+                            <input type="text" id="message-input" class="form-control border-0 bg-light py-2" placeholder="Type your message..." required>
+                            <button type="submit" class="btn btn-primary rounded-circle ms-2" style="width: 40px; height: 40px; padding: 0; display: flex; align-items: center; justify-content: center;">
+                                <i class="bi bi-send-fill"></i>
+                            </button>
                         </div>
                     </form>
                 </div>
@@ -51,37 +145,94 @@
 </div>
 
 <style>
+/* Message container styling */
 .chat-messages {
-    background-color: #f8f9fa;
-    border-radius: 0.25rem;
-    padding: 1rem;
+    background-color: var(--background-light);
 }
 
+/* Message bubbles styling */
 .message {
     max-width: 70%;
+    margin-bottom: 1.5rem;
 }
 
 .message.sent {
     margin-left: auto;
+    max-width: 60%;
 }
 
-.message.received {
-    margin-right: auto;
+.message-wrapper {
+    max-width: 100%;
 }
 
 .message-content {
-    background-color: #fff;
-    border: 1px solid #dee2e6;
+    border-radius: 1.2rem !important;
+    background-color: var(--background-card);
+    border: 1px solid var(--border-color);
+    box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+    position: relative;
+    max-width: 100%;
+    word-wrap: break-word;
+    padding: 0.75rem 1rem !important;
+}
+
+.message.received .message-content {
+    border-bottom-left-radius: 0.5rem !important;
+    border-top-left-radius: 0.5rem !important;
+    border-top-right-radius: 1.2rem !important;
+    border-bottom-right-radius: 1.2rem !important;
 }
 
 .message.sent .message-content {
-    background-color: #007bff;
+    background: linear-gradient(135deg, #6366f1, #4338ca);
     color: white;
+    border: none;
+    border-bottom-left-radius: 1.2rem !important;
+    border-top-left-radius: 1.2rem !important;
+    border-top-right-radius: 1.2rem !important;
+    border-bottom-right-radius: 0.5rem !important;
 }
 
-.message.sent .message-content a {
-    color: white;
-    text-decoration: underline;
+.message.sent .message-content a.btn-light {
+    color: var(--primary-color);
+}
+
+/* Message file attachments */
+.message-file {
+    padding-top: 0.5rem;
+    border-top: 1px solid rgba(255,255,255,0.2);
+}
+
+.message.received .message-file {
+    border-top: 1px solid var(--border-color);
+}
+
+/* Input field styling */
+#message-input {
+    border-radius: 1.5rem;
+    padding-left: 1rem;
+}
+
+/* Dark mode adjustments */
+[data-bs-theme="dark"] .message.received .message-content {
+    background-color: #2d3748;
+    border-color: #4a5568;
+}
+
+[data-bs-theme="dark"] .chat-messages {
+    background-color: var(--background-card);
+}
+
+/* File input button */
+label[for="file-input"] {
+    border-color: var(--border-color);
+    color: var(--text-muted);
+    transition: all 0.2s ease;
+}
+
+label[for="file-input"]:hover {
+    background-color: var(--background-light);
+    color: var(--primary-color);
 }
 
 /* Hide the info alerts above the chat */
@@ -89,6 +240,68 @@
 div[role="alert"] i.bi-info-circle-fill,
 .alert:has(i.bi-info-circle-fill) {
     display: none !important;
+}
+
+/* Dark mode adjustments */
+[data-bs-theme="dark"] .message.received .message-content {
+    background-color: #2d3748;
+    border-color: #4a5568;
+}
+
+[data-bs-theme="dark"] .message.sent .message-content {
+    background: linear-gradient(135deg, #8b5cf6, #6366f1);
+}
+
+[data-bs-theme="dark"] .chat-messages {
+    background-color: var(--background-card);
+}
+
+[data-bs-theme="dark"] .message-avatar .rounded-circle.bg-light {
+    background-color: #2d3748 !important;
+    color: #e2e8f0 !important;
+}
+
+[data-bs-theme="dark"] #message-input {
+    background-color: #1e293b !important;
+    color: #e2e8f0;
+}
+
+/* Dark mode improvements */
+[data-bs-theme="dark"] .chat-header h5,
+[data-bs-theme="dark"] .card-header h5 {
+    color: #e2e8f0 !important;
+}
+
+[data-bs-theme="dark"] .bg-light {
+    background-color: #1e293b !important;
+}
+
+[data-bs-theme="dark"] .text-muted {
+    color: #a0aec0 !important;
+}
+
+[data-bs-theme="dark"] .card {
+    background-color: #111827;
+    border-color: #374151;
+}
+
+/* Card and footer layout */
+.card {
+    display: flex;
+    flex-direction: column;
+    height: calc(100vh - 150px);
+    min-height: 500px;
+}
+
+.card-body {
+    flex: 1 1 auto;
+    overflow: hidden;
+}
+
+.sticky-bottom {
+    position: sticky;
+    bottom: 0;
+    z-index: 5;
 }
 </style>
 
@@ -100,37 +313,94 @@ document.addEventListener('DOMContentLoaded', function() {
     const messagesContainer = document.getElementById('messages-container');
     const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
     let lastMessageId = 0;
+    // Track sent message IDs to prevent duplicates
+    const sentMessageIds = new Set();
 
     // Scroll to bottom of messages
     function scrollToBottom() {
         messagesContainer.scrollTop = messagesContainer.scrollHeight;
     }
 
+    // Format time
+    function formatTime(dateString) {
+        const date = new Date(dateString);
+        return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    }
+
     // Add message to chat
     function addMessage(message) {
         const messageDiv = document.createElement('div');
-        const isSent = message.sender_id == {{ request.user.userprofile.id }};
+        const isSent = message.sender_id == "{{ request.user.userprofile.id }}";
         messageDiv.className = `message ${isSent ? 'sent' : 'received'} mb-3`;
-        messageDiv.innerHTML = `
-            <div class="message-content p-2 rounded">
-                <div class="message-text">${message.message}</div>
-                ${message.file_url ? `
-                    <div class="message-file mt-2">
-                        <a href="${message.file_url}" target="_blank" class="btn btn-sm btn-outline-primary">
-                            <i class="fas fa-paperclip"></i> Download Attachment
-                        </a>
+        messageDiv.setAttribute('data-message-id', message.id);
+        
+        const userAvatar = isSent 
+            ? `{% if request.user.userprofile.profile_picture %}
+                <img src="{{ request.user.userprofile.profile_picture.url }}" alt="{{ request.user.username }}" class="rounded-circle" width="32" height="32" style="object-fit: cover;">
+               {% else %}
+                <div class="rounded-circle bg-primary d-flex align-items-center justify-content-center" style="width: 32px; height: 32px;">
+                    <i class="bi bi-person text-white"></i>
+                </div>
+               {% endif %}`
+            : `{% if project.client == request.user.userprofile %}
+                {% if project.assigned_freelancer.profile_picture %}
+                    <img src="{{ project.assigned_freelancer.profile_picture.url }}" alt="{{ project.assigned_freelancer.user.username }}" class="rounded-circle" width="32" height="32" style="object-fit: cover;">
+                {% else %}
+                    <div class="rounded-circle bg-light d-flex align-items-center justify-content-center" style="width: 32px; height: 32px;">
+                        <i class="bi bi-person text-secondary"></i>
                     </div>
-                ` : ''}
+                {% endif %}
+               {% else %}
+                {% if project.client.profile_picture %}
+                    <img src="{{ project.client.profile_picture.url }}" alt="{{ project.client.user.username }}" class="rounded-circle" width="32" height="32" style="object-fit: cover;">
+                {% else %}
+                    <div class="rounded-circle bg-light d-flex align-items-center justify-content-center" style="width: 32px; height: 32px;">
+                        <i class="bi bi-person text-secondary"></i>
+                    </div>
+                {% endif %}
+               {% endif %}`;
+
+        messageDiv.innerHTML = `
+            <div class="d-flex ${isSent ? 'justify-content-end' : ''} align-items-start">
+                ${!isSent ? `<div class="message-avatar me-2 d-flex flex-shrink-0">${userAvatar}</div>` : ''}
+                
+                <div class="message-wrapper">
+                    <div class="message-content rounded-3">
+                        <div class="message-text">${message.message}</div>
+                        ${message.file_url ? `
+                            <div class="message-file mt-2">
+                                <a href="${message.file_url}" target="_blank" class="btn btn-sm ${isSent ? 'btn-light' : 'btn-outline-primary'}">
+                                    <i class="bi bi-paperclip me-1"></i> Attachment
+                                </a>
+                            </div>
+                        ` : ''}
+                    </div>
+                    <div class="message-info mt-1 d-flex align-items-center ${isSent ? 'justify-content-end' : ''}">
+                        <small class="text-muted">${formatTime(message.created_at)}</small>
+                        ${isSent ? '<small class="text-primary ms-1"><i class="bi bi-check2-all"></i></small>' : ''}
+                    </div>
+                </div>
+                
+                ${isSent ? `<div class="message-avatar ms-2 d-flex flex-shrink-0">${userAvatar}</div>` : ''}
             </div>
-            <small class="text-muted">${message.created_at}</small>
         `;
         messagesContainer.appendChild(messageDiv);
         scrollToBottom();
     }
 
     // Send message
+    let isSending = false;
     messageForm.addEventListener('submit', async function(e) {
         e.preventDefault();
+        
+        // Prevent multiple submissions
+        if (isSending || messageInput.value.trim() === '') return;
+        
+        // Disable the form during sending
+        isSending = true;
+        const submitButton = messageForm.querySelector('button[type="submit"]');
+        submitButton.disabled = true;
+        submitButton.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>';
         
         const formData = new FormData();
         formData.append('message', messageInput.value);
@@ -138,7 +408,11 @@ document.addEventListener('DOMContentLoaded', function() {
             formData.append('file', fileInput.files[0]);
         }
         formData.append('csrfmiddlewaretoken', csrfToken);
-
+        
+        const messageText = messageInput.value;
+        messageInput.value = '';
+        fileInput.value = '';
+        
         try {
             const response = await fetch(`/projects/{{ project.id }}/chat/send/`, {
                 method: 'POST',
@@ -147,12 +421,30 @@ document.addEventListener('DOMContentLoaded', function() {
 
             if (response.ok) {
                 const data = await response.json();
+                // Track this message ID to prevent duplicates
+                sentMessageIds.add(parseInt(data.id));
                 addMessage(data);
-                messageInput.value = '';
-                fileInput.value = '';
+                
+                // Update last message ID
+                lastMessageId = Math.max(lastMessageId, parseInt(data.id));
+                
+                // Reset file attachment indicator
+                const attachButton = document.querySelector('label[for="file-input"]');
+                attachButton.classList.remove('btn-primary');
+                attachButton.classList.add('btn-outline-secondary');
+            } else {
+                // If error, restore the message text
+                messageInput.value = messageText;
             }
         } catch (error) {
             console.error('Error sending message:', error);
+            // If error, restore the message text
+            messageInput.value = messageText;
+        } finally {
+            // Re-enable the form
+            isSending = false;
+            submitButton.disabled = false;
+            submitButton.innerHTML = '<i class="bi bi-send-fill"></i>';
         }
     });
 
@@ -162,10 +454,19 @@ document.addEventListener('DOMContentLoaded', function() {
             const response = await fetch(`/projects/{{ project.id }}/chat/messages/`);
             if (response.ok) {
                 const data = await response.json();
+                // Get existing message IDs to avoid duplicates
+                const existingMessageIds = Array.from(
+                    document.querySelectorAll('.message')
+                ).map(el => parseInt(el.getAttribute('data-message-id')));
+                
+                // Only add messages that don't already exist in the DOM and haven't been sent by this client
                 data.messages.forEach(message => {
-                    if (message.id > lastMessageId) {
+                    const messageId = parseInt(message.id);
+                    if (messageId > lastMessageId && 
+                        !existingMessageIds.includes(messageId) && 
+                        !sentMessageIds.has(messageId)) {
                         addMessage(message);
-                        lastMessageId = message.id;
+                        lastMessageId = Math.max(lastMessageId, messageId);
                     }
                 });
             }
@@ -177,12 +478,27 @@ document.addEventListener('DOMContentLoaded', function() {
     // Set initial lastMessageId
     const messages = document.querySelectorAll('.message');
     if (messages.length > 0) {
-        lastMessageId = parseInt(messages[messages.length - 1].dataset.messageId);
+        lastMessageId = parseInt(messages[messages.length - 1].getAttribute('data-message-id') || 0);
     }
 
     // Start polling
     setInterval(pollMessages, 5000);
     scrollToBottom();
+    
+    // Focus input field when page loads
+    messageInput.focus();
+    
+    // File input change indicator
+    fileInput.addEventListener('change', function() {
+        const attachButton = document.querySelector('label[for="file-input"]');
+        if (fileInput.files.length > 0) {
+            attachButton.classList.remove('btn-outline-secondary');
+            attachButton.classList.add('btn-primary');
+        } else {
+            attachButton.classList.remove('btn-primary');
+            attachButton.classList.add('btn-outline-secondary');
+        }
+    });
 });
 </script>
 {% endblock %} 

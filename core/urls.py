@@ -33,6 +33,7 @@ urlpatterns = [
     # Notification URLs
     path('notifications/', views.notifications, name='notifications'),
     path('notifications/<int:notification_id>/read/', views.mark_notification_read, name='mark_notification_read'),
+    path('notifications/mark-all-read/', views.mark_all_read, name='mark_all_read'),
     
     # Milestone management
     path('projects/<int:project_id>/milestones/', views.project_milestones, name='project_milestones'),
@@ -46,7 +47,9 @@ urlpatterns = [
     # Wallet URLs
     path('wallet/', views.wallet_dashboard, name='wallet_dashboard'),
     path('wallet/deposit/', views.wallet_deposit, name='wallet_deposit'),
-    path('wallet/deposit/confirm/', views.wallet_deposit_confirm, name='wallet_deposit_confirm'),
+    # path('wallet/deposit/confirm/', views.wallet_deposit_confirm, name='wallet_deposit_confirm'), # Comment out or remove if confirm page is no longer needed
+    path('wallet/razorpay/create-order/', views.create_razorpay_order, name='create_razorpay_order'), # New Razorpay order URL
+    path('wallet/razorpay/verify-payment/', views.verify_razorpay_payment, name='verify_razorpay_payment'), # New Razorpay verification URL
     path('wallet/withdraw/', views.wallet_withdraw, name='wallet_withdraw'),
     path('wallet/transactions/', views.wallet_transactions, name='wallet_transactions'),
     path('wallet/escrow/', views.wallet_escrow_records, name='wallet_escrow_records'),
@@ -76,4 +79,12 @@ urlpatterns = [
     path('projects/<int:project_id>/reviews/', views.project_reviews, name='project_reviews'),
     path('projects/<int:project_id>/reviews/<int:review_id>/edit/', views.edit_review, name='edit_review'),
     path('projects/<int:project_id>/reviews/<int:review_id>/delete/', views.delete_review, name='delete_review'),
+    
+    # Milestone delay handling
+    path('projects/milestone/<int:milestone_id>/handle-delay/', views.handle_milestone_delay, name='handle_milestone_delay'),
+    path('projects/milestone/<int:milestone_id>/extend-deadline/', views.extend_milestone_deadline, name='extend_milestone_deadline'),
+    path('projects/milestone/<int:milestone_id>/check-delay/', views.check_milestone_delay, name='check_milestone_delay'),
+    
+    # Admin-only routes
+    path('check-for-delays/', views.check_for_delays, name='check_for_delays'),
 ]

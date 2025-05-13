@@ -6,92 +6,169 @@
 {% block page_subtitle %}Overview of platform metrics and recent activity{% endblock %}
 
 {% block content %}
-<!-- Stats Cards Row -->
-<div class="row">
-    <!-- Users Stats -->
-    <div class="col-xl-3 col-md-6 mb-4">
-        <div class="stat-card">
-            <div class="stat-card-header">
-                <div class="stat-card-icon" style="background-color: var(--primary);">
-                    <i class="bi bi-people-fill"></i>
+<!-- Summary Cards -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="data-card border-0 shadow-sm">
+            <div class="data-card-header border-0 bg-white">
+                <h5 class="data-card-title">
+                    <i class="bi bi-speedometer2 text-primary me-2"></i>Platform Overview
+                </h5>
+                <div class="dropdown">
+                    <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" id="timeRangeDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                        Last 30 Days
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="timeRangeDropdown">
+                        <li><a class="dropdown-item active" href="#">Last 30 Days</a></li>
+                        <li><a class="dropdown-item" href="#">Last Quarter</a></li>
+                        <li><a class="dropdown-item" href="#">This Year</a></li>
+                        <li><a class="dropdown-item" href="#">All Time</a></li>
+                    </ul>
                 </div>
             </div>
-            <div class="stat-card-body">
-                <div class="stat-card-title">Total Users</div>
-                <div class="stat-card-value">{{ total_users }}</div>
-                <div class="stat-card-info d-flex justify-content-between">
-                    <span>Active: {{ active_users }}</span>
+            <div class="card-body py-4">
+                <div class="row g-4">
+                    <div class="col-md-3 col-sm-6">
+                        <div class="d-flex align-items-center">
+                            <div class="rounded-circle p-3 me-3" style="background-color: rgba(67, 97, 238, 0.1);">
+                                <i class="bi bi-people-fill text-primary fs-4"></i>
+                            </div>
+                            <div>
+                                <div class="fs-4 fw-bold">{{ total_users }}</div>
+                                <div class="text-muted small">Total Users</div>
+                                <div class="d-flex align-items-center small mt-1">
+                                    <span class="badge bg-success me-1">+{{ new_users_percent }}%</span>
+                                    <span class="text-muted">vs last period</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3 col-sm-6">
+                        <div class="d-flex align-items-center">
+                            <div class="rounded-circle p-3 me-3" style="background-color: rgba(76, 201, 240, 0.1);">
+                                <i class="bi bi-kanban-fill text-info fs-4"></i>
+                            </div>
+                            <div>
+                                <div class="fs-4 fw-bold">{{ total_projects }}</div>
+                                <div class="text-muted small">Total Projects</div>
+                                <div class="d-flex align-items-center small mt-1">
+                                    <span class="badge bg-success me-1">+{{ new_projects_percent }}%</span>
+                                    <span class="text-muted">vs last period</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3 col-sm-6">
+                        <div class="d-flex align-items-center">
+                            <div class="rounded-circle p-3 me-3" style="background-color: rgba(72, 149, 239, 0.1);">
+                                <i class="bi bi-cash-stack text-success fs-4"></i>
+                            </div>
+                            <div>
+                                <div class="fs-4 fw-bold">${{ total_transaction_volume }}</div>
+                                <div class="text-muted small">Transaction Volume</div>
+                                <div class="d-flex align-items-center small mt-1">
+                                    <span class="badge {% if transaction_volume_growth >= 0 %}bg-success{% else %}bg-danger{% endif %} me-1">
+                                        {{ transaction_volume_growth }}%
+                                    </span>
+                                    <span class="text-muted">vs last period</span>
+                </div>
+            </div>
+        </div>
+    </div>
+                    <div class="col-md-3 col-sm-6">
+                        <div class="d-flex align-items-center">
+                            <div class="rounded-circle p-3 me-3" style="background-color: rgba(247, 37, 133, 0.1);">
+                                <i class="bi bi-wallet-fill text-warning fs-4"></i>
+                            </div>
+                            <div>
+                                <div class="fs-4 fw-bold">${{ platform_revenue }}</div>
+                                <div class="text-muted small">Platform Revenue</div>
+                                <div class="d-flex align-items-center small mt-1">
+                                    <span class="badge {% if revenue_growth >= 0 %}bg-success{% else %}bg-danger{% endif %} me-1">
+                                        {{ revenue_growth }}%
+                                    </span>
+                                    <span class="text-muted">vs last period</span>
+                                </div>
+                            </div>
+                </div>
+            </div>
+                </div>
                 </div>
             </div>
         </div>
     </div>
     
-    <!-- Freelancers/Clients Stats -->
-    <div class="col-xl-3 col-md-6 mb-4">
-        <div class="stat-card">
-            <div class="stat-card-header">
-                <div class="stat-card-icon" style="background-color: var(--success);">
-                    <i class="bi bi-person-badge-fill"></i>
+<!-- Payment Statistics Row -->
+<div class="row mb-4">
+    <!-- Razorpay Stats -->
+    <div class="col-lg-8">
+        <div class="data-card border-0 shadow-sm h-100">
+            <div class="data-card-header border-0 bg-white">
+                <h5 class="data-card-title">
+                    <i class="bi bi-credit-card text-primary me-2"></i>Payment Processing
+                </h5>
+                <div class="btn-group" role="group" aria-label="Chart period">
+                    <button type="button" class="btn btn-sm btn-outline-primary active">Week</button>
+                    <button type="button" class="btn btn-sm btn-outline-primary">Month</button>
+                    <button type="button" class="btn btn-sm btn-outline-primary">Quarter</button>
                 </div>
             </div>
-            <div class="stat-card-body">
-                <div class="stat-card-title">User Types</div>
-                <div class="stat-card-value">{{ total_user_types }}</div>
-                <div class="stat-card-info d-flex justify-content-between">
-                    <span>Freelancers: {{ total_freelancers }}</span>
-                    <span>Clients: {{ total_clients }}</span>
+            <div class="card-body">
+                <div class="chart-container" style="height: 300px;">
+                    <canvas id="paymentProcessingChart"></canvas>
+                </div>
+            </div>
+            <div class="card-footer bg-white border-0">
+                <div class="row text-center g-3">
+                    <div class="col-md-4 col-sm-4">
+                        <div class="fw-bold fs-5">${{ razorpay_total }}</div>
+                        <div class="text-muted small">Processed via Razorpay</div>
+                    </div>
+                    <div class="col-md-4 col-sm-4">
+                        <div class="fw-bold fs-5">{{ razorpay_success_rate }}%</div>
+                        <div class="text-muted small">Payment Success Rate</div>
+                    </div>
+                    <div class="col-md-4 col-sm-4">
+                        <div class="fw-bold fs-5">{{ avg_transaction_time }}s</div>
+                        <div class="text-muted small">Avg Processing Time</div>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
     
-    <!-- Projects Stats -->
-    <div class="col-xl-3 col-md-6 mb-4">
-        <div class="stat-card">
-            <div class="stat-card-header">
-                <div class="stat-card-icon" style="background-color: var(--warning);">
-                    <i class="bi bi-kanban-fill"></i>
+    <!-- User Types & Wallet Stats -->
+    <div class="col-lg-4">
+        <div class="data-card border-0 shadow-sm h-100">
+            <div class="data-card-header border-0 bg-white">
+                <h5 class="data-card-title">
+                    <i class="bi bi-pie-chart-fill text-primary me-2"></i>User Distribution
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="chart-container" style="height: 220px;">
+                    <canvas id="userTypeChart"></canvas>
                 </div>
+                <div class="d-flex justify-content-around mt-4 text-center">
+                    <div>
+                        <div class="d-flex align-items-center justify-content-center mb-2">
+                            <span class="badge rounded-pill p-2 me-2" style="background-color: rgba(67, 97, 238, 0.2);">
+                                <i class="bi bi-person text-primary"></i>
+                            </span>
+                            <span class="fw-semibold">Freelancers</span>
+                        </div>
+                        <div class="fs-5 fw-bold">{{ total_freelancers }}</div>
+                    </div>
+                    <div>
+                        <div class="d-flex align-items-center justify-content-center mb-2">
+                            <span class="badge rounded-pill p-2 me-2" style="background-color: rgba(72, 149, 239, 0.2);">
+                                <i class="bi bi-briefcase text-info"></i>
+                            </span>
+                            <span class="fw-semibold">Clients</span>
+                        </div>
+                        <div class="fs-5 fw-bold">{{ total_clients }}</div>
             </div>
-            <div class="stat-card-body">
-                <div class="stat-card-title">Projects</div>
-                <div class="stat-card-value">{{ total_projects }}</div>
-                <div class="stat-card-info d-flex justify-content-between">
-                    <span>Open: {{ open_projects }}</span>
-                    <span>In Progress: {{ in_progress_projects }}</span>
                 </div>
-            </div>
-        </div>
-    </div>
-    
-    <!-- Financial Stats -->
-    <div class="col-xl-3 col-md-6 mb-4">
-        <div class="stat-card">
-            <div class="stat-card-header">
-                <div class="stat-card-icon" style="background-color: var(--info);">
-                    <i class="bi bi-cash-stack"></i>
-                </div>
-            </div>
-            <div class="stat-card-body">
-                <div class="stat-card-title">Wallet Balance</div>
-                <div class="stat-card-value">${{ total_wallet_balance }}</div>
-                <div class="stat-card-info d-flex justify-content-between">
-                    <span>Escrow: ${{ total_escrow_balance }}</span>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- Transaction Chart -->
-<div class="row">
-    <div class="col-lg-12 mb-4">
-        <div class="data-card">
-            <div class="data-card-header">
-                <h5 class="data-card-title">Transaction Volume (Last 7 Days)</h5>
-            </div>
-            <div class="chart-container">
-                <canvas id="transactionChart"></canvas>
             </div>
         </div>
     </div>
@@ -101,14 +178,18 @@
 <div class="row">
     <!-- Recent Transactions -->
     <div class="col-lg-6 mb-4">
-        <div class="data-card">
-            <div class="data-card-header">
-                <h5 class="data-card-title">Recent Transactions</h5>
-                <a href="{% url 'admin_transactions' %}" class="btn btn-sm btn-outline-primary">View All</a>
+        <div class="data-card border-0 shadow-sm">
+            <div class="data-card-header border-0 bg-white">
+                <h5 class="data-card-title">
+                    <i class="bi bi-arrow-left-right text-primary me-2"></i>Recent Transactions
+                </h5>
+                <a href="{% url 'admin_transactions' %}" class="btn btn-sm btn-primary rounded-pill">
+                    <i class="bi bi-eye me-1"></i>View All
+                </a>
             </div>
             <div class="table-responsive">
-                <table class="table">
-                    <thead>
+                <table class="table align-middle">
+                    <thead class="table-light">
                         <tr>
                             <th>ID</th>
                             <th>User</th>
@@ -120,39 +201,62 @@
                     <tbody>
                         {% for transaction in recent_transactions %}
                         <tr>
-                            <td><small class="text-muted">{{ transaction.transaction_id }}</small></td>
-                            <td>{{ transaction.wallet.user.user.username }}</td>
+                            <td><small class="text-muted">{{ transaction.transaction_id|truncatechars:8 }}</small></td>
+                            <td>
+                                <div class="d-flex align-items-center">
+                                    <div class="avatar-circle bg-light me-2">
+                                        {% if transaction.wallet.user.profile_picture %}
+                                        <img src="{{ transaction.wallet.user.profile_picture.url }}" alt="{{ transaction.wallet.user.user.username }}" class="avatar-img">
+                                        {% else %}
+                                        <span class="avatar-text">{{ transaction.wallet.user.user.username|first|upper }}</span>
+                                        {% endif %}
+                                    </div>
+                                    <span>{{ transaction.wallet.user.user.username }}</span>
+                                </div>
+                            </td>
                             <td>
                                 {% if transaction.transaction_type == 'deposit' %}
-                                <span class="badge bg-success">Deposit</span>
+                                <span class="badge bg-success rounded-pill">Deposit</span>
                                 {% elif transaction.transaction_type == 'withdrawal' %}
-                                <span class="badge bg-warning">Withdrawal</span>
+                                <span class="badge bg-warning rounded-pill">Withdrawal</span>
                                 {% elif transaction.transaction_type == 'escrow' %}
-                                <span class="badge bg-info">Escrow</span>
+                                <span class="badge bg-info rounded-pill">Escrow</span>
                                 {% elif transaction.transaction_type == 'release' %}
-                                <span class="badge bg-primary">Release</span>
+                                <span class="badge bg-primary rounded-pill">Release</span>
                                 {% elif transaction.transaction_type == 'fee' %}
-                                <span class="badge bg-secondary">Fee</span>
+                                <span class="badge bg-secondary rounded-pill">Fee</span>
                                 {% else %}
-                                <span class="badge bg-dark">{{ transaction.transaction_type }}</span>
+                                <span class="badge bg-dark rounded-pill">{{ transaction.transaction_type }}</span>
                                 {% endif %}
                             </td>
                             <td>${{ transaction.amount }}</td>
                             <td>
                                 {% if transaction.status == 'completed' %}
-                                <span class="badge bg-success">Completed</span>
+                                <div class="d-flex align-items-center">
+                                    <div class="status-dot bg-success me-2"></div>
+                                    <span>Completed</span>
+                                </div>
                                 {% elif transaction.status == 'pending' %}
-                                <span class="badge bg-warning">Pending</span>
+                                <div class="d-flex align-items-center">
+                                    <div class="status-dot bg-warning me-2"></div>
+                                    <span>Pending</span>
+                                </div>
                                 {% elif transaction.status == 'failed' %}
-                                <span class="badge bg-danger">Failed</span>
+                                <div class="d-flex align-items-center">
+                                    <div class="status-dot bg-danger me-2"></div>
+                                    <span>Failed</span>
+                                </div>
                                 {% else %}
-                                <span class="badge bg-secondary">{{ transaction.status }}</span>
+                                <div class="d-flex align-items-center">
+                                    <div class="status-dot bg-secondary me-2"></div>
+                                    <span>{{ transaction.status }}</span>
+                                </div>
                                 {% endif %}
                             </td>
                         </tr>
                         {% empty %}
                         <tr>
-                            <td colspan="5" class="text-center">No transactions found</td>
+                            <td colspan="5" class="text-center py-4">No transactions found</td>
                         </tr>
                         {% endfor %}
                     </tbody>
@@ -163,14 +267,18 @@
     
     <!-- Recent Projects -->
     <div class="col-lg-6 mb-4">
-        <div class="data-card">
-            <div class="data-card-header">
-                <h5 class="data-card-title">Recent Projects</h5>
-                <a href="{% url 'admin_projects' %}" class="btn btn-sm btn-outline-primary">View All</a>
+        <div class="data-card border-0 shadow-sm">
+            <div class="data-card-header border-0 bg-white">
+                <h5 class="data-card-title">
+                    <i class="bi bi-briefcase text-primary me-2"></i>Recent Projects
+                </h5>
+                <a href="{% url 'admin_projects' %}" class="btn btn-sm btn-primary rounded-pill">
+                    <i class="bi bi-eye me-1"></i>View All
+                </a>
             </div>
             <div class="table-responsive">
-                <table class="table">
-                    <thead>
+                <table class="table align-middle">
+                    <thead class="table-light">
                         <tr>
                             <th>Project Title</th>
                             <th>Client</th>
@@ -181,26 +289,45 @@
                     <tbody>
                         {% for project in recent_projects %}
                         <tr>
-                            <td>{{ project.title }}</td>
-                            <td>{{ project.client.user.username }}</td>
+                            <td>
+                                <div class="project-title-cell">
+                                    <span class="fw-medium text-truncate">{{ project.title }}</span>
+                                </div>
+                            </td>
+                            <td>
+                                <div class="d-flex align-items-center">
+                                    <div class="avatar-circle bg-light me-2">
+                                        {% if project.client.profile_picture %}
+                                        <img src="{{ project.client.profile_picture.url }}" alt="{{ project.client.user.username }}" class="avatar-img">
+                                        {% else %}
+                                        <span class="avatar-text">{{ project.client.user.username|first|upper }}</span>
+                                        {% endif %}
+                                    </div>
+                                    <span>{{ project.client.user.username }}</span>
+                                </div>
+                            </td>
                             <td>
                                 {% if project.status == 'open' %}
-                                <span class="badge bg-success">Open</span>
+                                <span class="badge bg-success rounded-pill">Open</span>
                                 {% elif project.status == 'in_progress' %}
-                                <span class="badge bg-primary">In Progress</span>
+                                <span class="badge bg-primary rounded-pill">In Progress</span>
                                 {% elif project.status == 'completed' %}
-                                <span class="badge bg-info">Completed</span>
+                                <span class="badge bg-info rounded-pill">Completed</span>
                                 {% elif project.status == 'cancelled' %}
-                                <span class="badge bg-danger">Cancelled</span>
+                                <span class="badge bg-danger rounded-pill">Cancelled</span>
                                 {% else %}
-                                <span class="badge bg-secondary">{{ project.status }}</span>
+                                <span class="badge bg-secondary rounded-pill">{{ project.status }}</span>
                                 {% endif %}
                             </td>
-                            <td>${{ project.budget_min }}-${{ project.budget_max }}</td>
+                            <td>
+                                <span class="budget-range">
+                                    <span class="text-muted">$</span>{{ project.budget_min }}-{{ project.budget_max }}
+                                </span>
+                            </td>
                         </tr>
                         {% empty %}
                         <tr>
-                            <td colspan="4" class="text-center">No projects found</td>
+                            <td colspan="4" class="text-center py-4">No projects found</td>
                         </tr>
                         {% endfor %}
                     </tbody>
@@ -210,134 +337,122 @@
     </div>
 </div>
 
-<!-- Recent Users -->
-<div class="row">
-    <div class="col-lg-12 mb-4">
-        <div class="data-card">
-            <div class="data-card-header">
-                <h5 class="data-card-title">Recent Users</h5>
-                <a href="{% url 'admin_users' %}" class="btn btn-sm btn-outline-primary">View All</a>
-            </div>
-            <div class="table-responsive">
-                <table class="table">
-                    <thead>
-                        <tr>
-                            <th>Username</th>
-                            <th>Email</th>
-                            <th>Type</th>
-                            <th>Date Joined</th>
-                            <th>Status</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for user in recent_users %}
-                        <tr>
-                            <td>{{ user.username }}</td>
-                            <td>{{ user.email }}</td>
-                            <td>
-                                {% if user.userprofile.is_freelancer %}
-                                <span class="badge bg-info">Freelancer</span>
-                                {% elif user.userprofile.is_client %}
-                                <span class="badge bg-primary">Client</span>
-                                {% elif user.is_superuser %}
-                                <span class="badge bg-warning">Admin</span>
-                                {% else %}
-                                <span class="badge bg-secondary">User</span>
-                                {% endif %}
-                            </td>
-                            <td>{{ user.date_joined|date:"M d, Y" }}</td>
-                            <td>
-                                {% if user.is_active %}
-                                <span class="badge bg-success">Active</span>
-                                {% else %}
-                                <span class="badge bg-danger">Inactive</span>
-                                {% endif %}
-                            </td>
-                        </tr>
-                        {% empty %}
-                        <tr>
-                            <td colspan="5" class="text-center">No users found</td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
-        </div>
-    </div>
-</div>
-{% endblock %}
+<!-- Custom CSS -->
+<style>
+    .avatar-circle {
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        overflow: hidden;
+    }
+    
+    .avatar-text {
+        font-weight: 600;
+        color: var(--primary);
+    }
+    
+    .avatar-img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+    
+    .status-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+    }
+    
+    .project-title-cell {
+        max-width: 200px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+    
+    .budget-range {
+        font-weight: 500;
+    }
+</style>
 
-{% block extra_js %}
+<!-- Chart.js Scripts -->
 <script>
     document.addEventListener('DOMContentLoaded', function() {
-        // Parse chart data from the server
-        const chartData = JSON.parse('{{ chart_data|safe }}');
+        // Get payment processing data from backend
+        const paymentProcessingData = {{ payment_processing_data|safe }};
         
-        // Create the transaction chart
-        const ctx = document.getElementById('transactionChart').getContext('2d');
-        new Chart(ctx, {
-            type: 'bar',
+        // Payment Processing Chart
+        const paymentCtx = document.getElementById('paymentProcessingChart').getContext('2d');
+        const paymentChart = new Chart(paymentCtx, {
+            type: 'line',
             data: {
-                labels: chartData.labels,
-                datasets: [
-                    {
-                        label: 'Deposits',
-                        data: chartData.deposits,
-                        backgroundColor: '#4cc9f0', // var(--success)
-                        borderColor: '#4cc9f0',
-                        borderWidth: 1
-                    },
-                    {
-                        label: 'Withdrawals',
-                        data: chartData.withdrawals,
-                        backgroundColor: '#f72585', // var(--warning)
-                        borderColor: '#f72585',
-                        borderWidth: 1
-                    },
-                    {
-                        label: 'Escrow',
-                        data: chartData.escrow,
-                        backgroundColor: '#4895ef', // var(--info)
-                        borderColor: '#4895ef',
-                        borderWidth: 1
-                    },
-                    {
-                        label: 'Releases',
-                        data: chartData.releases,
-                        backgroundColor: '#4361ee', // var(--primary)
-                        borderColor: '#4361ee',
-                        borderWidth: 1
-                    }
-                ]
+                labels: paymentProcessingData.labels,
+                datasets: [{
+                    label: 'Razorpay',
+                    data: paymentProcessingData.razorpay,
+                    borderColor: '#4361ee',
+                    backgroundColor: 'rgba(67, 97, 238, 0.1)',
+                    tension: 0.4,
+                    fill: true
+                }, {
+                    label: 'Other Methods',
+                    data: paymentProcessingData.other_methods,
+                    borderColor: '#4895ef',
+                    backgroundColor: 'rgba(72, 149, 239, 0.1)',
+                    tension: 0.4,
+                    fill: true
+                }]
             },
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
-                scales: {
-                    y: {
-                        beginAtZero: true,
-                        ticks: {
-                            callback: function(value) {
-                                return '$' + value;
-                            }
-                        }
-                    }
-                },
                 plugins: {
                     legend: {
                         position: 'top',
-                    },
-                    tooltip: {
-                        callbacks: {
-                            label: function(context) {
-                                let label = context.dataset.label || '';
-                                if (label) {
-                                    label += ': ';
-                                }
-                                label += '$' + context.raw;
-                                return label;
-                            }
+                        align: 'end'
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        grid: {
+                            color: 'rgba(0, 0, 0, 0.05)'
                         }
+                    },
+                    x: {
+                        grid: {
+                            display: false
+                        }
+                    }
+                }
+            }
+        });
+        
+        // User Type Chart
+        const userTypeCtx = document.getElementById('userTypeChart').getContext('2d');
+        const userTypeChart = new Chart(userTypeCtx, {
+            type: 'doughnut',
+            data: {
+                labels: ['Freelancers', 'Clients'],
+                datasets: [{
+                    data: [{{ user_distribution.freelancers }}, {{ user_distribution.clients }}],
+                    backgroundColor: [
+                        'rgba(67, 97, 238, 0.8)',
+                        'rgba(72, 149, 239, 0.8)'
+                    ],
+                    borderWidth: 0
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                cutout: '70%',
+                plugins: {
+                    legend: {
+                        display: false
                     }
                 }
             }

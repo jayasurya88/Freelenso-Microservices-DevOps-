@@ -2,62 +2,241 @@
 
 {% block title %}Login{% endblock %}
 
+{% block extra_css %}
+<style>
+    .login-container {
+        min-height: 85vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    
+    .login-card {
+        border-radius: 1.5rem;
+        overflow: hidden;
+        box-shadow: 0 10px 30px var(--shadow-color);
+        transition: all 0.3s ease;
+    }
+    
+    .login-form {
+        padding: 2.5rem;
+    }
+    
+    .login-header {
+        margin-bottom: 2.5rem;
+    }
+    
+    .login-header h2 {
+        font-weight: 700;
+        margin-bottom: 0.5rem;
+    }
+    
+    .form-floating {
+        margin-bottom: 1.5rem;
+    }
+    
+    .form-floating .form-control {
+        border-radius: 0.75rem;
+        border: 1px solid var(--border-color);
+        padding: 1rem 1rem 1rem 2.5rem;
+        height: 3.5rem;
+        font-size: 1rem;
+        transition: all 0.2s ease;
+    }
+    
+    .form-floating .form-control:focus {
+        box-shadow: 0 0 0 0.25rem rgba(17, 24, 39, 0.15);
+        border-color: var(--accent-color);
+    }
+    
+    .form-floating label {
+        padding-left: 2.5rem;
+    }
+    
+    .input-icon {
+        position: absolute;
+        top: 1.15rem;
+        left: 1rem;
+        color: var(--text-muted);
+        z-index: 2;
+    }
+    
+    .login-button {
+        width: 100%;
+        padding: 0.85rem;
+        border-radius: 0.75rem;
+        font-weight: 600;
+        margin-top: 0.5rem;
+        transition: all 0.3s ease;
+    }
+    
+    .login-button:hover {
+        transform: translateY(-3px);
+    }
+    
+    .login-divider {
+        display: flex;
+        align-items: center;
+        text-align: center;
+        margin: 1.5rem 0;
+        color: var(--text-muted);
+    }
+    
+    .login-divider::before,
+    .login-divider::after {
+        content: '';
+        flex: 1;
+        border-bottom: 1px solid var(--border-color);
+    }
+    
+    .login-divider::before {
+        margin-right: 1rem;
+    }
+    
+    .login-divider::after {
+        margin-left: 1rem;
+    }
+    
+    .social-login-btn {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 0.85rem;
+        border-radius: 0.75rem;
+        font-weight: 500;
+        background-color: transparent;
+        border: 1px solid var(--border-color);
+        color: var(--text-dark);
+        transition: all 0.3s ease;
+    }
+    
+    .social-login-btn:hover {
+        background-color: rgba(17, 24, 39, 0.05);
+    }
+    
+    [data-bs-theme="dark"] .social-login-btn:hover {
+        background-color: rgba(255, 255, 255, 0.05);
+    }
+    
+    .login-footer {
+        margin-top: 2rem;
+    }
+    
+    .login-footer a {
+        color: var(--primary-color);
+        text-decoration: none;
+        font-weight: 500;
+        transition: all 0.2s ease;
+    }
+    
+    .login-footer a:hover {
+        opacity: 0.8;
+    }
+    
+    .animated-bg {
+        position: absolute;
+        width: 500px;
+        height: 500px;
+        filter: blur(80px);
+        opacity: 0.08;
+        border-radius: 50%;
+        top: 50%;
+        left: 0;
+        transform: translate(-50%, -50%);
+        background: var(--gradient);
+        z-index: -1;
+    }
+    
+    @media (max-width: 768px) {
+        .login-form {
+            padding: 2rem 1.5rem;
+        }
+    }
+</style>
+{% endblock %}
+
 {% block content %}
-<div class="row justify-content-center align-items-center min-vh-75">
-    <div class="col-md-5">
-        <div class="text-center mb-4">
-            <h2 class="fw-bold">Welcome Back</h2>
-            <p class="text-muted">Login to access your account</p>
-        </div>
-        <div class="card border-0">
-            <div class="card-body p-4">
-                <form method="POST">
-                    {% csrf_token %}
-                    <div class="mb-4">
-                        <label for="username" class="form-label">Username</label>
-                        <div class="input-group">
-                            <span class="input-group-text bg-light border-end-0">
-                                <i class="bi bi-person text-muted"></i>
-                            </span>
-                            <input type="text" class="form-control border-start-0 ps-0" id="username" name="username" placeholder="Enter your username" required>
+<div class="animated-bg"></div>
+<div class="login-container">
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-md-5">
+                <div class="login-card card">
+                    <div class="login-form">
+                        <div class="login-header text-center">
+                            <h2>Welcome Back</h2>
+                            <p class="text-muted">Login to your Freelenso account</p>
+                        </div>
+                        
+                        <form method="POST">
+                            {% csrf_token %}
+                            
+                            <div class="position-relative">
+                                <div class="input-icon">
+                                    <i class="bi bi-person"></i>
+                                </div>
+                                <div class="form-floating">
+                                    <input type="text" class="form-control" id="username" name="username" placeholder="Username" required>
+                                    <label for="username">Username</label>
+                                </div>
+                            </div>
+                            
+                            <div class="position-relative">
+                                <div class="input-icon">
+                                    <i class="bi bi-lock"></i>
+                                </div>
+                                <div class="form-floating">
+                                    <input type="password" class="form-control" id="password" name="password" placeholder="Password" required>
+                                    <label for="password">Password</label>
+                                </div>
+                            </div>
+                            
+                            <div class="d-flex justify-content-between align-items-center mb-4">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="remember" name="remember">
+                                    <label class="form-check-label text-muted" for="remember">
+                                        Remember me
+                                    </label>
+                                </div>
+                                <a href="#" class="forgot-link">Forgot password?</a>
+                            </div>
+                            
+                            <button type="submit" class="btn btn-primary login-button">
+                                Sign In
+                            </button>
+                        </form>
+                        
+                        <div class="login-divider">
+                            <span>or continue with</span>
+                        </div>
+                        
+                        <div class="row g-3">
+                            <div class="col">
+                                <a href="{% url 'social:begin' 'google-oauth2' %}" class="btn social-login-btn w-100">
+                                    <i class="bi bi-google me-2"></i> Google
+                                </a>
+                            </div>
+                            <div class="col">
+                                <button type="button" class="btn social-login-btn w-100">
+                                    <i class="bi bi-github me-2"></i> GitHub
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div class="login-footer text-center">
+                            <p class="text-muted mb-0">Don't have an account? <a href="{% url 'register' %}">Sign Up</a></p>
                         </div>
                     </div>
-                    <div class="mb-4">
-                        <label for="password" class="form-label">Password</label>
-                        <div class="input-group">
-                            <span class="input-group-text bg-light border-end-0">
-                                <i class="bi bi-lock text-muted"></i>
-                            </span>
-                            <input type="password" class="form-control border-start-0 ps-0" id="password" name="password" placeholder="Enter your password" required>
-                        </div>
-                    </div>
-                    <div class="d-flex justify-content-between align-items-center mb-4">
-                        <div class="form-check">
-                            <input class="form-check-input" type="checkbox" id="remember" name="remember">
-                            <label class="form-check-label text-muted" for="remember">
-                                Remember me
-                            </label>
-                        </div>
-                        <a href="#" class="text-decoration-none">Forgot password?</a>
-                    </div>
-                    <div class="d-grid">
-                        <button type="submit" class="btn btn-primary btn-lg">
-                            <i class="bi bi-box-arrow-in-right me-2"></i>Login
-                        </button>
-                    </div>
-                </form>
-                <div class="text-center mt-4">
-                    <p class="text-muted mb-0">Don't have an account?</p>
-                    <a href="{% url 'register' %}" class="text-decoration-none">Create an account</a>
                 </div>
-            </div>
-        </div>
-        <div class="text-center mt-4">
-            <p class="text-muted small mb-0">By logging in, you agree to our</p>
-            <div class="mt-2">
-                <a href="#" class="text-decoration-none small me-2">Terms of Service</a>
-                <span class="text-muted small">•</span>
-                <a href="#" class="text-decoration-none small ms-2">Privacy Policy</a>
+                
+                <div class="text-center mt-4">
+                    <p class="text-muted small mb-1">By logging in, you agree to our</p>
+                    <div>
+                        <a href="#" class="text-decoration-none small me-2">Terms of Service</a>
+                        <span class="text-muted small">•</span>
+                        <a href="#" class="text-decoration-none small ms-2">Privacy Policy</a>
+                    </div>
+                </div>
             </div>
         </div>
     </div>

@@ -1,4 +1,5 @@
 {% extends 'base.html' %}
+{% load review_tags %}
 
 {% block title %}Reviews - {{ project.title }}{% endblock %}
 
@@ -29,7 +30,7 @@
                 <div class="card-body">
                     <h5 class="mb-3">Rating Distribution</h5>
                     {% for rating in "54321" %}
-                        {% with dist=rating_distribution|dictsort:"rating"|get_item:rating %}
+                        {% with dist=rating_distribution|get_item:rating %}
                         <div class="mb-3">
                             <div class="d-flex justify-content-between align-items-center mb-1">
                                 <span>{{ rating }} star{% if rating != "1" %}s{% endif %}</span>
@@ -103,5 +104,4 @@
         </div>
     </div>
 </div>
-{% endblock %} 
 {% endblock %} 

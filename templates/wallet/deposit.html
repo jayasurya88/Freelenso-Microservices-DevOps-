@@ -24,7 +24,7 @@
                         Current wallet balance: <strong>{{ wallet.balance }} {{ wallet.currency }}</strong>
                     </div>
 
-                    <form method="post" action="{% url 'wallet_deposit' %}">
+                    <form method="post" id="deposit-form">
                         {% csrf_token %}
                         
                         <div class="mb-3">
@@ -33,82 +33,8 @@
                             <div class="form-text">Minimum deposit amount is 10 {{ wallet.currency }}</div>
                         </div>
 
-                        <div class="mb-4">
-                            <label class="form-label">Payment Method</label>
-                            <div class="d-flex flex-wrap gap-3">
-                                <div class="form-check payment-method-radio">
-                                    <input class="form-check-input" type="radio" name="payment_method" id="upi" value="upi" checked>
-                                    <label class="form-check-label payment-method-label" for="upi">
-                                        <div class="card shadow-sm p-3 text-center">
-                                            <i class="fas fa-mobile-alt fs-3 mb-2 text-success"></i>
-                                            <span>UPI</span>
-                                        </div>
-                                    </label>
-                                </div>
-                                
-                                <div class="form-check payment-method-radio">
-                                    <input class="form-check-input" type="radio" name="payment_method" id="card" value="card">
-                                    <label class="form-check-label payment-method-label" for="card">
-                                        <div class="card shadow-sm p-3 text-center">
-                                            <i class="fas fa-credit-card fs-3 mb-2 text-primary"></i>
-                                            <span>Card</span>
-                                        </div>
-                                    </label>
-                                </div>
-                                
-                                <div class="form-check payment-method-radio">
-                                    <input class="form-check-input" type="radio" name="payment_method" id="bank" value="bank">
-                                    <label class="form-check-label payment-method-label" for="bank">
-                                        <div class="card shadow-sm p-3 text-center">
-                                            <i class="fas fa-university fs-3 mb-2 text-secondary"></i>
-                                            <span>Bank</span>
-                                        </div>
-                                    </label>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Payment method specific forms - will be shown/hidden via JavaScript -->
-                        <div id="upi-form" class="payment-method-form mb-4">
-                            <div class="alert alert-success">
-                                <div class="d-flex align-items-center">
-                                    <i class="fas fa-mobile-alt fs-3 me-3"></i>
-                                    <div>
-                                        <h6 class="mb-1">UPI Payment</h6>
-                                        <p class="mb-0">Pay using any UPI app like Google Pay, PhonePe, Paytm, etc.</p>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div id="card-form" class="payment-method-form mb-4 d-none">
-                            <div class="alert alert-primary">
-                                <div class="d-flex align-items-center">
-                                    <i class="fas fa-credit-card fs-3 me-3"></i>
-                                    <div>
-                                        <h6 class="mb-1">Card Payment</h6>
-                                        <p class="mb-0">Pay securely using credit or debit card</p>
-                                    </div>
-                                </div>
-                            </div>
-                            <!-- Card form fields would go here in a real implementation -->
-                        </div>
-
-                        <div id="bank-form" class="payment-method-form mb-4 d-none">
-                            <div class="alert alert-secondary">
-                                <div class="d-flex align-items-center">
-                                    <i class="fas fa-university fs-3 me-3"></i>
-                                    <div>
-                                        <h6 class="mb-1">Bank Transfer</h6>
-                                        <p class="mb-0">Direct bank transfer to our account</p>
-                                    </div>
-                                </div>
-                            </div>
-                            <!-- Bank transfer instructions would go here -->
-                        </div>
-
                         <div class="d-grid gap-2">
-                            <button type="submit" class="btn btn-primary btn-lg">Continue to Payment</button>
+                            <button type="button" class="btn btn-primary btn-lg" onclick="initiateRazorpayPayment()">Continue to Payment</button>
                             <a href="{% url 'wallet_dashboard' %}" class="btn btn-outline-secondary">Cancel</a>
                         </div>
                     </form>
@@ -118,42 +44,93 @@
     </div>
 </div>
 
+<script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+
 <style>
-    .payment-method-radio {
-        flex: 1;
-        min-width: 100px;
-    }
-    
-    .payment-method-radio input {
-        display: none;
-    }
-    
-    .payment-method-label {
-        display: block;
-        cursor: pointer;
-        width: 100%;
-    }
-    
-    .payment-method-radio input:checked + .payment-method-label .card {
-        border: 2px solid #007bff;
-        background-color: #f8f9fa;
-    }
+    /* Removed payment method styles */
 </style>
 
 <script>
-    document.addEventListener('DOMContentLoaded', function() {
-        const paymentMethods = document.querySelectorAll('input[name="payment_method"]');
-        const methodForms = document.querySelectorAll('.payment-method-form');
-        
-        paymentMethods.forEach(method => {
-            method.addEventListener('change', function() {
-                methodForms.forEach(form => {
-                    form.classList.add('d-none');
-                });
-                
-                document.getElementById(`${this.value}-form`).classList.remove('d-none');
+    function initiateRazorpayPayment() {
+        const amount = document.getElementById('amount').value;
+        if (!amount || parseFloat(amount) < 10) {
+            alert('Please enter a valid amount (minimum 10 {{ wallet.currency }}).');
+            return;
+        }
+
+        fetch("{% url 'create_razorpay_order' %}", {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': '{{ csrf_token }}'
+            },
+            body: JSON.stringify({ amount: amount })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.error) {
+                alert('Error creating payment order: ' + data.error);
+                return;
+            }
+            
+            const options = {
+                "key": data.razorpay_key,
+                "amount": data.amount,
+                "currency": data.currency,
+                "name": "Freelenso",
+                "description": "Wallet Deposit",
+                "image": "/static/images/favicon.png",
+                "order_id": data.order_id,
+                "handler": function (response){
+                    verifyPayment(response);
+                },
+                "prefill": {
+                    "name": "{{ request.user.get_full_name }}",
+                    "email": "{{ request.user.email }}",
+                },
+                "notes": {
+                    "address": "Razorpay Corporate Office"
+                },
+                "theme": {
+                    "color": "#3399cc"
+                }
+            };
+            
+            const rzp1 = new Razorpay(options);
+            rzp1.on('payment.failed', function (response){
+                alert("Payment Failed: " + response.error.description);
+                console.error("Razorpay Error:", response.error);
             });
+            rzp1.open();
+        })
+        .catch(error => {
+            console.error('Error fetching Razorpay order:', error);
+            alert('An error occurred while initiating payment. Please try again.');
         });
-    });
+    }
+
+    function verifyPayment(response) {
+        fetch("{% url 'verify_razorpay_payment' %}", {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': '{{ csrf_token }}'
+            },
+            body: JSON.stringify(response)
+        })
+        .then(verifyResponse => verifyResponse.json())
+        .then(verifyData => {
+            if (verifyData.success) {
+                alert('Payment successful! Your wallet has been updated.');
+                window.location.href = "{% url 'wallet_dashboard' %}"; 
+            } else {
+                alert('Payment verification failed: ' + (verifyData.error || 'Unknown error'));
+            }
+        })
+        .catch(error => {
+            console.error('Error verifying payment:', error);
+            alert('An error occurred during payment verification.');
+        });
+    }
 </script>
 {% endblock %} 

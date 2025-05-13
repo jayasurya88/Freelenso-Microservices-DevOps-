@@ -3,14 +3,26 @@
 {% block title %}Wallet Dashboard{% endblock %}
 
 {% block content %}
-<div class="container py-5">
-    <h1 class="mb-4">Wallet Dashboard</h1>
+<div class="container py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="fw-bold mb-0">
+            <i class="bi bi-wallet2 me-2 text-primary"></i>Wallet Dashboard
+        </h2>
+        <div class="d-flex gap-2">
+            <a href="{% url 'wallet_deposit' %}" class="btn btn-primary">
+                <i class="bi bi-plus-circle me-2"></i>Deposit
+            </a>
+            <a href="{% url 'wallet_withdraw' %}" class="btn btn-outline-primary">
+                <i class="bi bi-arrow-down-circle me-2"></i>Withdraw
+            </a>
+        </div>
+    </div>
     
     {% if messages %}
-    <div class="row">
+    <div class="row mb-4">
         <div class="col-12">
             {% for message in messages %}
-            <div class="alert alert-{{ message.tags }}">
+            <div class="alert alert-{{ message.tags }} shadow-sm border-0">
                 {{ message }}
             </div>
             {% endfor %}
@@ -18,56 +30,94 @@
     </div>
     {% endif %}
 
-    <div class="row">
+    <div class="row g-4">
         <!-- Wallet Balance Section -->
-        <div class="col-md-4 mb-4">
-            <div class="card shadow h-100">
-                <div class="card-header bg-primary text-white">
-                    <h5 class="mb-0">Wallet Balance</h5>
-                </div>
-                <div class="card-body">
-                    <h2 class="display-5 text-primary text-center mb-3">{{ wallet.balance }} {{ wallet.currency }}</h2>
-                    <div class="text-center mb-4">
-                        <a href="{% url 'wallet_escrow_records' %}" class="badge bg-info me-2 text-decoration-none">Escrow: {{ wallet.escrow_balance }} {{ wallet.currency }}</a>
-                        <span class="badge bg-secondary">Total: {{ total_funds }} {{ wallet.currency }}</span>
+        <div class="col-md-4">
+            <div class="card shadow-sm border-0 h-100">
+                <div class="card-body p-4">
+                    <div class="d-flex justify-content-between mb-3">
+                        <h5 class="fw-bold text-primary mb-0">
+                            <i class="bi bi-cash-coin me-2"></i>Available Balance
+                        </h5>
+                        <span class="badge bg-light text-primary border">{{ wallet.currency }}</span>
                     </div>
-                    <div class="d-grid gap-2">
-                        <a href="{% url 'wallet_deposit' %}" class="btn btn-success">Deposit Funds</a>
-                        <a href="{% url 'wallet_withdraw' %}" class="btn btn-outline-primary">Withdraw Funds</a>
+                    <h2 class="display-4 fw-bold text-primary mb-3">{{ wallet.balance }}</h2>
+                    
+                    <div class="d-flex align-items-center mb-4">
+                        <div class="me-3">
+                            <div class="text-muted small">Escrow Balance</div>
+                            <div class="fw-semibold">{{ wallet.escrow_balance }} {{ wallet.currency }}</div>
+                        </div>
+                        <div class="vr mx-2 my-1"></div>
+                        <div>
+                            <div class="text-muted small">Total Funds</div>
+                            <div class="fw-semibold">{{ total_funds }} {{ wallet.currency }}</div>
+                        </div>
+                    </div>
+                    
+                    <div class="progress mb-1" style="height: 6px;">
+                        <div class="progress-bar" role="progressbar" style="width: {{ wallet.balance|floatformat:0 }}%;" aria-valuenow="{{ wallet.balance|floatformat:0 }}" aria-valuemin="0" aria-valuemax="100"></div>
+                    </div>
+                    <div class="d-flex justify-content-between small text-muted">
+                        <span>Available</span>
+                        <span>Total: {{ total_funds }}</span>
                     </div>
                 </div>
             </div>
         </div>
 
         <!-- Stats Section -->
-        <div class="col-md-4 mb-4">
-            <div class="card shadow h-100">
-                <div class="card-header bg-primary text-white">
-                    <h5 class="mb-0">{% if user.userprofile.is_freelancer %}Earnings{% else %}Project Funds{% endif %} Stats</h5>
-                </div>
-                <div class="card-body">
+        <div class="col-md-4">
+            <div class="card shadow-sm border-0 h-100">
+                <div class="card-body p-4">
+                    <h5 class="fw-bold mb-4">
+                        <i class="bi bi-graph-up me-2 text-success"></i>{% if user.userprofile.is_freelancer %}Earnings{% else %}Project Funds{% endif %} Stats
+                    </h5>
+                    
                     {% if user.userprofile.is_freelancer %}
-                    <div class="d-flex justify-content-between mb-3">
-                        <div>This Month</div>
-                        <div class="fw-bold">{{ earnings_this_month }} {{ wallet.currency }}</div>
+                    <div class="mb-4">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <div class="text-muted">This Month</div>
+                            <div class="fw-bold">{{ earnings_this_month }} {{ wallet.currency }}</div>
+                        </div>
+                        <div class="progress" style="height: 8px;">
+                            <div class="progress-bar bg-success" role="progressbar" style="width: 75%;" aria-valuenow="75" aria-valuemin="0" aria-valuemax="100"></div>
+                        </div>
                     </div>
-                    <div class="d-flex justify-content-between mb-3">
-                        <div>Completed Milestones</div>
-                        <div class="fw-bold">{{ completed_milestones_count }}</div>
+                    
+                    <div class="d-flex justify-content-between mb-3 p-3 bg-light rounded-3">
+                        <div>
+                            <div class="text-muted small">Completed Milestones</div>
+                            <div class="fw-bold fs-5">{{ completed_milestones_count }}</div>
+                        </div>
+                        <div class="d-flex align-items-center">
+                            <i class="bi bi-check-circle-fill text-success fs-3"></i>
+                        </div>
                     </div>
                     {% elif user.userprofile.is_client %}
-                    <div class="d-flex justify-content-between mb-3">
-                        <div>Active Projects</div>
-                        <div class="fw-bold">{{ active_projects_count }}</div>
+                    <div class="mb-4">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <div class="text-muted">Total Escrowed</div>
+                            <div class="fw-bold">{{ total_escrowed }} {{ wallet.currency }}</div>
+                        </div>
+                        <div class="progress" style="height: 8px;">
+                            <div class="progress-bar bg-info" role="progressbar" style="width: 60%;" aria-valuenow="60" aria-valuemin="0" aria-valuemax="100"></div>
+                        </div>
                     </div>
-                    <div class="d-flex justify-content-between mb-3">
-                        <div>Total Escrowed</div>
-                        <div class="fw-bold">{{ total_escrowed }} {{ wallet.currency }}</div>
+                    
+                    <div class="d-flex justify-content-between mb-3 p-3 bg-light rounded-3">
+                        <div>
+                            <div class="text-muted small">Active Projects</div>
+                            <div class="fw-bold fs-5">{{ active_projects_count }}</div>
+                        </div>
+                        <div class="d-flex align-items-center">
+                            <i class="bi bi-briefcase-fill text-primary fs-3"></i>
+                        </div>
                     </div>
                     {% endif %}
                     
-                    <div class="alert alert-info mt-3">
-                        <i class="fas fa-info-circle me-2"></i>
+                    <div class="alert alert-info border-0 mt-3 mb-0 small">
+                        <i class="bi bi-info-circle-fill me-2"></i>
                         {% if user.userprofile.is_freelancer %}
                             Payments are released after milestone approval
                         {% else %}
@@ -79,29 +129,33 @@
         </div>
 
         <!-- Quick Links Section -->
-        <div class="col-md-4 mb-4">
-            <div class="card shadow h-100">
-                <div class="card-header bg-primary text-white">
-                    <h5 class="mb-0">Quick Links</h5>
-                </div>
-                <div class="card-body">
-                    <div class="list-group">
-                        <a href="{% url 'wallet_transactions' %}" class="list-group-item list-group-item-action">
-                            <i class="fas fa-history me-2"></i> Transaction History
+        <div class="col-md-4">
+            <div class="card shadow-sm border-0 h-100">
+                <div class="card-body p-4">
+                    <h5 class="fw-bold mb-4">
+                        <i class="bi bi-lightning-charge me-2 text-warning"></i>Quick Links
+                    </h5>
+                    
+                    <div class="d-grid gap-3">
+                        <a href="{% url 'wallet_transactions' %}" class="btn btn-outline-primary d-flex justify-content-between align-items-center py-3">
+                            <span><i class="bi bi-clock-history me-2"></i> Transaction History</span>
+                            <i class="bi bi-chevron-right"></i>
                         </a>
-                        <a href="{% url 'wallet_escrow_records' %}" class="list-group-item list-group-item-action">
-                            <i class="fas fa-shield-alt me-2"></i> Escrow Records
+                        
+                        <a href="{% url 'wallet_escrow_records' %}" class="btn btn-outline-primary d-flex justify-content-between align-items-center py-3">
+                            <span><i class="bi bi-shield-lock me-2"></i> Escrow Records</span>
+                            <i class="bi bi-chevron-right"></i>
                         </a>
-                        <a href="{% url 'payment_methods' %}" class="list-group-item list-group-item-action">
-                            <i class="fas fa-credit-card me-2"></i> Payment Methods
+                        
+                        <a href="{% url 'payment_methods' %}" class="btn btn-outline-primary d-flex justify-content-between align-items-center py-3">
+                            <span><i class="bi bi-credit-card me-2"></i> Payment Methods</span>
+                            <i class="bi bi-chevron-right"></i>
                         </a>
-                        {% if user.userprofile.is_freelancer %}
-                        <a href="{% url 'my_projects' %}" class="list-group-item list-group-item-action">
-                            <i class="fas fa-project-diagram me-2"></i> My Projects
-                        </a>
-                        {% elif user.userprofile.is_client %}
-                        <a href="{% url 'my_projects' %}" class="list-group-item list-group-item-action">
-                            <i class="fas fa-project-diagram me-2"></i> My Projects
+                        
+                        {% if user.userprofile.is_freelancer or user.userprofile.is_client %}
+                        <a href="{% url 'my_projects' %}" class="btn btn-outline-primary d-flex justify-content-between align-items-center py-3">
+                            <span><i class="bi bi-kanban me-2"></i> My Projects</span>
+                            <i class="bi bi-chevron-right"></i>
                         </a>
                         {% endif %}
                     </div>
@@ -111,59 +165,61 @@
     </div>
 
     <!-- Recent Transactions -->
-    <div class="row mt-3">
+    <div class="row mt-4">
         <div class="col-12">
-            <div class="card shadow">
-                <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
-                    <h5 class="mb-0">Recent Transactions</h5>
-                    <a href="{% url 'wallet_transactions' %}" class="btn btn-sm btn-light">View All</a>
+            <div class="card shadow-sm border-0">
+                <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+                    <h5 class="fw-bold mb-0">
+                        <i class="bi bi-arrow-left-right me-2 text-primary"></i>Recent Transactions
+                    </h5>
+                    <a href="{% url 'wallet_transactions' %}" class="btn btn-sm btn-primary">View All</a>
                 </div>
-                <div class="card-body">
+                <div class="card-body p-0">
                     {% if recent_transactions %}
                     <div class="table-responsive">
-                        <table class="table table-striped">
-                            <thead>
+                        <table class="table table-hover mb-0">
+                            <thead class="table-light">
                                 <tr>
-                                    <th>Date</th>
+                                    <th class="ps-4">Date</th>
                                     <th>Description</th>
                                     <th>Amount</th>
                                     <th>Type</th>
-                                    <th>Status</th>
+                                    <th class="pe-4">Status</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 {% for transaction in recent_transactions %}
                                 <tr>
-                                    <td>{{ transaction.created_at|date:"M d, Y" }}</td>
+                                    <td class="ps-4">{{ transaction.created_at|date:"M d, Y" }}</td>
                                     <td>{{ transaction.description }}</td>
-                                    <td class="{% if transaction.transaction_type == 'deposit' or transaction.transaction_type == 'release' %}text-success{% elif transaction.transaction_type == 'withdrawal' or transaction.transaction_type == 'escrow' or transaction.transaction_type == 'fee' %}text-danger{% endif %}">
+                                    <td class="fw-semibold {% if transaction.transaction_type == 'deposit' or transaction.transaction_type == 'release' %}text-success{% elif transaction.transaction_type == 'withdrawal' or transaction.transaction_type == 'escrow' or transaction.transaction_type == 'fee' %}text-danger{% endif %}">
                                         {% if transaction.transaction_type == 'deposit' or transaction.transaction_type == 'release' %}+{% elif transaction.transaction_type == 'withdrawal' or transaction.transaction_type == 'escrow' or transaction.transaction_type == 'fee' %}-{% endif %}
                                         {{ transaction.amount }} {{ wallet.currency }}
                                     </td>
                                     <td>
                                         {% if transaction.transaction_type == 'deposit' %}
-                                        <span class="badge bg-success">Deposit</span>
+                                        <span class="badge rounded-pill bg-success-subtle text-success">Deposit</span>
                                         {% elif transaction.transaction_type == 'withdrawal' %}
-                                        <span class="badge bg-warning text-dark">Withdrawal</span>
+                                        <span class="badge rounded-pill bg-warning-subtle text-warning">Withdrawal</span>
                                         {% elif transaction.transaction_type == 'escrow' %}
-                                        <span class="badge bg-info">Escrow</span>
+                                        <span class="badge rounded-pill bg-info-subtle text-info">Escrow</span>
                                         {% elif transaction.transaction_type == 'release' %}
-                                        <span class="badge bg-primary">Release</span>
+                                        <span class="badge rounded-pill bg-primary-subtle text-primary">Release</span>
                                         {% elif transaction.transaction_type == 'refund' %}
-                                        <span class="badge bg-secondary">Refund</span>
+                                        <span class="badge rounded-pill bg-secondary-subtle text-secondary">Refund</span>
                                         {% elif transaction.transaction_type == 'fee' %}
-                                        <span class="badge bg-dark">Fee</span>
+                                        <span class="badge rounded-pill bg-dark-subtle text-dark">Fee</span>
                                         {% endif %}
                                     </td>
-                                    <td>
+                                    <td class="pe-4">
                                         {% if transaction.status == 'pending' %}
-                                        <span class="badge bg-warning text-dark">Pending</span>
+                                        <span class="badge rounded-pill bg-warning-subtle text-warning">Pending</span>
                                         {% elif transaction.status == 'completed' %}
-                                        <span class="badge bg-success">Completed</span>
+                                        <span class="badge rounded-pill bg-success-subtle text-success">Completed</span>
                                         {% elif transaction.status == 'failed' %}
-                                        <span class="badge bg-danger">Failed</span>
+                                        <span class="badge rounded-pill bg-danger-subtle text-danger">Failed</span>
                                         {% elif transaction.status == 'cancelled' %}
-                                        <span class="badge bg-secondary">Cancelled</span>
+                                        <span class="badge rounded-pill bg-secondary-subtle text-secondary">Cancelled</span>
                                         {% endif %}
                                     </td>
                                 </tr>
@@ -172,8 +228,12 @@
                         </table>
                     </div>
                     {% else %}
-                    <div class="text-center py-4">
-                        <p class="mb-0 text-muted">No transactions yet</p>
+                    <div class="text-center py-5">
+                        <div class="mb-3">
+                            <i class="bi bi-arrow-left-right text-muted" style="font-size: 3rem;"></i>
+                        </div>
+                        <p class="text-muted">No transactions yet</p>
+                        <a href="{% url 'wallet_deposit' %}" class="btn btn-sm btn-primary">Make a Deposit</a>
                     </div>
                     {% endif %}
                 </div>
@@ -185,44 +245,46 @@
     {% if active_withdrawals %}
     <div class="row mt-4">
         <div class="col-12">
-            <div class="card shadow">
-                <div class="card-header bg-warning text-dark">
-                    <h5 class="mb-0">Pending Withdrawals</h5>
+            <div class="card shadow-sm border-0">
+                <div class="card-header bg-white py-3">
+                    <h5 class="fw-bold mb-0">
+                        <i class="bi bi-hourglass-split me-2 text-warning"></i>Pending Withdrawals
+                    </h5>
                 </div>
-                <div class="card-body">
+                <div class="card-body p-0">
                     <div class="table-responsive">
-                        <table class="table table-striped">
-                            <thead>
+                        <table class="table table-hover mb-0">
+                            <thead class="table-light">
                                 <tr>
-                                    <th>Date</th>
+                                    <th class="ps-4">Date</th>
                                     <th>Amount</th>
                                     <th>Fee</th>
                                     <th>Net Amount</th>
                                     <th>Method</th>
-                                    <th>Status</th>
+                                    <th class="pe-4">Status</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 {% for withdrawal in active_withdrawals %}
                                 <tr>
-                                    <td>{{ withdrawal.created_at|date:"M d, Y" }}</td>
+                                    <td class="ps-4">{{ withdrawal.created_at|date:"M d, Y" }}</td>
                                     <td>{{ withdrawal.amount }} {{ wallet.currency }}</td>
-                                    <td>{{ withdrawal.fee }} {{ wallet.currency }}</td>
-                                    <td>{{ withdrawal.amount|add:"-"|add:withdrawal.fee }} {{ wallet.currency }}</td>
+                                    <td class="text-danger">{{ withdrawal.fee }} {{ wallet.currency }}</td>
+                                    <td class="fw-semibold">{{ withdrawal.amount|add:"-"|add:withdrawal.fee }} {{ wallet.currency }}</td>
                                     <td>
                                         {% if withdrawal.withdrawal_method == 'bank' %}
-                                        <span class="badge bg-primary">Bank Transfer</span>
+                                        <span class="badge rounded-pill bg-primary-subtle text-primary">Bank Transfer</span>
                                         {% elif withdrawal.withdrawal_method == 'upi' %}
-                                        <span class="badge bg-success">UPI</span>
+                                        <span class="badge rounded-pill bg-success-subtle text-success">UPI</span>
                                         {% elif withdrawal.withdrawal_method == 'paypal' %}
-                                        <span class="badge bg-info">PayPal</span>
+                                        <span class="badge rounded-pill bg-info-subtle text-info">PayPal</span>
                                         {% endif %}
                                     </td>
-                                    <td>
+                                    <td class="pe-4">
                                         {% if withdrawal.status == 'pending' %}
-                                        <span class="badge bg-warning text-dark">Pending</span>
+                                        <span class="badge rounded-pill bg-warning-subtle text-warning">Pending</span>
                                         {% elif withdrawal.status == 'processing' %}
-                                        <span class="badge bg-info">Processing</span>
+                                        <span class="badge rounded-pill bg-info-subtle text-info">Processing</span>
                                         {% endif %}
                                     </td>
                                 </tr>
@@ -236,4 +298,53 @@
     </div>
     {% endif %}
 </div>
+
+<style>
+[data-bs-theme="dark"] .bg-light {
+    background-color: rgba(255, 255, 255, 0.05) !important;
+}
+
+[data-bs-theme="dark"] .card {
+    background-color: #1e293b;
+    border-color: #374151;
+}
+
+[data-bs-theme="dark"] .table-light {
+    background-color: rgba(255, 255, 255, 0.05);
+}
+
+[data-bs-theme="dark"] .badge.bg-light {
+    background-color: rgba(255, 255, 255, 0.1) !important;
+}
+
+[data-bs-theme="dark"] .badge.rounded-pill.bg-success-subtle {
+    background-color: rgba(25, 135, 84, 0.2) !important;
+}
+
+[data-bs-theme="dark"] .badge.rounded-pill.bg-warning-subtle {
+    background-color: rgba(255, 193, 7, 0.2) !important;
+}
+
+[data-bs-theme="dark"] .badge.rounded-pill.bg-info-subtle {
+    background-color: rgba(13, 202, 240, 0.2) !important;
+}
+
+[data-bs-theme="dark"] .badge.rounded-pill.bg-primary-subtle {
+    background-color: rgba(13, 110, 253, 0.2) !important;
+}
+
+[data-bs-theme="dark"] .badge.rounded-pill.bg-secondary-subtle {
+    background-color: rgba(108, 117, 125, 0.2) !important;
+}
+
+[data-bs-theme="dark"] .badge.rounded-pill.bg-dark-subtle {
+    background-color: rgba(33, 37, 41, 0.2) !important;
+}
+
+@media (max-width: 768px) {
+    .display-4 {
+        font-size: 2.5rem;
+    }
+}
+</style>
 {% endblock %} 

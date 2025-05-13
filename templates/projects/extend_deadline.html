@@ -1,0 +1,35 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-8 offset-md-2">
+            <div class="card">
+                <div class="card-header">
+                    <h3>Extend Milestone Deadline</h3>
+                </div>
+                <div class="card-body">
+                    <h4>Milestone: {{ milestone.title }}</h4>
+                    <p><strong>Project:</strong> {{ project.title }}</p>
+                    <p><strong>Current Deadline:</strong> {{ milestone.due_date }}</p>
+                    
+                    <form method="POST">
+                        {% csrf_token %}
+                        <div class="form-group">
+                            <label for="new_deadline">New Deadline</label>
+                            <input type="date" class="form-control" id="new_deadline" name="new_deadline" 
+                                   min="{{ milestone.due_date|date:'Y-m-d' }}" required>
+                        </div>
+                        
+                        <div class="mt-4">
+                            <button type="submit" class="btn btn-primary">Extend Deadline</button>
+                            <a href="{% url 'project_milestones' project.id %}" class="btn btn-secondary">Cancel</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

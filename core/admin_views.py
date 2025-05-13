@@ -27,8 +27,6 @@ def admin_dashboard(request):
     active_users = User.objects.filter(is_active=True).count()
     total_freelancers = UserProfile.objects.filter(is_freelancer=True).count()
     total_clients = UserProfile.objects.filter(is_client=True).count()
-    # Calculate total user types (sum of freelancers and clients)
-    total_user_types = total_freelancers + total_clients
     
     # Project stats
     total_projects = Project.objects.count()
@@ -52,12 +50,119 @@ def admin_dashboard(request):
     # Get transaction data for chart (last 7 days)
     chart_data = get_transaction_chart_data()
     
+    # Calculate growth rates (last 30 days vs previous 30 days)
+    thirty_days_ago = timezone.now() - timedelta(days=30)
+    sixty_days_ago = timezone.now() - timedelta(days=60)
+    
+    new_users_current = User.objects.filter(date_joined__gte=thirty_days_ago).count()
+    new_users_previous = User.objects.filter(date_joined__gte=sixty_days_ago, date_joined__lt=thirty_days_ago).count()
+    new_users_percent = round((new_users_current - new_users_previous) / max(new_users_previous, 1) * 100) if new_users_previous else 100
+    
+    new_projects_current = Project.objects.filter(created_at__gte=thirty_days_ago).count()
+    new_projects_previous = Project.objects.filter(created_at__gte=sixty_days_ago, created_at__lt=thirty_days_ago).count()
+    new_projects_percent = round((new_projects_current - new_projects_previous) / max(new_projects_previous, 1) * 100) if new_projects_previous else 100
+    
+    # Transaction volume growth
+    current_volume = Transaction.objects.filter(
+        created_at__gte=thirty_days_ago,
+        status='completed',
+        transaction_type__in=['deposit', 'release']
+    ).aggregate(total=Sum('amount'))['total'] or 0
+    
+    previous_volume = Transaction.objects.filter(
+        created_at__gte=sixty_days_ago,
+        created_at__lt=thirty_days_ago,
+        status='completed',
+        transaction_type__in=['deposit', 'release']
+    ).aggregate(total=Sum('amount'))['total'] or 0
+    
+    transaction_volume_growth = round((current_volume - previous_volume) / max(previous_volume, 1) * 100) if previous_volume else 100
+    
+    # Platform revenue (fees collected)
+    current_revenue = Transaction.objects.filter(
+        created_at__gte=thirty_days_ago,
+        status='completed',
+        transaction_type='fee'
+    ).aggregate(total=Sum('amount'))['total'] or 0
+    
+    previous_revenue = Transaction.objects.filter(
+        created_at__gte=sixty_days_ago,
+        created_at__lt=thirty_days_ago,
+        status='completed',
+        transaction_type='fee'
+    ).aggregate(total=Sum('amount'))['total'] or 0
+    
+    revenue_growth = round((current_revenue - previous_revenue) / max(previous_revenue, 1) * 100) if previous_revenue else 100
+    
+    # Payment processing statistics
+    # Razorpay statistics
+    razorpay_total = Transaction.objects.filter(
+        status='completed',
+        description__icontains='razorpay',
+        transaction_type='deposit'
+    ).aggregate(total=Sum('amount'))['total'] or 0
+    
+    # Calculate Razorpay success rate
+    total_razorpay_attempts = Transaction.objects.filter(
+        description__icontains='razorpay',
+        transaction_type='deposit'
+    ).count()
+    
+    successful_razorpay = Transaction.objects.filter(
+        status='completed',
+        description__icontains='razorpay',
+        transaction_type='deposit'
+    ).count()
+    
+    razorpay_success_rate = round((successful_razorpay / max(total_razorpay_attempts, 1)) * 100)
+    
+    # Calculate daily payment processing data (for the chart)
+    end_date = timezone.now()
+    start_date = end_date - timedelta(days=7)
+    
+    payment_processing_data = {
+        'labels': [],
+        'razorpay': [],
+        'other_methods': []
+    }
+    
+    # Generate daily payment processing data
+    day_names = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
+    for i in range(7):
+        current_date = start_date + timedelta(days=i)
+        day_start = current_date.replace(hour=0, minute=0, second=0, microsecond=0)
+        day_end = current_date.replace(hour=23, minute=59, second=59, microsecond=999999)
+        
+        # Add day label
+        payment_processing_data['labels'].append(day_names[current_date.weekday()])
+        
+        # Razorpay transactions for the day
+        razorpay_amount = Transaction.objects.filter(
+            transaction_type='deposit',
+            status='completed',
+            description__icontains='razorpay',
+            created_at__range=(day_start, day_end)
+        ).aggregate(total=Sum('amount'))['total'] or 0
+        
+        # Other payment methods
+        other_amount = Transaction.objects.filter(
+            transaction_type='deposit',
+            status='completed',
+            created_at__range=(day_start, day_end)
+        ).exclude(description__icontains='razorpay').aggregate(total=Sum('amount'))['total'] or 0
+        
+        # Add to data
+        payment_processing_data['razorpay'].append(float(razorpay_amount))
+        payment_processing_data['other_methods'].append(float(other_amount))
+    
+    # Mock average transaction time (in seconds) since actual processing time might not be stored
+    avg_transaction_time = 2.5  # This could be replaced with actual data if available
+    
     context = {
         'total_users': total_users,
         'active_users': active_users,
         'total_freelancers': total_freelancers,
         'total_clients': total_clients,
-        'total_user_types': total_user_types,
         'total_projects': total_projects,
         'open_projects': open_projects,
         'in_progress_projects': in_progress_projects,
@@ -68,6 +173,19 @@ def admin_dashboard(request):
         'recent_projects': recent_projects,
         'recent_users': recent_users,
         'chart_data': json.dumps(chart_data),
+        'payment_processing_data': json.dumps(payment_processing_data),
+        'new_users_percent': new_users_percent,
+        'new_projects_percent': new_projects_percent,
+        'transaction_volume_growth': transaction_volume_growth,
+        'platform_revenue': current_revenue,
+        'revenue_growth': revenue_growth,
+        'razorpay_total': razorpay_total,
+        'razorpay_success_rate': razorpay_success_rate,
+        'avg_transaction_time': avg_transaction_time,
+        'user_distribution': {
+            'freelancers': total_freelancers,
+            'clients': total_clients
+        }
     }
     
     return render(request, 'admin/dashboard.html', context)
@@ -104,8 +222,7 @@ def admin_users(request):
             Q(user__username__icontains=search) | 
             Q(user__email__icontains=search) |
             Q(user__first_name__icontains=search) |
-            Q(user__last_name__icontains=search) |
-            Q(full_name__icontains=search)
+            Q(user__last_name__icontains=search)
         )
     
     # Get some statistics for the view
@@ -503,8 +620,7 @@ def admin_export_users(request):
             Q(user__username__icontains=current_search) | 
             Q(user__email__icontains=current_search) |
             Q(user__first_name__icontains=current_search) |
-            Q(user__last_name__icontains=current_search) |
-            Q(full_name__icontains=current_search)
+            Q(user__last_name__icontains=current_search)
         )
     
     # If no fields selected, use defaults
@@ -514,8 +630,30 @@ def admin_export_users(request):
     # Prepare the data for export
     export_data = []
     
+    # First, determine all possible field names based on the requested fields
+    all_field_names = set()
+    
+    # Pre-define all possible fields that might be added based on user type
+    if 'projects' in fields:
+        all_field_names.add('Projects Completed')
+        all_field_names.add('Projects Posted')
+    
+    for field in fields:
+        if field == 'username':
+            all_field_names.add('Username')
+        elif field == 'email':
+            all_field_names.add('Email')
+        elif field == 'full_name':
+            all_field_names.add('Full Name')
+        elif field == 'user_type':
+            all_field_names.add('User Type')
+        elif field == 'date_joined':
+            all_field_names.add('Date Joined')
+        elif field == 'wallet':
+            all_field_names.add('Wallet Balance')
+    
     for profile in profiles:
-        user_data = {}
+        user_data = {field: "" for field in all_field_names}  # Initialize with empty strings
         
         # Include requested fields
         for field in fields:
@@ -524,7 +662,7 @@ def admin_export_users(request):
             elif field == 'email':
                 user_data['Email'] = profile.user.email
             elif field == 'full_name':
-                user_data['Full Name'] = profile.full_name or f"{profile.user.first_name} {profile.user.last_name}".strip() or "Not provided"
+                user_data['Full Name'] = f"{profile.user.first_name} {profile.user.last_name}".strip() or "Not provided"
             elif field == 'user_type':
                 user_types = []
                 if profile.is_freelancer:

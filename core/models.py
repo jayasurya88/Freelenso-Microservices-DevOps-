@@ -25,6 +25,7 @@ class UserProfile(models.Model):
     availability = models.CharField(max_length=100, null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+    wallet_balance = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
 
     def __str__(self):
         return self.user.username
@@ -163,7 +164,8 @@ class ProjectMilestone(models.Model):
         ('pending', 'Pending'),
         ('completed', 'Completed'),
         ('approved', 'Approved'),
-        ('rejected', 'Rejected')
+        ('rejected', 'Rejected'),
+        ('delayed', 'Delayed')
     ]
 
     project = models.ForeignKey(Project, on_delete=models.CASCADE, related_name='milestones')
@@ -177,9 +179,32 @@ class ProjectMilestone(models.Model):
     feedback = models.TextField(blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+    penalty_per_day = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
+    max_penalty_days = models.IntegerField(default=7)
+    max_penalty_percentage = models.DecimalField(max_digits=5, decimal_places=2, default=20.00)
 
     def __str__(self):
         return f"{self.title} - {self.project.title}"
+
+    def calculate_delay(self):
+        """Calculate the delay in days and penalty amount"""
+        if self.status == 'pending' and self.due_date < timezone.now().date():
+            delay_days = (timezone.now().date() - self.due_date).days
+            penalty_days = min(delay_days, self.max_penalty_days)
+            penalty_amount = (self.amount * (self.penalty_per_day / 100)) * penalty_days
+            max_penalty = (self.amount * self.max_penalty_percentage) / 100
+            penalty_amount = min(penalty_amount, max_penalty)
+            return delay_days, penalty_amount
+        return 0, Decimal('0.00')
+
+    def update_delay_status(self):
+        """Update milestone status based on delay"""
+        delay_days, _ = self.calculate_delay()
+        if delay_days > 0 and self.status == 'pending':
+            self.status = 'delayed'
+            self.save()
+            return True
+        return False
 
     class Meta:
         ordering = ['due_date']
@@ -462,3 +487,20 @@ class ProjectReview(models.Model):
         else:
             self.reviewed = self.project.client
         super().save(*args, **kwargs)
+
+class MilestoneDelay(models.Model):
+    """Model for tracking milestone delays and penalties"""
+    milestone = models.ForeignKey(ProjectMilestone, on_delete=models.CASCADE, related_name='delays')
+    delay_days = models.IntegerField(default=0)
+    penalty_amount = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
+    reason = models.TextField(blank=True, null=True)
+    is_resolved = models.BooleanField(default=False)
+    resolution_notes = models.TextField(blank=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    resolved_at = models.DateTimeField(null=True, blank=True)
+
+    def __str__(self):
+        return f"Delay for {self.milestone.title} - {self.delay_days} days"
+
+    class Meta:
+        ordering = ['-created_at']

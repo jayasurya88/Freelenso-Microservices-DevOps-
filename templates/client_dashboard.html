@@ -2,95 +2,227 @@
 
 {% block title %}Client Dashboard{% endblock %}
 
+{% block extra_css %}
+<style>
+    .dashboard-header {
+        padding: 2rem 0;
+        border-radius: 1rem;
+        margin-bottom: 2rem;
+        background: var(--gradient);
+        color: white;
+        position: relative;
+        overflow: hidden;
+    }
+    
+    .dashboard-header::before {
+        content: '';
+        position: absolute;
+        top: -50%;
+        right: -50%;
+        width: 100%;
+        height: 200%;
+        background: rgba(255,255,255,0.1);
+        transform: rotate(30deg);
+    }
+    
+    .stats-card {
+        border-radius: 1rem;
+        transition: all 0.3s ease;
+        border: none;
+        box-shadow: 0 4px 12px var(--shadow-color);
+        height: 100%;
+    }
+    
+    .stats-card:hover {
+        transform: translateY(-5px);
+    }
+    
+    .stats-icon {
+        width: 48px;
+        height: 48px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 12px;
+        font-size: 1.5rem;
+    }
+    
+    .project-card {
+        border-radius: 1rem;
+        border: none;
+        box-shadow: 0 4px 12px var(--shadow-color);
+        transition: all 0.3s ease;
+        overflow: hidden;
+    }
+    
+    .project-card:hover {
+        transform: translateY(-5px);
+    }
+    
+    .activity-item {
+        padding: 1rem;
+        border-radius: 0.75rem;
+        margin-bottom: 1rem;
+        transition: all 0.3s ease;
+        background-color: var(--background-light);
+    }
+    
+    .activity-item:hover {
+        transform: translateX(5px);
+        background-color: var(--background-card);
+    }
+    
+    .profile-img-container {
+        width: 120px;
+        height: 120px;
+        border-radius: 50%;
+        overflow: hidden;
+        border: 4px solid rgba(255,255,255,0.2);
+        box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+    }
+    
+    /* Animated stats counter */
+    .animated-counter {
+        font-size: 2rem;
+        font-weight: 700;
+        transition: all 0.5s ease;
+    }
+    
+    .animated-counter:hover {
+        transform: scale(1.1);
+    }
+</style>
+{% endblock %}
+
 {% block content %}
-<div class="container py-4">
-    <div class="row">
-        <div class="col-md-4">
-            <div class="card border-0 shadow-sm mb-4">
-                <div class="card-body text-center">
-                    <div class="position-relative d-inline-block mb-3">
+<div class="dashboard-header">
+    <div class="container">
+        <div class="row align-items-center">
+            <div class="col-md-8">
+                <div class="d-flex align-items-center">
+                    <div class="profile-img-container me-4">
                         {% if profile.profile_picture %}
                             <img src="{{ profile.profile_picture.url }}?v={{ profile.updated_at|date:'U' }}" 
-                                 class="rounded-circle shadow" 
-                                 alt="{{ profile.user.username }}'s profile picture"
-                                 style="width: 150px; height: 150px; object-fit: cover;">
+                                alt="{{ profile.user.username }}'s profile picture"
+                                class="img-fluid" style="width: 100%; height: 100%; object-fit: cover;">
                         {% else %}
-                            <div class="rounded-circle bg-primary bg-opacity-10 d-flex align-items-center justify-content-center mx-auto"
-                                 style="width: 150px; height: 150px;">
-                                <i class="bi bi-person text-primary" style="font-size: 4rem;"></i>
+                            <div class="h-100 w-100 d-flex align-items-center justify-content-center bg-dark bg-opacity-25">
+                                <i class="bi bi-person text-white" style="font-size: 3rem;"></i>
                             </div>
                         {% endif %}
                     </div>
-                    <h4 class="mb-1">{{ profile.user.get_full_name|default:profile.user.username }}</h4>
-                    <p class="text-muted mb-2">Client</p>
-                    {% if profile.country %}
-                        <p class="mb-3"><i class="bi bi-geo-alt me-1"></i>{{ profile.country }}</p>
-                    {% endif %}
-                    <a href="{% url 'edit_profile' %}" class="btn btn-primary">
-                        <i class="bi bi-pencil-square me-2"></i>Edit Profile
-                    </a>
+                    <div>
+                        <h1 class="display-6 mb-0">Welcome, {{ profile.user.get_full_name|default:profile.user.username }}!</h1>
+                        <p class="lead mb-0 opacity-75">Client Dashboard</p>
+                    </div>
                 </div>
             </div>
-            
-            <div class="card border-0 shadow-sm mb-4">
-                <div class="card-header bg-transparent border-0">
-                    <h5 class="card-title mb-0">Account Summary</h5>
-                </div>
-                <div class="card-body">
-                    <div class="d-flex justify-content-between align-items-center mb-3">
-                        <div class="text-muted">Active Projects</div>
-                        <div class="badge bg-primary">0</div>
-                    </div>
-                    <div class="d-flex justify-content-between align-items-center mb-3">
-                        <div class="text-muted">Completed Projects</div>
-                        <div class="badge bg-success">0</div>
-                    </div>
-                    <div class="d-flex justify-content-between align-items-center">
-                        <div class="text-muted">Total Spent</div>
-                        <div class="fw-bold">$0</div>
+            <div class="col-md-4 text-md-end mt-3 mt-md-0">
+                <a href="{% url 'create_project' %}" class="btn btn-light btn-lg">
+                    <i class="bi bi-plus-circle me-2"></i>Post New Project
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="container pb-5">
+    <!-- Stats Row -->
+    <div class="row mb-4">
+        <div class="col-md-4 mb-4 mb-md-0">
+            <div class="stats-card card">
+                <div class="card-body p-4">
+                    <div class="d-flex align-items-center">
+                        <div class="stats-icon bg-primary bg-opacity-10 text-primary me-3">
+                            <i class="bi bi-diagram-3"></i>
+                        </div>
+                        <div>
+                            <h6 class="text-muted mb-1">Active Projects</h6>
+                            <div class="animated-counter">
+                                {{ profile.posted_projects.count|default:0 }}
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
-        
-        <div class="col-md-8">
-            <div class="card border-0 shadow-sm mb-4">
-                <div class="card-header bg-transparent border-0 d-flex justify-content-between align-items-center">
-                    <h5 class="card-title mb-0">My Projects</h5>
-                    <a href="{% url 'create_project' %}" class="btn btn-primary btn-sm">
-                        <i class="bi bi-plus-lg me-2"></i>Post New Project
+        <div class="col-md-4 mb-4 mb-md-0">
+            <div class="stats-card card">
+                <div class="card-body p-4">
+                    <div class="d-flex align-items-center">
+                        <div class="stats-icon bg-success bg-opacity-10 text-success me-3">
+                            <i class="bi bi-check2-circle"></i>
+                        </div>
+                        <div>
+                            <h6 class="text-muted mb-1">Completed Projects</h6>
+                            <div class="animated-counter">
+                                {{ profile.posted_projects.filter.status_completed.count|default:0 }}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="stats-card card">
+                <div class="card-body p-4">
+                    <div class="d-flex align-items-center">
+                        <div class="stats-icon bg-info bg-opacity-10 text-info me-3">
+                            <i class="bi bi-wallet2"></i>
+                        </div>
+                        <div>
+                            <h6 class="text-muted mb-1">Total Spent</h6>
+                            <div class="animated-counter">
+                                ${{ profile.total_spent|default:'0' }}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="row">
+        <div class="col-lg-8 mb-4 mb-lg-0">
+            <!-- Projects Section -->
+            <div class="project-card card mb-4">
+                <div class="card-header bg-transparent border-0 d-flex justify-content-between align-items-center p-4">
+                    <h5 class="mb-0"><i class="bi bi-briefcase me-2"></i>My Projects</h5>
+                    <a href="{% url 'create_project' %}" class="btn btn-sm btn-primary">
+                        <i class="bi bi-plus-lg me-1"></i> New Project
                     </a>
                 </div>
-                <div class="card-body">
+                <div class="card-body p-0">
                     {% if profile.posted_projects.exists %}
-                        <div class="list-group">
+                        <div class="list-group list-group-flush">
                             {% for project in profile.posted_projects.all %}
-                                <div class="list-group-item border-0 mb-3 bg-light rounded">
-                                    <div class="d-flex justify-content-between align-items-center">
-                                        <div>
+                                <div class="list-group-item border-0 p-4">
+                                    <div class="d-flex justify-content-between align-items-center flex-wrap">
+                                        <div class="mb-2 mb-md-0">
                                             <h6 class="mb-1">{{ project.title }}</h6>
-                                            <p class="text-muted small mb-0">
-                                                <span class="me-3">
-                                                    <i class="bi bi-clock me-1"></i>
-                                                    Posted {{ project.created_at|timesince }} ago
-                                                </span>
-                                                <span class="me-3">
-                                                    <i class="bi bi-tag me-1"></i>
-                                                    {{ project.category }}
-                                                </span>
-                                                <span class="badge {% if project.status == 'open' %}bg-success{% elif project.status == 'in_progress' %}bg-primary{% else %}bg-secondary{% endif %}">
+                                            <div class="d-flex align-items-center flex-wrap">
+                                                <span class="badge rounded-pill 
+                                                    {% if project.status == 'open' %}bg-success{% elif project.status == 'in_progress' %}bg-primary{% else %}bg-secondary{% endif %} me-2">
                                                     {{ project.get_status_display }}
                                                 </span>
-                                            </p>
+                                                <small class="text-muted me-3">
+                                                    <i class="bi bi-calendar-event me-1"></i>
+                                                    Posted {{ project.created_at|timesince }} ago
+                                                </small>
+                                                <small class="text-muted">
+                                                    <i class="bi bi-tag me-1"></i>
+                                                    {{ project.category }}
+                                                </small>
+                                            </div>
                                         </div>
-                                        <div>
+                                        <div class="d-flex">
                                             {% if project.status == 'open' %}
-                                                <a href="{% url 'project_detail' project.id %}" class="btn btn-outline-primary btn-sm">
-                                                    <i class="bi bi-people me-1"></i>View Applications
+                                                <a href="{% url 'project_detail' project.id %}" class="btn btn-sm btn-outline-primary me-2">
+                                                    <i class="bi bi-people me-1"></i> Applications
                                                 </a>
                                             {% else %}
-                                                <a href="{% url 'project_workspace' project.id %}" class="btn btn-primary btn-sm">
-                                                    <i class="bi bi-briefcase me-1"></i>Workspace
+                                                <a href="{% url 'project_workspace' project.id %}" class="btn btn-sm btn-primary">
+                                                    <i class="bi bi-kanban me-1"></i> Workspace
                                                 </a>
                                             {% endif %}
                                         </div>
@@ -99,23 +231,117 @@
                             {% endfor %}
                         </div>
                     {% else %}
-                        <p class="text-muted text-center py-4">
-                            <i class="bi bi-clipboard2-x display-4 d-block mb-3"></i>
-                            No active projects
-                        </p>
+                        <div class="text-center py-5">
+                            <div class="mb-3">
+                                <i class="bi bi-clipboard-plus text-muted" style="font-size: 4rem;"></i>
+                            </div>
+                            <h5 class="text-muted mb-3">No projects yet</h5>
+                            <p class="mb-4">Get started by posting your first project and find skilled freelancers</p>
+                            <a href="{% url 'create_project' %}" class="btn btn-primary">
+                                <i class="bi bi-plus-circle me-2"></i>Post a Project
+                            </a>
+                        </div>
                     {% endif %}
                 </div>
             </div>
-
-            <div class="card border-0 shadow-sm">
-                <div class="card-header bg-transparent border-0">
-                    <h5 class="card-title mb-0">Recent Activity</h5>
+            
+            <!-- Recent Activity -->
+            <div class="project-card card">
+                <div class="card-header bg-transparent border-0 p-4">
+                    <h5 class="mb-0"><i class="bi bi-activity me-2"></i>Recent Activity</h5>
                 </div>
-                <div class="card-body">
-                    <p class="text-muted text-center py-4">
-                        <i class="bi bi-activity display-4 d-block mb-3"></i>
-                        No recent activity
-                    </p>
+                <div class="card-body p-3">
+                    <div class="text-center py-4">
+                        <div class="mb-3">
+                            <i class="bi bi-hourglass text-muted" style="font-size: 3rem;"></i>
+                        </div>
+                        <h5 class="text-muted mb-2">No recent activity</h5>
+                        <p class="mb-0 text-muted">Your recent activities will appear here</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-lg-4">
+            <!-- Profile Card -->
+            <div class="project-card card mb-4">
+                <div class="card-header bg-transparent border-0 p-4">
+                    <h5 class="mb-0"><i class="bi bi-person me-2"></i>My Profile</h5>
+                </div>
+                <div class="card-body p-4">
+                    <div class="d-flex flex-column align-items-center text-center mb-4">
+                        {% if profile.profile_picture %}
+                            <img src="{{ profile.profile_picture.url }}?v={{ profile.updated_at|date:'U' }}" 
+                                class="rounded-circle mb-3" 
+                                alt="{{ profile.user.username }}'s profile picture"
+                                style="width: 120px; height: 120px; object-fit: cover;">
+                        {% else %}
+                            <div class="rounded-circle bg-primary bg-opacity-10 d-flex align-items-center justify-content-center mb-3"
+                                style="width: 120px; height: 120px;">
+                                <i class="bi bi-person text-primary" style="font-size: 3rem;"></i>
+                            </div>
+                        {% endif %}
+                        <h5 class="mb-1">{{ profile.user.get_full_name|default:profile.user.username }}</h5>
+                        <p class="mb-0 text-muted">{{ profile.bio|truncatechars:60|default:"No bio added yet" }}</p>
+                    </div>
+                    
+                    <div class="mb-4">
+                        {% if profile.country or profile.phone_number or profile.website %}
+                            <div class="mb-3">
+                                {% if profile.country %}
+                                <div class="d-flex align-items-center mb-2">
+                                    <i class="bi bi-geo-alt text-muted me-3"></i>
+                                    <span>{{ profile.country }}</span>
+                                </div>
+                                {% endif %}
+                                
+                                {% if profile.phone_number %}
+                                <div class="d-flex align-items-center mb-2">
+                                    <i class="bi bi-telephone text-muted me-3"></i>
+                                    <span>{{ profile.phone_number }}</span>
+                                </div>
+                                {% endif %}
+                                
+                                {% if profile.website %}
+                                <div class="d-flex align-items-center">
+                                    <i class="bi bi-globe text-muted me-3"></i>
+                                    <a href="{{ profile.website }}" target="_blank" class="text-decoration-none">{{ profile.website }}</a>
+                                </div>
+                                {% endif %}
+                            </div>
+                        {% endif %}
+                    </div>
+                    
+                    <a href="{% url 'edit_profile' %}" class="btn btn-primary w-100">
+                        <i class="bi bi-pencil-square me-2"></i>Edit Profile
+                    </a>
+                </div>
+            </div>
+            
+            <!-- Wallet Summary -->
+            <div class="project-card card">
+                <div class="card-header bg-transparent border-0 p-4">
+                    <h5 class="mb-0"><i class="bi bi-wallet me-2"></i>Wallet Summary</h5>
+                </div>
+                <div class="card-body p-4">
+                    <div class="d-flex align-items-center mb-4">
+                        <div class="stats-icon bg-success bg-opacity-10 text-success me-3">
+                            <i class="bi bi-currency-dollar"></i>
+                        </div>
+                        <div>
+                            <h6 class="text-muted mb-1">Available Balance</h6>
+                            <h4 class="mb-0">$0.00</h4>
+                        </div>
+                    </div>
+                    
+                    <div class="d-grid gap-2">
+                        <a href="{% url 'wallet_deposit' %}" class="btn btn-outline-primary">
+                            <i class="bi bi-plus-circle me-2"></i>Add Funds
+                        </a>
+                        <a href="{% url 'wallet_dashboard' %}" class="btn btn-outline-secondary">
+                            <i class="bi bi-arrow-right me-2"></i>Go to Wallet
+                        </a>
+                    </div>
                 </div>
             </div>
         </div>

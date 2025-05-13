@@ -24,6 +24,7 @@ from django.urls import re_path
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('', include('core.urls')),
+    path('social-auth/', include('social_django.urls', namespace='social')),
     
     # Serve media files in all environments
     re_path(r'^media/(?P<path>.*)$', serve, {

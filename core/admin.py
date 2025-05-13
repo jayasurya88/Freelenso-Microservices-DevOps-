@@ -3,7 +3,7 @@ from .models import (
     UserProfile, Project, ProjectApplication, ProjectMilestone, 
     ProjectAttachment, ProjectFile, ProjectActivity, ChatRoom, 
     ChatMessage, ChatParticipant, Notification, Wallet, 
-    Transaction, WithdrawalRequest, PaymentMethod
+    Transaction, WithdrawalRequest, PaymentMethod, MilestoneDelay
 )
 
 # Register models with custom admin classes
@@ -31,8 +31,8 @@ class ProjectApplicationAdmin(admin.ModelAdmin):
 @admin.register(ProjectMilestone)
 class ProjectMilestoneAdmin(admin.ModelAdmin):
     list_display = ('title', 'project', 'amount', 'due_date', 'status')
-    list_filter = ('status',)
-    search_fields = ('title', 'description', 'project__title')
+    list_filter = ('status', 'due_date')
+    search_fields = ('title', 'project__title')
     date_hierarchy = 'due_date'
 
 @admin.register(Wallet)
@@ -53,6 +53,13 @@ class WithdrawalRequestAdmin(admin.ModelAdmin):
     list_display = ('wallet', 'amount', 'fee', 'withdrawal_method', 'status', 'created_at')
     list_filter = ('status', 'withdrawal_method')
     search_fields = ('wallet__user__user__username', 'reference_id')
+    date_hierarchy = 'created_at'
+
+@admin.register(MilestoneDelay)
+class MilestoneDelayAdmin(admin.ModelAdmin):
+    list_display = ('milestone', 'delay_days', 'penalty_amount', 'is_resolved', 'created_at')
+    list_filter = ('is_resolved', 'created_at')
+    search_fields = ('milestone__title', 'reason')
     date_hierarchy = 'created_at'
 
 # Register the rest of the models with default admin
