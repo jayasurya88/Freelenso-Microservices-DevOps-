@@ -1,0 +1,497 @@
+{% extends 'admin/admin_base.html' %}
+
+{% block title %}Users Management{% endblock %}
+
+{% block page_title %}Users Management{% endblock %}
+{% block page_subtitle %}Monitor and manage all users on the platform{% endblock %}
+
+{% block content %}
+<!-- User Statistics -->
+<div class="row mb-4">
+    <div class="col-xl-3 col-md-6">
+        <div class="data-card h-100">
+            <div class="card-body">
+                <div class="d-flex align-items-center">
+                    <div class="rounded-circle bg-primary bg-opacity-10 p-3 me-3">
+                        <i class="bi bi-person fs-4 text-primary"></i>
+                    </div>
+                    <div>
+                        <div class="fs-5 fw-bold">{{ total_users }}</div>
+                        <div class="text-muted">Total Users</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-xl-3 col-md-6">
+        <div class="data-card h-100">
+            <div class="card-body">
+                <div class="d-flex align-items-center">
+                    <div class="rounded-circle bg-success bg-opacity-10 p-3 me-3">
+                        <i class="bi bi-person-badge fs-4 text-success"></i>
+                    </div>
+                    <div>
+                        <div class="fs-5 fw-bold">{{ total_freelancers }}</div>
+                        <div class="text-muted">Freelancers</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-xl-3 col-md-6">
+        <div class="data-card h-100">
+            <div class="card-body">
+                <div class="d-flex align-items-center">
+                    <div class="rounded-circle bg-info bg-opacity-10 p-3 me-3">
+                        <i class="bi bi-briefcase fs-4 text-info"></i>
+                    </div>
+                    <div>
+                        <div class="fs-5 fw-bold">{{ total_clients }}</div>
+                        <div class="text-muted">Clients</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-xl-3 col-md-6">
+        <div class="data-card h-100">
+            <div class="card-body">
+                <div class="d-flex align-items-center">
+                    <div class="rounded-circle bg-warning bg-opacity-10 p-3 me-3">
+                        <i class="bi bi-person-plus fs-4 text-warning"></i>
+                    </div>
+                    <div>
+                        <div class="fs-5 fw-bold">{{ new_users_count }}</div>
+                        <div class="text-muted">New Users (30 days)</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Filters and Search -->
+<div class="data-card mb-4">
+    <div class="data-card-header">
+        <h5 class="data-card-title">Filters</h5>
+    </div>
+    <div class="card-body pt-0">
+        <form method="get" class="row g-3 align-items-end">
+            <!-- Search Field -->
+            <div class="col-lg-4 col-md-6">
+                <label for="search" class="form-label">Search</label>
+                <div class="input-group">
+                    <span class="input-group-text"><i class="bi bi-search"></i></span>
+                    <input type="text" class="form-control" id="search" name="search" placeholder="Search username, email, name..." value="{{ search }}">
+                </div>
+            </div>
+            
+            <!-- User Type Filter -->
+            <div class="col-lg-3 col-md-6">
+                <label for="user_type" class="form-label">User Type</label>
+                <select class="form-select" id="user_type" name="user_type">
+                    <option value="" {% if user_type == '' %}selected{% endif %}>All Types</option>
+                    <option value="freelancer" {% if user_type == 'freelancer' %}selected{% endif %}>Freelancers</option>
+                    <option value="client" {% if user_type == 'client' %}selected{% endif %}>Clients</option>
+                    <option value="both" {% if user_type == 'both' %}selected{% endif %}>Both Roles</option>
+                    <option value="admin" {% if user_type == 'admin' %}selected{% endif %}>Administrators</option>
+                </select>
+            </div>
+            
+            <!-- Status Filter -->
+            <div class="col-lg-3 col-md-6">
+                <label for="status" class="form-label">Status</label>
+                <select class="form-select" id="status" name="status">
+                    <option value="" {% if status == '' %}selected{% endif %}>All Status</option>
+                    <option value="active" {% if status == 'active' %}selected{% endif %}>Active</option>
+                    <option value="inactive" {% if status == 'inactive' %}selected{% endif %}>Inactive</option>
+                </select>
+            </div>
+            
+            <!-- Filter Button -->
+            <div class="col-lg-2 col-md-6 d-flex">
+                <button type="submit" class="btn btn-primary flex-fill">
+                    <i class="bi bi-filter me-2"></i> Apply Filters
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Users Table -->
+<div class="data-card">
+    <div class="data-card-header d-flex justify-content-between align-items-center">
+        <h5 class="data-card-title mb-0">Users</h5>
+        <div class="d-flex gap-2 align-items-center">
+            <span class="badge bg-primary">{{ profiles.count }} Users</span>
+            <button class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#exportModal">
+                <i class="bi bi-download me-1"></i> Export
+            </button>
+        </div>
+    </div>
+    <div class="table-responsive">
+        <table class="table table-hover align-middle">
+            <thead>
+                <tr>
+                    <th>User</th>
+                    <th>Role</th>
+                    <th>Joined</th>
+                    <th>Status</th>
+                    <th>Projects</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for profile in profiles %}
+                <tr>
+                    <td>
+                        <div class="d-flex align-items-center">
+                            <div class="user-avatar me-3">
+                                {% if profile.avatar %}
+                                <img src="{{ profile.avatar.url }}" alt="{{ profile.user.username }}" class="rounded-circle" width="40" height="40">
+                                {% else %}
+                                <div class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
+                                    {{ profile.user.username|slice:":1"|upper }}
+                                </div>
+                                {% endif %}
+                            </div>
+                            <div>
+                                <div class="fw-semibold">{{ profile.user.username }}</div>
+                                <div class="text-muted small">{{ profile.user.email }}</div>
+                            </div>
+                        </div>
+                    </td>
+                    <td>
+                        <div class="d-flex gap-1">
+                            {% if profile.is_freelancer %}
+                            <span class="badge bg-success">Freelancer</span>
+                            {% endif %}
+                            {% if profile.is_client %}
+                            <span class="badge bg-info">Client</span>
+                            {% endif %}
+                            {% if profile.user.is_superuser %}
+                            <span class="badge bg-danger">Admin</span>
+                            {% endif %}
+                        </div>
+                    </td>
+                    <td>{{ profile.user.date_joined|date:"M d, Y" }}</td>
+                    <td>
+                        {% if profile.user.is_active %}
+                        <span class="badge bg-success">Active</span>
+                        {% else %}
+                        <span class="badge bg-danger">Inactive</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <div class="small">
+                            {% if profile.is_freelancer %}
+                            <div>Completed: {{ profile.completed_projects_count }}</div>
+                            {% endif %}
+                            {% if profile.is_client %}
+                            <div>Posted: {{ profile.posted_projects_count }}</div>
+                            {% endif %}
+                        </div>
+                    </td>
+                    <td>
+                        <div class="dropdown">
+                            <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" id="userActionDropdown{{ profile.id }}" data-bs-toggle="dropdown" aria-expanded="false">
+                                Actions
+                            </button>
+                            <ul class="dropdown-menu" aria-labelledby="userActionDropdown{{ profile.id }}">
+                                <li><a class="dropdown-item" href="{% url 'view_freelancer_profile' profile.user.username %}"><i class="bi bi-eye me-2"></i> View Profile</a></li>
+                                <li><a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#userModal{{ profile.id }}"><i class="bi bi-info-circle me-2"></i> Details</a></li>
+                                {% if profile.user.is_active %}
+                                <li><a class="dropdown-item text-danger" href="#" data-bs-toggle="modal" data-bs-target="#deactivateModal{{ profile.id }}"><i class="bi bi-person-x me-2"></i> Deactivate</a></li>
+                                {% else %}
+                                <li><a class="dropdown-item text-success" href="#" data-bs-toggle="modal" data-bs-target="#activateModal{{ profile.id }}"><i class="bi bi-person-check me-2"></i> Activate</a></li>
+                                {% endif %}
+                            </ul>
+                        </div>
+                        
+                        <!-- User Details Modal -->
+                        <div class="modal fade" id="userModal{{ profile.id }}" tabindex="-1" aria-labelledby="userModalLabel{{ profile.id }}" aria-hidden="true">
+                            <div class="modal-dialog modal-dialog-centered">
+                                <div class="modal-content">
+                                    <div class="modal-header">
+                                        <h5 class="modal-title" id="userModalLabel{{ profile.id }}">User Details</h5>
+                                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                    </div>
+                                    <div class="modal-body">
+                                        <div class="text-center mb-4">
+                                            <div class="user-avatar mx-auto mb-3">
+                                                {% if profile.avatar %}
+                                                <img src="{{ profile.avatar.url }}" alt="{{ profile.user.username }}" class="rounded-circle" width="80" height="80">
+                                                {% else %}
+                                                <div class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center mx-auto" style="width: 80px; height: 80px; font-size: 1.5rem;">
+                                                    {{ profile.user.username|slice:":1"|upper }}
+                                                </div>
+                                                {% endif %}
+                                            </div>
+                                            <h5 class="mb-0">{{ profile.user.username }}</h5>
+                                            <div class="text-muted">{{ profile.user.email }}</div>
+                                            <div class="d-flex gap-1 justify-content-center mt-2">
+                                                {% if profile.is_freelancer %}
+                                                <span class="badge bg-success">Freelancer</span>
+                                                {% endif %}
+                                                {% if profile.is_client %}
+                                                <span class="badge bg-info">Client</span>
+                                                {% endif %}
+                                                {% if profile.user.is_superuser %}
+                                                <span class="badge bg-danger">Admin</span>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                        <div class="mb-3">
+                                            <strong>Full Name:</strong>
+                                            <div>{{ profile.full_name|default:"Not provided" }}</div>
+                                        </div>
+                                        <div class="row mb-3">
+                                            <div class="col-md-6">
+                                                <strong>Joined:</strong>
+                                                <div>{{ profile.user.date_joined|date:"M d, Y H:i" }}</div>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <strong>Last Login:</strong>
+                                                <div>{{ profile.user.last_login|date:"M d, Y H:i"|default:"Never" }}</div>
+                                            </div>
+                                        </div>
+                                        <div class="mb-3">
+                                            <strong>Bio:</strong>
+                                            <div>{{ profile.bio|default:"No bio provided"|linebreaks }}</div>
+                                        </div>
+                                        {% if profile.is_freelancer %}
+                                        <div class="mb-3">
+                                            <strong>Skills:</strong>
+                                            <div>
+                                                {% for skill in profile.skills.all %}
+                                                <span class="badge bg-secondary me-1">{{ skill.name }}</span>
+                                                {% empty %}
+                                                <span class="text-muted">No skills added</span>
+                                                {% endfor %}
+                                            </div>
+                                        </div>
+                                        {% endif %}
+                                        <div class="row mb-3">
+                                            <div class="col-md-6">
+                                                <strong>Projects Created:</strong>
+                                                <div>{{ profile.posted_projects_count|default:"0" }}</div>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <strong>Projects Completed:</strong>
+                                                <div>{{ profile.completed_projects_count|default:"0" }}</div>
+                                            </div>
+                                        </div>
+                                        <div class="row">
+                                            <div class="col-md-6">
+                                                <strong>Wallet Balance:</strong>
+                                                <div>${{ profile.wallet.balance|default:"0.00" }}</div>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <strong>Total Earnings:</strong>
+                                                <div>${{ profile.total_earnings|default:"0.00" }}</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="modal-footer">
+                                        <a href="{% url 'view_freelancer_profile' profile.user.username %}" class="btn btn-primary">View Full Profile</a>
+                                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Deactivate User Modal -->
+                        <div class="modal fade" id="deactivateModal{{ profile.id }}" tabindex="-1" aria-labelledby="deactivateModalLabel{{ profile.id }}" aria-hidden="true">
+                            <div class="modal-dialog modal-dialog-centered">
+                                <div class="modal-content">
+                                    <div class="modal-header">
+                                        <h5 class="modal-title" id="deactivateModalLabel{{ profile.id }}">Deactivate User</h5>
+                                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                    </div>
+                                    <div class="modal-body">
+                                        <div class="text-center mb-4">
+                                            <i class="bi bi-exclamation-triangle-fill text-warning fs-1"></i>
+                                            <h5 class="my-3">Are you sure you want to deactivate this user?</h5>
+                                            <p class="text-muted">
+                                                This will prevent <strong>{{ profile.user.username }}</strong> from logging in 
+                                                and using the platform. All their existing projects and content will remain intact.
+                                            </p>
+                                        </div>
+                                    </div>
+                                    <div class="modal-footer">
+                                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                                        <form method="post" action="{% url 'admin_deactivate_user' profile.user.id %}">
+                                            {% csrf_token %}
+                                            <button type="submit" class="btn btn-danger">Deactivate User</button>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Activate User Modal -->
+                        <div class="modal fade" id="activateModal{{ profile.id }}" tabindex="-1" aria-labelledby="activateModalLabel{{ profile.id }}" aria-hidden="true">
+                            <div class="modal-dialog modal-dialog-centered">
+                                <div class="modal-content">
+                                    <div class="modal-header">
+                                        <h5 class="modal-title" id="activateModalLabel{{ profile.id }}">Activate User</h5>
+                                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                    </div>
+                                    <div class="modal-body">
+                                        <div class="text-center mb-4">
+                                            <i class="bi bi-check-circle-fill text-success fs-1"></i>
+                                            <h5 class="my-3">Activate this user account?</h5>
+                                            <p class="text-muted">
+                                                This will allow <strong>{{ profile.user.username }}</strong> to log in 
+                                                and regain access to all their projects and content.
+                                            </p>
+                                        </div>
+                                    </div>
+                                    <div class="modal-footer">
+                                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                                        <form method="post" action="{% url 'admin_activate_user' profile.user.id %}">
+                                            {% csrf_token %}
+                                            <button type="submit" class="btn btn-success">Activate User</button>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="6" class="text-center py-4">
+                        <i class="bi bi-people fs-1 d-block mb-3 text-muted"></i>
+                        <p class="mb-0">No users found matching your criteria</p>
+                        <a href="{% url 'admin_users' %}" class="btn btn-sm btn-outline-primary mt-3">Clear Filters</a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Pagination -->
+<div class="mt-4 d-flex justify-content-center">
+    <nav aria-label="Page navigation">
+        <ul class="pagination">
+            {% if profiles.has_previous %}
+            <li class="page-item">
+                <a class="page-link" href="?page={{ profiles.previous_page_number }}{% if search %}&search={{ search }}{% endif %}{% if user_type %}&user_type={{ user_type }}{% endif %}{% if status %}&status={{ status }}{% endif %}" aria-label="Previous">
+                    <span aria-hidden="true">&laquo;</span>
+                </a>
+            </li>
+            {% else %}
+            <li class="page-item disabled">
+                <a class="page-link" href="#" tabindex="-1" aria-disabled="true">&laquo;</a>
+            </li>
+            {% endif %}
+            
+            {% for i in profiles.paginator.page_range %}
+                {% if profiles.number == i %}
+                <li class="page-item active" aria-current="page">
+                    <span class="page-link">{{ i }}</span>
+                </li>
+                {% else %}
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ i }}{% if search %}&search={{ search }}{% endif %}{% if user_type %}&user_type={{ user_type }}{% endif %}{% if status %}&status={{ status }}{% endif %}">{{ i }}</a>
+                </li>
+                {% endif %}
+            {% endfor %}
+            
+            {% if profiles.has_next %}
+            <li class="page-item">
+                <a class="page-link" href="?page={{ profiles.next_page_number }}{% if search %}&search={{ search }}{% endif %}{% if user_type %}&user_type={{ user_type }}{% endif %}{% if status %}&status={{ status }}{% endif %}" aria-label="Next">
+                    <span aria-hidden="true">&raquo;</span>
+                </a>
+            </li>
+            {% else %}
+            <li class="page-item disabled">
+                <a class="page-link" href="#" tabindex="-1" aria-disabled="true">&raquo;</a>
+            </li>
+            {% endif %}
+        </ul>
+    </nav>
+</div>
+
+<!-- Export Modal -->
+<div class="modal fade" id="exportModal" tabindex="-1" aria-labelledby="exportModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="exportModalLabel">Export Users</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form action="{% url 'admin_export_users' %}" method="post">
+                    {% csrf_token %}
+                    <div class="mb-3">
+                        <label for="exportFormat" class="form-label">Format</label>
+                        <select class="form-select" id="exportFormat" name="format">
+                            <option value="csv">CSV</option>
+                            <option value="xlsx">Excel (XLSX)</option>
+                            <option value="json">JSON</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="userTypeExport" class="form-label">User Type</label>
+                        <select class="form-select" id="userTypeExport" name="user_type">
+                            <option value="">All Users</option>
+                            <option value="freelancer">Only Freelancers</option>
+                            <option value="client">Only Clients</option>
+                            <option value="admin">Only Administrators</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Fields to Export</label>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" value="username" id="field_username" name="fields" checked>
+                            <label class="form-check-label" for="field_username">Username</label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" value="email" id="field_email" name="fields" checked>
+                            <label class="form-check-label" for="field_email">Email</label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" value="full_name" id="field_full_name" name="fields" checked>
+                            <label class="form-check-label" for="field_full_name">Full Name</label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" value="user_type" id="field_user_type" name="fields" checked>
+                            <label class="form-check-label" for="field_user_type">User Type</label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" value="date_joined" id="field_date_joined" name="fields" checked>
+                            <label class="form-check-label" for="field_date_joined">Date Joined</label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" value="projects" id="field_projects" name="fields">
+                            <label class="form-check-label" for="field_projects">Projects Count</label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" value="wallet" id="field_wallet" name="fields">
+                            <label class="form-check-label" for="field_wallet">Wallet Balance</label>
+                        </div>
+                    </div>
+                    <div class="form-check mb-3">
+                        <input class="form-check-input" type="checkbox" value="apply_filters" id="apply_filters" name="apply_filters">
+                        <label class="form-check-label" for="apply_filters">
+                            Apply current search filters to export
+                        </label>
+                    </div>
+                    <input type="hidden" name="current_search" value="{{ search }}">
+                    <input type="hidden" name="current_user_type" value="{{ user_type }}">
+                    <input type="hidden" name="current_status" value="{{ status }}">
+                    <div class="d-grid">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-download me-2"></i> Export Users
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

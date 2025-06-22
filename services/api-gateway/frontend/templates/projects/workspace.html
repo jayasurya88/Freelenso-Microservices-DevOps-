@@ -1,0 +1,150 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ project.title }} - Workspace{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Project Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <h2>{{ project.title }}</h2>
+                <div>
+                    {% if is_client %}
+                        <a href="{% url 'edit_project' project.id %}" class="btn btn-outline-primary me-2">
+                            <i class="bi bi-pencil"></i> Edit Project
+                        </a>
+                    {% endif %}
+                    <a href="{% url 'project_milestones' project_id=project.id %}" class="btn btn-outline-success me-2">
+                        <i class="bi bi-list-check"></i> Milestones
+                    </a>
+                    <a href="{% url 'chat_room' project.id %}" class="btn btn-primary">
+                        <i class="bi bi-chat"></i> Open Chat
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Project Status -->
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Project Status</h5>
+                    <p class="card-text">
+                        Status: <span class="badge bg-{{ project.status_color }}">{{ project.get_status_display }}</span>
+                    </p>
+                    <p class="card-text">
+                        Progress: {{ project.progress }}%
+                    </p>
+                    <div class="progress mb-3">
+                        <div class="progress-bar" role="progressbar" style="width: {{ project.progress }}%"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Project Details</h5>
+                    <p class="card-text">
+                        <strong>Client:</strong> {{ project.client.user.username }}
+                    </p>
+                    {% if project.assigned_freelancer %}
+                    <p class="card-text">
+                        <strong>Freelancer:</strong> {{ project.assigned_freelancer.user.username }}
+                    </p>
+                    {% endif %}
+                    <p class="card-text">
+                        <strong>Budget:</strong> ${{ project.budget_min }} - ${{ project.budget_max }}
+                    </p>
+                    <p class="card-text">
+                        <strong>Deadline:</strong> {{ project.deadline|date:"M d, Y" }}
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Project Files -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">Project Files</h5>
+                    <form method="post" action="{% url 'upload_file' project.id %}" enctype="multipart/form-data" class="d-flex">
+                        {% csrf_token %}
+                        <input type="file" name="file" class="form-control me-2" required>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-upload"></i> Upload
+                        </button>
+                    </form>
+                </div>
+                <div class="card-body">
+                    {% if project_files %}
+                        <div class="table-responsive">
+                            <table class="table">
+                                <thead>
+                                    <tr>
+                                        <th>File Name</th>
+                                        <th>Uploaded By</th>
+                                        <th>Upload Date</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for file in project_files %}
+                                    <tr>
+                                        <td>{{ file.file_name }}</td>
+                                        <td>{{ file.uploaded_by.username }}</td>
+                                        <td>{{ file.uploaded_at|date:"M d, Y H:i" }}</td>
+                                        <td>
+                                            <a href="{{ file.file.url }}" class="btn btn-sm btn-outline-primary" target="_blank">
+                                                <i class="fas fa-download"></i> Download
+                                            </a>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <p class="text-muted">No files uploaded yet.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Project Activities -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Recent Activities</h5>
+                </div>
+                <div class="card-body">
+                    {% if activities %}
+                        <div class="list-group">
+                            {% for activity in activities %}
+                            <div class="list-group-item">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <strong>{{ activity.user.username }}</strong> {{ activity.description }}
+                                    </div>
+                                    <small class="text-muted">{{ activity.created_at|date:"M d, Y H:i" }}</small>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <p class="text-muted">No recent activities.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

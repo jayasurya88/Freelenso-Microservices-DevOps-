@@ -1,0 +1,295 @@
+{% extends 'base.html' %}
+
+{% block title %}Register{% endblock %}
+
+{% block extra_css %}
+<style>
+    .register-container {
+        min-height: 85vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 3rem 0;
+    }
+    
+    .register-card {
+        border-radius: 1.5rem;
+        overflow: hidden;
+        box-shadow: 0 10px 30px var(--shadow-color);
+        transition: all 0.3s ease;
+    }
+    
+    .register-form {
+        padding: 2.5rem;
+    }
+    
+    .register-header {
+        margin-bottom: 2rem;
+    }
+    
+    .register-header h2 {
+        font-weight: 700;
+        margin-bottom: 0.5rem;
+    }
+    
+    .form-floating {
+        margin-bottom: 1.5rem;
+    }
+    
+    .form-floating .form-control {
+        border-radius: 0.75rem;
+        border: 1px solid var(--border-color);
+        padding: 1rem 1rem 1rem 2.5rem;
+        height: 3.5rem;
+        font-size: 1rem;
+        transition: all 0.2s ease;
+    }
+    
+    .form-floating .form-control:focus {
+        box-shadow: 0 0 0 0.25rem rgba(17, 24, 39, 0.15);
+        border-color: var(--accent-color);
+    }
+    
+    .form-floating label {
+        padding-left: 2.5rem;
+    }
+    
+    .input-icon {
+        position: absolute;
+        top: 1.15rem;
+        left: 1rem;
+        color: var(--text-muted);
+        z-index: 2;
+    }
+    
+    .register-button {
+        width: 100%;
+        padding: 0.85rem;
+        border-radius: 0.75rem;
+        font-weight: 600;
+        margin-top: 0.5rem;
+        transition: all 0.3s ease;
+    }
+    
+    .register-button:hover {
+        transform: translateY(-3px);
+    }
+    
+    .user-type-container {
+        margin-bottom: 1.5rem;
+    }
+    
+    .user-type-option {
+        border-radius: 1rem;
+        overflow: hidden;
+        border: 1px solid var(--border-color);
+        background-color: var(--background-card);
+        transition: all 0.2s ease;
+        height: 100%;
+        cursor: pointer;
+    }
+    
+    .user-type-option:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 5px 15px var(--shadow-color);
+    }
+    
+    .user-type-radio {
+        display: none;
+    }
+    
+    .user-type-radio:checked + .user-type-option {
+        border-color: var(--primary-color);
+        box-shadow: 0 5px 15px var(--shadow-color);
+    }
+    
+    .user-type-radio:checked + .user-type-option .user-type-check {
+        opacity: 1;
+        transform: scale(1);
+    }
+    
+    .user-type-icon {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 50px;
+        height: 50px;
+        border-radius: 50%;
+        background: rgba(17, 24, 39, 0.05);
+        margin-bottom: 1rem;
+    }
+    
+    [data-bs-theme="dark"] .user-type-icon {
+        background: rgba(255, 255, 255, 0.05);
+    }
+    
+    .user-type-content {
+        padding: 1.5rem;
+        text-align: center;
+        position: relative;
+    }
+    
+    .user-type-check {
+        position: absolute;
+        top: 1rem;
+        right: 1rem;
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        background: var(--primary-color);
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        opacity: 0;
+        transform: scale(0);
+        transition: all 0.2s ease;
+    }
+    
+    .register-footer {
+        margin-top: 1.5rem;
+    }
+    
+    .register-footer a {
+        color: var(--primary-color);
+        text-decoration: none;
+        font-weight: 500;
+        transition: all 0.2s ease;
+    }
+    
+    .register-footer a:hover {
+        opacity: 0.8;
+    }
+    
+    .animated-bg {
+        position: absolute;
+        width: 500px;
+        height: 500px;
+        filter: blur(80px);
+        opacity: 0.08;
+        border-radius: 50%;
+        top: 50%;
+        right: 0;
+        transform: translate(50%, -50%);
+        background: var(--gradient);
+        z-index: -1;
+    }
+    
+    @media (max-width: 768px) {
+        .register-form {
+            padding: 2rem 1.5rem;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="animated-bg"></div>
+<div class="register-container">
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-lg-7 col-md-9">
+                <div class="register-card card">
+                    <div class="register-form">
+                        <div class="register-header text-center">
+                            <h2>Join Freelenso</h2>
+                            <p class="text-muted">Create your account and start freelancing</p>
+                        </div>
+                        
+                        <form method="POST">
+                            {% csrf_token %}
+                            
+                            <div class="position-relative">
+                                <div class="input-icon">
+                                    <i class="bi bi-person"></i>
+                                </div>
+                                <div class="form-floating">
+                                    <input type="text" class="form-control" id="username" name="username" placeholder="Username" required>
+                                    <label for="username">Username</label>
+                                </div>
+                            </div>
+                            
+                            <div class="position-relative">
+                                <div class="input-icon">
+                                    <i class="bi bi-envelope"></i>
+                                </div>
+                                <div class="form-floating">
+                                    <input type="email" class="form-control" id="email" name="email" placeholder="Email" required>
+                                    <label for="email">Email address</label>
+                                </div>
+                            </div>
+                            
+                            <div class="position-relative">
+                                <div class="input-icon">
+                                    <i class="bi bi-lock"></i>
+                                </div>
+                                <div class="form-floating">
+                                    <input type="password" class="form-control" id="password" name="password" placeholder="Password" required>
+                                    <label for="password">Password</label>
+                                </div>
+                                <div class="form-text mt-1 ms-1">
+                                    <i class="bi bi-info-circle me-1"></i>
+                                    Password must be at least 8 characters long
+                                </div>
+                            </div>
+                            
+                            <div class="mb-4 mt-4">
+                                <label class="form-label mb-3">I want to:</label>
+                                <div class="row g-3 user-type-container">
+                                    <div class="col-md-6">
+                                        <input type="radio" class="user-type-radio" name="user_type" id="freelancer" value="freelancer" required>
+                                        <label class="user-type-option" for="freelancer">
+                                            <div class="user-type-content">
+                                                <div class="user-type-check">
+                                                    <i class="bi bi-check-lg"></i>
+                                                </div>
+                                                <div class="user-type-icon text-primary mx-auto">
+                                                    <i class="bi bi-person-workspace fs-4"></i>
+                                                </div>
+                                                <h6 class="mb-2">Work as a Freelancer</h6>
+                                                <p class="text-muted mb-0 small">Find projects and offer your services</p>
+                                            </div>
+                                        </label>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <input type="radio" class="user-type-radio" name="user_type" id="client" value="client" required>
+                                        <label class="user-type-option" for="client">
+                                            <div class="user-type-content">
+                                                <div class="user-type-check">
+                                                    <i class="bi bi-check-lg"></i>
+                                                </div>
+                                                <div class="user-type-icon text-primary mx-auto">
+                                                    <i class="bi bi-briefcase fs-4"></i>
+                                                </div>
+                                                <h6 class="mb-2">Hire Freelancers</h6>
+                                                <p class="text-muted mb-0 small">Post projects and hire talent</p>
+                                            </div>
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="mb-4">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="terms" required>
+                                    <label class="form-check-label text-muted" for="terms">
+                                        I agree to the <a href="#">Terms of Service</a> and <a href="#">Privacy Policy</a>
+                                    </label>
+                                </div>
+                            </div>
+                            
+                            <button type="submit" class="btn btn-primary register-button">
+                                Create Account
+                            </button>
+                        </form>
+                        
+                        <div class="register-footer text-center">
+                            <p class="text-muted mb-0">Already have an account? <a href="{% url 'login' %}">Sign In</a></p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

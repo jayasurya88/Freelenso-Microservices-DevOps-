@@ -1,0 +1,402 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ project.title }}{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    {% if messages %}
+        {% for message in messages %}
+            <div class="alert alert-{{ message.tags }} alert-dismissible fade show mb-4" role="alert">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        {% endfor %}
+    {% endif %}
+
+    <!-- Project Header -->
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-body">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1 class="h3 mb-0">{{ project.title }}</h1>
+                <div>
+                    {% if is_owner %}
+                        {% if project.status == 'open' %}
+                            <a href="{% url 'manage_applications' project.id %}" class="btn btn-primary me-2">
+                                <i class="bi bi-people me-2"></i>Manage Applications
+                            </a>
+                        {% else %}
+                            <a href="{% url 'project_workspace' project.id %}" class="btn btn-primary me-2">
+                                <i class="bi bi-briefcase me-2"></i>Go to Workspace
+                            </a>
+                        {% endif %}
+                        <button type="button" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#deleteProjectModal">
+                            <i class="bi bi-trash me-2"></i>Delete Project
+                        </button>
+                    {% elif project.assigned_freelancer == user.userprofile %}
+                        <a href="{% url 'project_workspace' project.id %}" class="btn btn-primary me-2">
+                            <i class="bi bi-briefcase me-2"></i>Go to Workspace
+                        </a>
+                    {% elif has_active_application %}
+                        <div class="alert alert-info mb-0">
+                            <i class="bi bi-info-circle me-2"></i>You have already applied to this project
+                        </div>
+                    {% elif user.userprofile.is_freelancer %}
+                        <a href="{% url 'apply_to_project' project.id %}" class="btn btn-primary">
+                            <i class="bi bi-send me-2"></i>Apply Now
+                        </a>
+                    {% else %}
+                        <div class="alert alert-info mb-0">
+                            <i class="bi bi-info-circle me-2"></i>Only freelancers can apply to projects
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Project Status and Review Section -->
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <span class="badge {% if project.status == 'completed' %}bg-success{% elif project.status == 'in_progress' %}bg-primary{% else %}bg-warning{% endif %} p-2">
+                        {{ project.get_status_display }}
+                    </span>
+                </div>
+                <div>
+                    <!-- Review Button Section -->
+                    {% if project.status == 'completed' %}
+                        {% if can_review %}
+                            <a href="{% url 'leave_review' project.id %}" class="btn btn-success">
+                                <i class="bi bi-star me-2"></i>Leave Review
+                            </a>
+                        {% elif user_review %}
+                            <a href="{% url 'project_reviews' project.id %}" class="btn btn-outline-primary">
+                                <i class="bi bi-star-fill me-2"></i>View Reviews
+                            </a>
+                        {% else %}
+                            <a href="{% url 'project_reviews' project.id %}" class="btn btn-outline-secondary">
+                                <i class="bi bi-star me-2"></i>View Reviews
+                            </a>
+                        {% endif %}
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Project Budget and Duration -->
+            <div class="row g-4 mb-4">
+                <div class="col-md-4">
+                    <div class="card h-100 border-0 bg-light">
+                        <div class="card-body">
+                            <h6 class="card-subtitle mb-2 text-muted">Budget Range</h6>
+                            <h4 class="card-title mb-0">${{ project.budget_min }} - ${{ project.budget_max }}</h4>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="card h-100 border-0 bg-light">
+                        <div class="card-body">
+                            <h6 class="card-subtitle mb-2 text-muted">Project Duration</h6>
+                            <h4 class="card-title mb-0">{{ project.get_duration_display }}</h4>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="card h-100 border-0 bg-light">
+                        <div class="card-body">
+                            <h6 class="card-subtitle mb-2 text-muted">Experience Level</h6>
+                            <h4 class="card-title mb-0">{{ project.get_experience_level_display }}</h4>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Project Description -->
+            <h5 class="mb-3">Project Description</h5>
+            <div class="mb-4">
+                {{ project.description|linebreaks }}
+            </div>
+
+            <!-- Project Reviews Section -->
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">Project Reviews</h5>
+                    {% if can_review %}
+                        <a href="{% url 'leave_review' project.id %}" class="btn btn-primary btn-sm">
+                            <i class="bi bi-plus-circle me-2"></i>Leave a Review
+                        </a>
+                    {% endif %}
+                </div>
+                <div class="card-body">
+                    {% if project.reviews.exists %}
+                        <!-- Average Rating -->
+                        <div class="text-center mb-4">
+                            <div class="display-4 mb-2">{{ avg_rating }}</div>
+                            <div class="rating mb-3">
+                                {% for i in "12345" %}
+                                    {% if forloop.counter <= avg_rating %}
+                                        <i class="bi bi-star-fill text-warning fs-4"></i>
+                                    {% else %}
+                                        <i class="bi bi-star text-warning fs-4"></i>
+                                    {% endif %}
+                                {% endfor %}
+                            </div>
+                            <p class="text-muted mb-0">{{ total_reviews }} reviews</p>
+                        </div>
+
+                        <!-- Reviews List -->
+                        {% for review in project.reviews.all %}
+                            {% if review.is_public %}
+                                <div class="review-item {% if not forloop.last %}mb-4 pb-4 border-bottom{% endif %}">
+                                    <div class="d-flex justify-content-between align-items-start mb-2">
+                                        <div>
+                                            <h6 class="mb-1">{{ review.reviewer.user.get_full_name|default:review.reviewer.user.username }}</h6>
+                                            <div class="rating">
+                                                {% for i in "12345" %}
+                                                    {% if forloop.counter <= review.rating %}
+                                                        <i class="bi bi-star-fill text-warning"></i>
+                                                    {% else %}
+                                                        <i class="bi bi-star text-warning"></i>
+                                                    {% endif %}
+                                                {% endfor %}
+                                            </div>
+                                        </div>
+                                        <small class="text-muted">{{ review.created_at|date:"M d, Y" }}</small>
+                                    </div>
+                                    <p class="mb-2">{{ review.review_text|linebreaks }}</p>
+                                    {% if user.userprofile == review.reviewer %}
+                                        <div class="mt-2">
+                                            <a href="{% url 'edit_review' project_id=project.id review_id=review.id %}" class="btn btn-sm btn-outline-primary">
+                                                <i class="bi bi-pencil me-1"></i>Edit
+                                            </a>
+                                            <a href="{% url 'delete_review' project_id=project.id review_id=review.id %}" class="btn btn-sm btn-outline-danger ms-2">
+                                                <i class="bi bi-trash me-1"></i>Delete
+                                            </a>
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            {% endif %}
+                        {% endfor %}
+                    {% else %}
+                        <div class="text-center py-4">
+                            <i class="bi bi-chat-dots display-4 text-muted mb-3 d-block"></i>
+                            <p class="text-muted mb-0">No reviews yet. Be the first to review this project!</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Required Skills -->
+            <h5 class="mb-3">Required Skills</h5>
+            <div class="d-flex flex-wrap gap-2 mb-4">
+                {% for skill in project.required_skills.split %}
+                    <span class="badge bg-primary bg-opacity-10 text-primary px-3 py-2">{{ skill }}</span>
+                {% endfor %}
+            </div>
+
+            {% if project.attachments.exists %}
+                <!-- Project Attachments -->
+                <h5 class="mb-3">Attachments</h5>
+                <div class="mb-4">
+                    <div class="list-group">
+                        {% for attachment in project.attachments.all %}
+                            <a href="{{ attachment.file.url }}" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center" target="_blank">
+                                <div>
+                                    <i class="bi bi-file-earmark me-2"></i>
+                                    {{ attachment.file.name|slice:"13:" }}
+                                </div>
+                                <span class="badge bg-primary rounded-pill">
+                                    <i class="bi bi-download"></i>
+                                </span>
+                            </a>
+                        {% endfor %}
+                    </div>
+                </div>
+            {% endif %}
+
+            {% if project.milestones.exists %}
+                <!-- Project Milestones -->
+                <h5 class="mb-3">
+                    Project Milestones
+                    {% if user.userprofile == project.client or user.userprofile == project.assigned_freelancer %}
+                    <a href="{% url 'project_milestones' project_id=project.id %}" class="btn btn-sm btn-outline-primary float-end">
+                        <i class="bi bi-list-check"></i> Manage Milestones
+                    </a>
+                    {% endif %}
+                </h5>
+                <div class="table-responsive">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Milestone</th>
+                                <th>Description</th>
+                                <th>Amount</th>
+                                <th>Due Date</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for milestone in project.milestones.all %}
+                                <tr>
+                                    <td>{{ milestone.title }}</td>
+                                    <td>{{ milestone.description }}</td>
+                                    <td>${{ milestone.amount }}</td>
+                                    <td>{{ milestone.due_date }}</td>
+                                    <td>
+                                        <span class="badge {% if milestone.status == 'completed' %}bg-success{% elif milestone.status == 'pending' %}bg-warning{% else %}bg-secondary{% endif %}">
+                                            {{ milestone.get_status_display }}
+                                        </span>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+
+    {% if has_applied %}
+        <!-- Application Status -->
+        <div class="card border-0 shadow-sm">
+            <div class="card-body">
+                <h5 class="card-title mb-4">Your Application</h5>
+                <div class="mb-4">
+                    <h6 class="text-muted mb-2">Status</h6>
+                    <span class="badge {% if application.status == 'accepted' %}bg-success{% elif application.status == 'rejected' %}bg-danger{% else %}bg-warning{% endif %} p-2">
+                        {{ application.get_status_display }}
+                    </span>
+                </div>
+                <div class="mb-4">
+                    <h6 class="text-muted mb-2">Your Proposal</h6>
+                    <p>{{ application.cover_letter }}</p>
+                </div>
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6 class="text-muted mb-2">Proposed Budget</h6>
+                        <p>${{ application.proposed_budget }}</p>
+                    </div>
+                    <div class="col-md-6">
+                        <h6 class="text-muted mb-2">Estimated Duration</h6>
+                        <p>{{ application.get_estimated_duration_display }}</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    {% endif %}
+
+    {% if applications %}
+        <div class="card border-0 shadow-sm mb-4">
+            <div class="card-body">
+                {% if project.status == 'open' %}
+                    <h5 class="card-title mb-4">Applications ({{ active_applications_count }})</h5>
+                {% else %}
+                    <h5 class="card-title mb-4">Selected Freelancer</h5>
+                {% endif %}
+                
+                {% for application in applications %}
+                    <div class="application-item {% if not forloop.last %}border-bottom pb-4 mb-4{% endif %}">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div>
+                                <div class="d-flex align-items-center mb-2">
+                                    <a href="{% url 'view_freelancer_profile' application.freelancer.user.username %}" class="text-decoration-none">
+                                        <h6 class="mb-0">{{ application.freelancer.user.get_full_name|default:application.freelancer.user.username }}</h6>
+                                    </a>
+                                    <span class="badge bg-primary bg-opacity-10 text-primary ms-2">
+                                        ${{ application.proposed_budget }}/hr
+                                    </span>
+                                </div>
+                                <p class="text-muted mb-3">{{ application.cover_letter }}</p>
+                                <div class="d-flex gap-3 text-muted small">
+                                    <div>
+                                        <i class="bi bi-clock me-1"></i>
+                                        <span>{{ application.get_estimated_duration_display }}</span>
+                                    </div>
+                                    <div>
+                                        <i class="bi bi-calendar me-1"></i>
+                                        <span>Applied {{ application.created_at|timesince }} ago</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="d-flex gap-2">
+                                {% if project.status == 'open' and application.status == 'pending' %}
+                                    <form method="post" action="{% url 'manage_applications' project.id %}" class="d-inline">
+                                        {% csrf_token %}
+                                        <input type="hidden" name="application_id" value="{{ application.id }}">
+                                        <input type="hidden" name="action" value="accept">
+                                        <button type="submit" class="btn btn-success">
+                                            <i class="bi bi-check-lg me-2"></i>Accept
+                                        </button>
+                                    </form>
+                                    <form method="post" action="{% url 'manage_applications' project.id %}" class="d-inline">
+                                        {% csrf_token %}
+                                        <input type="hidden" name="application_id" value="{{ application.id }}">
+                                        <input type="hidden" name="action" value="reject">
+                                        <button type="submit" class="btn btn-danger">
+                                            <i class="bi bi-x-lg me-2"></i>Reject
+                                        </button>
+                                    </form>
+                                {% else %}
+                                    <span class="badge {% if application.status == 'accepted' %}bg-success{% else %}bg-danger{% endif %} p-2">
+                                        {{ application.get_status_display }}
+                                    </span>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+    {% endif %}
+</div>
+
+<!-- Delete Project Modal -->
+{% if is_owner %}
+<div class="modal fade" id="deleteProjectModal" tabindex="-1" aria-labelledby="deleteProjectModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header border-0">
+                <h5 class="modal-title text-danger" id="deleteProjectModalLabel">
+                    <i class="bi bi-exclamation-triangle-fill me-2"></i>Delete Project
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="alert alert-warning">
+                    <h6 class="alert-heading">⚠️ Warning</h6>
+                    <p class="mb-0">This action cannot be undone. This will permanently delete the project, all applications, and associated files.</p>
+                </div>
+                <form id="deleteProjectForm" method="POST" action="{% url 'delete_project' project.id %}">
+                    {% csrf_token %}
+                    <div class="mb-3">
+                        <label for="confirmProjectName" class="form-label">Please type <strong>{{ project.title }}</strong> to confirm deletion:</label>
+                        <input type="text" class="form-control" id="confirmProjectName" required>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer border-0">
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-danger" id="confirmDeleteBtn" disabled>
+                    <i class="bi bi-trash me-2"></i>Delete Project
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const confirmInput = document.getElementById('confirmProjectName');
+    const confirmBtn = document.getElementById('confirmDeleteBtn');
+    const projectTitle = "{{ project.title }}";
+    const deleteForm = document.getElementById('deleteProjectForm');
+
+    confirmInput.addEventListener('input', function() {
+        confirmBtn.disabled = this.value !== projectTitle;
+    });
+
+    confirmBtn.addEventListener('click', function() {
+        if (confirmInput.value === projectTitle) {
+            deleteForm.submit();
+        }
+    });
+});
+</script>
+{% endif %}
+{% endblock %} 
