@@ -4,6 +4,7 @@ services:
   # User Service
   user-service:
     build: ./services/user-service
+    image: freelenso-user-service:latest
     ports:
       - "8001:8000"
     environment:
@@ -14,6 +15,7 @@ services:
   # Project Service
   project-service:
     build: ./services/project-service
+    image: freelenso-project-service:latest
     ports:
       - "8002:8000"
     environment:
@@ -24,6 +26,7 @@ services:
   # Payment Service
   payment-service:
     build: ./services/payment-service
+    image: freelenso-payment-service:latest
     ports:
       - "8003:8000"
     environment:
@@ -34,6 +37,7 @@ services:
   # Notification Service
   notification-service:
     build: ./services/notification-service
+    image: freelenso-notification-service:latest
     ports:
       - "8004:8000"
     environment:
@@ -46,18 +50,24 @@ services:
   # Django Frontend Service
   web:
     build: .
+    image: freelenso-web:latest
     ports:
       - "8000:8000"
     volumes:
       - .:/app
     environment:
-      - DATABASE_URL=postgresql://postgres:postgres@user-db:5432/user_service # Using user-db for now, adjust if frontend needs its own DB
+      - POSTGRES_DB=freelenso_db
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_HOST=freelenso-db
+      - POSTGRES_PORT=5432
     depends_on:
-      - user-db # Assuming frontend might need access to user data for login/registration
+      - freelenso-db
 
   # API Gateway
   api-gateway:
     build: ./services/api-gateway
+    image: freelenso-api-gateway:latest
     ports:
       - "80:80"
     volumes:
@@ -67,7 +77,22 @@ services:
       - project-service
       - payment-service
       - notification-service
-      - web # Add dependency on the new frontend service
+      - web
+
+  # Main Django Database
+  freelenso-db:
+    image: postgres:13
+    environment:
+      - POSTGRES_DB=freelenso_db
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+    volumes:
+      - freelenso_db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
 
   # Databases
   user-db:
@@ -135,4 +160,5 @@ volumes:
   user_db_data:
   project_db_data:
   payment_db_data:
-  notification_db_data: 
+  notification_db_data:
+  freelenso_db_data: 
