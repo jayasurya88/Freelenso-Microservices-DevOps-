@@ -19,7 +19,7 @@ spec:
         - containerPort: 8000
         env:
         - name: DATABASE_URL
-          value: postgresql://postgres:postgres@user-db:5432/user_service
+          value: postgresql://postgres:postgres@user-db:5432/freelenso_db
 ---
 apiVersion: v1
 kind: Service
