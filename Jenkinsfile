@@ -46,6 +46,14 @@ pipeline {
             steps {
                 dir('services/user-service') {
                     script {
+                        sh '''
+                        echo "=== Checking files in user-service ==="
+                        ls -la
+                        echo "=== Dockerfile content ==="
+                        cat Dockerfile || echo "Dockerfile not found"
+                        echo "=== Requirements content ==="
+                        cat requirements.txt || echo "requirements.txt not found"
+                        '''
                         withDockerRegistry(credentialsId: 'docker-cred', toolName: 'docker') {
                             sh "docker build -t ${USER_SERVICE_IMAGE} ."
                             sh "docker push ${USER_SERVICE_IMAGE}"
@@ -59,6 +67,14 @@ pipeline {
             steps {
                 dir('services/project-service') {
                     script {
+                        sh '''
+                        echo "=== Checking files in project-service ==="
+                        ls -la
+                        echo "=== Dockerfile content ==="
+                        cat Dockerfile || echo "Dockerfile not found"
+                        echo "=== Requirements content ==="
+                        cat requirements.txt || echo "requirements.txt not found"
+                        '''
                         withDockerRegistry(credentialsId: 'docker-cred', toolName: 'docker') {
                             sh "docker build -t ${PROJECT_SERVICE_IMAGE} ."
                             sh "docker push ${PROJECT_SERVICE_IMAGE}"
@@ -72,6 +88,14 @@ pipeline {
             steps {
                 dir('services/notification-service') {
                     script {
+                        sh '''
+                        echo "=== Checking files in notification-service ==="
+                        ls -la
+                        echo "=== Dockerfile content ==="
+                        cat Dockerfile || echo "Dockerfile not found"
+                        echo "=== Requirements content ==="
+                        cat requirements.txt || echo "requirements.txt not found"
+                        '''
                         withDockerRegistry(credentialsId: 'docker-cred', toolName: 'docker') {
                             sh "docker build -t ${NOTIFICATION_SERVICE_IMAGE} ."
                             sh "docker push ${NOTIFICATION_SERVICE_IMAGE}"
@@ -85,6 +109,14 @@ pipeline {
             steps {
                 dir('services/payment-service') {
                     script {
+                        sh '''
+                        echo "=== Checking files in payment-service ==="
+                        ls -la
+                        echo "=== Dockerfile content ==="
+                        cat Dockerfile || echo "Dockerfile not found"
+                        echo "=== Requirements content ==="
+                        cat requirements.txt || echo "requirements.txt not found"
+                        '''
                         withDockerRegistry(credentialsId: 'docker-cred', toolName: 'docker') {
                             sh "docker build -t ${PAYMENT_SERVICE_IMAGE} ."
                             sh "docker push ${PAYMENT_SERVICE_IMAGE}"
@@ -97,6 +129,14 @@ pipeline {
         stage('Build Web Application Image') {
             steps {
                 script {
+                    sh '''
+                    echo "=== Checking files in web ==="
+                    ls -la
+                    echo "=== Dockerfile content ==="
+                    cat Dockerfile || echo "Dockerfile not found"
+                    echo "=== Requirements content ==="
+                    cat requirements.txt || echo "requirements.txt not found"
+                    '''
                     withDockerRegistry(credentialsId: 'docker-cred', toolName: 'docker') {
                         sh "docker build -t ${WEB_IMAGE} ."
                         sh "docker push ${WEB_IMAGE}"
@@ -109,6 +149,14 @@ pipeline {
             steps {
                 dir('services/api-gateway') {
                     script {
+                        sh '''
+                        echo "=== Checking files in api-gateway ==="
+                        ls -la
+                        echo "=== Dockerfile content ==="
+                        cat Dockerfile || echo "Dockerfile not found"
+                        echo "=== Requirements content ==="
+                        cat requirements.txt || echo "requirements.txt not found"
+                        '''
                         withDockerRegistry(credentialsId: 'docker-cred', toolName: 'docker') {
                             sh "docker build -t ${API_GATEWAY_IMAGE} ."
                             sh "docker push ${API_GATEWAY_IMAGE}"
@@ -133,10 +181,7 @@ pipeline {
         stage('Deploy to Kubernetes') {
             steps {
                 script {
-                    // Apply all Kubernetes manifests
                     sh "kubectl apply -f k8s/"
-                    
-                    // Wait for deployments to be ready
                     sh """
                     kubectl wait --for=condition=available --timeout=300s deployment/user-db
                     kubectl wait --for=condition=available --timeout=300s deployment/project-db
