@@ -41,7 +41,7 @@ pipeline {
                             -Dsonar.sources=services,core,freelenso \
                             -Dsonar.language=py \
                             -Dsonar.python.version=3 \
-                            -Dsonar.host.url=http://localhost:9000 \
+                            -Dsonar.host.url=http://172.22.2.14:9000 \
                             -Dsonar.sourceEncoding=UTF-8
                         """
                     }
