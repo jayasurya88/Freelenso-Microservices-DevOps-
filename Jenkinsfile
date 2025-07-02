@@ -166,6 +166,16 @@ pipeline {
             }
         }
 
+        stage('Install Docker Scout') {
+            steps {
+                sh '''
+                curl -fsSL https://raw.githubusercontent.com/docker/scout-cli/main/install.sh -o install-scout.sh
+                chmod +x install-scout.sh
+                sudo ./install-scout.sh
+                '''
+            }
+        }
+
         stage('Docker Scout Analysis') {
             steps {
                 script {
