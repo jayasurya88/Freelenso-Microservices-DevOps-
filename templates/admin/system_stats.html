@@ -1,0 +1,360 @@
+{% extends 'admin/admin_base.html' %}
+
+{% block title %}System Statistics{% endblock %}
+
+{% block page_title %}System Statistics{% endblock %}
+{% block page_subtitle %}Detailed statistics and trends for your platform{% endblock %}
+
+{% block content %}
+<!-- Filter Row -->
+<div class="data-card mb-4">
+    <div class="data-card-header">
+        <h5 class="data-card-title">Time Period</h5>
+    </div>
+    <div class="card-body pt-0">
+        <form method="get" class="row align-items-end">
+            <div class="col-md-4">
+                <label for="period" class="form-label">Show data for the last</label>
+                <select class="form-select" id="period" name="period" onchange="this.form.submit()">
+                    <option value="7" {% if days == 7 %}selected{% endif %}>7 days</option>
+                    <option value="30" {% if days == 30 %}selected{% endif %}>30 days</option>
+                    <option value="90" {% if days == 90 %}selected{% endif %}>90 days</option>
+                    <option value="180" {% if days == 180 %}selected{% endif %}>6 months</option>
+                    <option value="365" {% if days == 365 %}selected{% endif %}>1 year</option>
+                </select>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Stats Cards Row -->
+<div class="row">
+    <!-- New User Stats -->
+    <div class="col-lg-4 col-md-6 mb-4">
+        <div class="stat-card">
+            <div class="stat-card-header">
+                <div class="stat-card-icon" style="background-color: var(--primary);">
+                    <i class="bi bi-person-plus-fill"></i>
+                </div>
+            </div>
+            <div class="stat-card-body">
+                <div class="stat-card-title">New Users (Last {{ days }} days)</div>
+                <div class="stat-card-value">{{ new_users }}</div>
+                <div class="stat-card-info d-flex justify-content-between">
+                    <span>Freelancers: {{ new_freelancers }}</span>
+                    <span>Clients: {{ new_clients }}</span>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Project Stats -->
+    <div class="col-lg-4 col-md-6 mb-4">
+        <div class="stat-card">
+            <div class="stat-card-header">
+                <div class="stat-card-icon" style="background-color: var(--warning);">
+                    <i class="bi bi-kanban-fill"></i>
+                </div>
+            </div>
+            <div class="stat-card-body">
+                <div class="stat-card-title">Project Activity (Last {{ days }} days)</div>
+                <div class="stat-card-value">{{ new_projects }}</div>
+                <div class="stat-card-info">
+                    <span>Completed Projects: {{ completed_projects }}</span>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Financial Stats -->
+    <div class="col-lg-4 col-md-6 mb-4">
+        <div class="stat-card">
+            <div class="stat-card-header">
+                <div class="stat-card-icon" style="background-color: var(--info);">
+                    <i class="bi bi-cash-stack"></i>
+                </div>
+            </div>
+            <div class="stat-card-body">
+                <div class="stat-card-title">Financial Activity (Last {{ days }} days)</div>
+                <div class="stat-card-value">${{ total_transaction_volume }}</div>
+                <div class="stat-card-info">
+                    <span>Platform Fees: ${{ platform_fees }}</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Charts Row -->
+<div class="row">
+    <!-- Monthly Users Chart -->
+    <div class="col-lg-6 mb-4">
+        <div class="data-card h-100">
+            <div class="data-card-header">
+                <h5 class="data-card-title">User Growth (Monthly)</h5>
+            </div>
+            <div class="chart-container">
+                <canvas id="userGrowthChart"></canvas>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Monthly Projects Chart -->
+    <div class="col-lg-6 mb-4">
+        <div class="data-card h-100">
+            <div class="data-card-header">
+                <h5 class="data-card-title">Project Activity (Monthly)</h5>
+            </div>
+            <div class="chart-container">
+                <canvas id="projectActivityChart"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Transaction Volume Chart -->
+<div class="row">
+    <div class="col-lg-12 mb-4">
+        <div class="data-card">
+            <div class="data-card-header">
+                <h5 class="data-card-title">Transaction Volume (Monthly)</h5>
+            </div>
+            <div class="chart-container">
+                <canvas id="transactionVolumeChart"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Key Metrics Summary -->
+<div class="row">
+    <div class="col-lg-12 mb-4">
+        <div class="data-card">
+            <div class="data-card-header">
+                <h5 class="data-card-title">Summary</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-4 mb-3">
+                        <h6 class="fw-bold">User Growth</h6>
+                        <p>
+                            In the last {{ days }} days, {{ new_users }} new users have joined the platform.
+                            Out of these, {{ new_freelancers }} are freelancers and {{ new_clients }} are clients.
+                        </p>
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <h6 class="fw-bold">Project Activity</h6>
+                        <p>
+                            {{ new_projects }} new projects were created in the last {{ days }} days.
+                            {{ completed_projects }} projects were completed during this period.
+                        </p>
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <h6 class="fw-bold">Financial Activity</h6>
+                        <p>
+                            Total transaction volume of ${{ total_transaction_volume }} was processed.
+                            Platform earned ${{ platform_fees }} in fees during this period.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // User Growth Chart
+        const userGrowthData = JSON.parse('{{ monthly_users|safe }}');
+        const userCtx = document.getElementById('userGrowthChart').getContext('2d');
+        new Chart(userCtx, {
+            type: 'line',
+            data: {
+                labels: userGrowthData.labels,
+                datasets: [{
+                    label: 'New Users',
+                    data: userGrowthData.counts,
+                    backgroundColor: 'rgba(67, 97, 238, 0.1)',
+                    borderColor: '#4361ee',
+                    borderWidth: 2,
+                    tension: 0.3,
+                    fill: true,
+                    pointBackgroundColor: '#4361ee',
+                    pointBorderColor: '#fff',
+                    pointBorderWidth: 2,
+                    pointRadius: 4
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        grid: {
+                            drawBorder: false
+                        },
+                        ticks: {
+                            precision: 0
+                        }
+                    },
+                    x: {
+                        grid: {
+                            display: false
+                        }
+                    }
+                },
+                plugins: {
+                    legend: {
+                        display: false
+                    },
+                    tooltip: {
+                        backgroundColor: 'rgba(0, 0, 0, 0.7)',
+                        titleColor: '#fff',
+                        bodyColor: '#fff',
+                        borderColor: '#4361ee',
+                        borderWidth: 1,
+                        displayColors: false,
+                        callbacks: {
+                            title: function(tooltipItems) {
+                                return tooltipItems[0].label;
+                            },
+                            label: function(context) {
+                                return context.raw + ' new users';
+                            }
+                        }
+                    }
+                }
+            }
+        });
+        
+        // Project Activity Chart
+        const projectData = JSON.parse('{{ monthly_projects|safe }}');
+        const projectCtx = document.getElementById('projectActivityChart').getContext('2d');
+        new Chart(projectCtx, {
+            type: 'line',
+            data: {
+                labels: projectData.labels,
+                datasets: [{
+                    label: 'New Projects',
+                    data: projectData.counts,
+                    backgroundColor: 'rgba(247, 37, 133, 0.1)',
+                    borderColor: '#f72585',
+                    borderWidth: 2,
+                    tension: 0.3,
+                    fill: true,
+                    pointBackgroundColor: '#f72585',
+                    pointBorderColor: '#fff',
+                    pointBorderWidth: 2,
+                    pointRadius: 4
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        grid: {
+                            drawBorder: false
+                        },
+                        ticks: {
+                            precision: 0
+                        }
+                    },
+                    x: {
+                        grid: {
+                            display: false
+                        }
+                    }
+                },
+                plugins: {
+                    legend: {
+                        display: false
+                    },
+                    tooltip: {
+                        backgroundColor: 'rgba(0, 0, 0, 0.7)',
+                        titleColor: '#fff',
+                        bodyColor: '#fff',
+                        borderColor: '#f72585',
+                        borderWidth: 1,
+                        displayColors: false,
+                        callbacks: {
+                            title: function(tooltipItems) {
+                                return tooltipItems[0].label;
+                            },
+                            label: function(context) {
+                                return context.raw + ' projects';
+                            }
+                        }
+                    }
+                }
+            }
+        });
+        
+        // Transaction Volume Chart
+        const transactionData = JSON.parse('{{ monthly_transactions|safe }}');
+        const transactionCtx = document.getElementById('transactionVolumeChart').getContext('2d');
+        new Chart(transactionCtx, {
+            type: 'bar',
+            data: {
+                labels: transactionData.labels,
+                datasets: [{
+                    label: 'Transaction Volume',
+                    data: transactionData.amounts,
+                    backgroundColor: '#4cc9f0',
+                    borderColor: '#4cc9f0',
+                    borderWidth: 1,
+                    borderRadius: 6
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        grid: {
+                            drawBorder: false,
+                            color: 'rgba(0, 0, 0, 0.05)'
+                        },
+                        ticks: {
+                            callback: function(value) {
+                                return '$' + value;
+                            }
+                        }
+                    },
+                    x: {
+                        grid: {
+                            display: false
+                        }
+                    }
+                },
+                plugins: {
+                    legend: {
+                        display: false
+                    },
+                    tooltip: {
+                        backgroundColor: 'rgba(0, 0, 0, 0.7)',
+                        titleColor: '#fff',
+                        bodyColor: '#fff',
+                        borderColor: '#4cc9f0',
+                        borderWidth: 1,
+                        displayColors: false,
+                        callbacks: {
+                            title: function(tooltipItems) {
+                                return tooltipItems[0].label;
+                            },
+                            label: function(context) {
+                                return '$' + context.raw;
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    });
+</script>
+{% endblock %} 

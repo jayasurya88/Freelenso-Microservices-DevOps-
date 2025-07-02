@@ -1,0 +1,104 @@
+body{
+    font-family: 'Poppins', sans-serif;
+}
+
+/* Centered Container */
+.container {
+    background: white;
+    padding: 30px;
+    border-radius: 10px;
+    box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1);
+    text-align: center;
+    width: 100%;
+    max-width: 400px;
+}
+
+/* Heading */
+h2 {
+    font-size: 24px;
+    font-weight: bold;
+    margin-bottom: 20px;
+}
+
+/* Account Selection Styling */
+.account-options {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    align-items: center;
+}
+
+/* Hide Default Radio Button */
+input[type="radio"] {
+    display: none;
+}
+
+/* Styled Labels */
+.account-card {
+    background: #333;
+    color: white;
+    padding: 15px;
+    width: 100%;
+    max-width: 350px;
+    border-radius: 8px;
+    text-align: center;
+    font-size: 16px;
+    cursor: pointer;
+    transition: 0.3s ease;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    position: relative;
+}
+
+/* Custom Radio Indicator */
+.account-card::after {
+    content: "";
+    width: 20px;
+    height: 20px;
+    border: 2px solid white;
+    border-radius: 50%;
+    position: absolute;
+    right: 15px;
+    transition: 0.3s;
+}
+
+/* Checked Effect */
+input[type="radio"]:checked + label {
+    background: #ff5722;
+    color: white;
+}
+
+input[type="radio"]:checked + label::after {
+    background: white;
+}
+
+/* Button Styling */
+.create-btn {
+    background-color: #ff9800;
+    color: black;
+    font-weight: bold;
+    border: none;
+    padding: 12px;
+    width: 100%;
+    max-width: 350px;
+    border-radius: 8px;
+    margin-top: 20px;
+    cursor: not-allowed;
+    text-transform: uppercase;
+    transition: 0.3s;
+    display: inline-block;
+    text-align: center;
+}
+
+/* Enable Button */
+.create-btn.enabled {
+    background-color: #ff5722;
+    color: white;
+    cursor: pointer;
+}
+
+/* Button Hover Effect */
+.create-btn.enabled:hover {
+    background-color: #e64a19;
+}

@@ -1,0 +1,276 @@
+{% extends 'base.html' %}
+{% load review_tags %}
+
+{% block title %}Profile - {{ profile.user.username }}{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row">
+        <!-- Profile Header -->
+        <div class="col-12 mb-4">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body">
+                    <div class="row align-items-center">
+                        <div class="col-auto">
+                            <div class="position-relative" style="width: 100px; height: 100px;">
+                                {% if profile.profile_picture %}
+                                    <img src="{{ profile.profile_picture.url }}?v={{ profile.updated_at|date:'U' }}" 
+                                         alt="Profile Picture" 
+                                         class="rounded-circle shadow" 
+                                         style="width: 100px; height: 100px; object-fit: cover;">
+                                {% else %}
+                                    <div class="rounded-circle bg-primary bg-opacity-10 d-flex align-items-center justify-content-center" 
+                                         style="width: 100px; height: 100px;">
+                                        <i class="bi bi-person text-primary" style="font-size: 2.5rem;"></i>
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="col">
+                            <h2 class="mb-1">{{ profile.user.get_full_name|default:profile.user.username }}</h2>
+                            <p class="text-muted mb-2">
+                                {% if profile.is_freelancer %}
+                                    Freelancer
+                                {% else %}
+                                    Client
+                                {% endif %}
+                                {% if profile.country %}
+                                    • {{ profile.country }}
+                                {% endif %}
+                            </p>
+                            <div class="d-flex gap-2">
+                                <a href="{% url 'edit_profile' %}" class="btn btn-primary">
+                                    <i class="bi bi-pencil-square me-2"></i>Edit Profile
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Profile Content -->
+        <div class="col-lg-8">
+            <!-- About Section -->
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-body">
+                    <h5 class="card-title mb-4">About</h5>
+                    <p class="text-muted">{{ profile.bio|default:"No bio added yet." }}</p>
+                </div>
+            </div>
+
+            <!-- Reviews Section -->
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-body">
+                    <h5 class="card-title mb-4">Reviews</h5>
+                    {% if reviews %}
+                        <div class="row">
+                            <!-- Average Rating -->
+                            <div class="col-md-4">
+                                <div class="text-center mb-4">
+                                    <div class="display-4 mb-2">{{ avg_rating }}</div>
+                                    <div class="rating mb-3">
+                                        {% for i in "12345" %}
+                                            {% if forloop.counter <= avg_rating %}
+                                                <i class="bi bi-star-fill text-warning fs-4"></i>
+                                            {% else %}
+                                                <i class="bi bi-star text-warning fs-4"></i>
+                                            {% endif %}
+                                        {% endfor %}
+                                    </div>
+                                    <p class="text-muted mb-0">{{ total_reviews }} reviews</p>
+                                </div>
+                            </div>
+
+                            <!-- Rating Distribution -->
+                            <div class="col-md-8">
+                                <h6 class="mb-3">Rating Distribution</h6>
+                                {% for rating in "54321"|make_list %}
+                                    <div class="mb-3">
+                                        <div class="d-flex justify-content-between align-items-center mb-1">
+                                            <span>{{ rating }} star{% if rating != "1" %}s{% endif %}</span>
+                                            <small class="text-muted">
+                                                {% with dist=rating_distribution|get_item:rating %}
+                                                    {{ dist.count|default:0 }}
+                                                {% endwith %}
+                                            </small>
+                                        </div>
+                                        <div class="progress" style="height: 8px;">
+                                            {% with dist=rating_distribution|get_item:rating %}
+                                            <div class="progress-bar bg-warning" role="progressbar" 
+                                                 style="width: {% widthratio dist.count|default:0 total_reviews|default:1 100 %}%" 
+                                                 aria-valuenow="{% widthratio dist.count|default:0 total_reviews|default:1 100 %}" 
+                                                 aria-valuemin="0" 
+                                                 aria-valuemax="100">
+                                            </div>
+                                            {% endwith %}
+                                        </div>
+                                    </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+
+                        <hr class="my-4">
+
+                        <!-- Reviews List -->
+                        {% for review in reviews %}
+                            <div class="review-item {% if not forloop.last %}mb-4 pb-4 border-bottom{% endif %}">
+                                <div class="d-flex justify-content-between align-items-start mb-2">
+                                    <div>
+                                        <h6 class="mb-1">{{ review.reviewer.user.get_full_name|default:review.reviewer.user.username }}</h6>
+                                        <div class="rating">
+                                            {% for i in "12345" %}
+                                                {% if forloop.counter <= review.rating %}
+                                                    <i class="bi bi-star-fill text-warning"></i>
+                                                {% else %}
+                                                    <i class="bi bi-star text-warning"></i>
+                                                {% endif %}
+                                            {% endfor %}
+                                        </div>
+                                    </div>
+                                    <small class="text-muted">{{ review.created_at|date:"M d, Y" }}</small>
+                                </div>
+                                <p class="mb-2">{{ review.review_text|linebreaks }}</p>
+                                <small class="text-muted">Project: <a href="{% url 'project_detail' review.project.id %}" class="text-decoration-none">{{ review.project.title }}</a></small>
+                            </div>
+                        {% endfor %}
+                    {% else %}
+                        <div class="text-center py-4">
+                            <i class="bi bi-chat-dots display-4 text-muted mb-3 d-block"></i>
+                            <p class="text-muted mb-0">No reviews yet.</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            {% if profile.is_freelancer %}
+                <!-- Skills Section -->
+                <div class="card border-0 shadow-sm mb-4">
+                    <div class="card-body">
+                        <h5 class="card-title mb-4">Skills</h5>
+                        {% if profile.skills %}
+                            <div class="d-flex flex-wrap gap-2">
+                                {% for skill in profile.skills.split %}
+                                    <span class="badge bg-primary bg-opacity-10 text-primary px-3 py-2">{{ skill }}</span>
+                                {% endfor %}
+                            </div>
+                        {% else %}
+                            <p class="text-muted">No skills added yet.</p>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Experience Section -->
+                <div class="card border-0 shadow-sm mb-4">
+                    <div class="card-body">
+                        <h5 class="card-title mb-4">Experience</h5>
+                        {% if profile.experience %}
+                            <div class="text-muted">{{ profile.experience|linebreaks }}</div>
+                        {% else %}
+                            <p class="text-muted">No experience added yet.</p>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Education Section -->
+                <div class="card border-0 shadow-sm">
+                    <div class="card-body">
+                        <h5 class="card-title mb-4">Education</h5>
+                        {% if profile.education %}
+                            <div class="text-muted">{{ profile.education|linebreaks }}</div>
+                        {% else %}
+                            <p class="text-muted">No education added yet.</p>
+                        {% endif %}
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+
+        <!-- Sidebar -->
+        <div class="col-lg-4">
+            <!-- Contact Information -->
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-body">
+                    <h5 class="card-title mb-4">Contact Information</h5>
+                    <ul class="list-unstyled mb-0">
+                        <li class="mb-3">
+                            <div class="d-flex align-items-center text-muted">
+                                <i class="bi bi-envelope me-2"></i>
+                                {{ profile.user.email }}
+                            </div>
+                        </li>
+                        {% if profile.phone_number %}
+                            <li class="mb-3">
+                                <div class="d-flex align-items-center text-muted">
+                                    <i class="bi bi-telephone me-2"></i>
+                                    {{ profile.phone_number }}
+                                </div>
+                            </li>
+                        {% endif %}
+                        {% if profile.website %}
+                            <li class="mb-3">
+                                <div class="d-flex align-items-center">
+                                    <i class="bi bi-globe me-2 text-muted"></i>
+                                    <a href="{{ profile.website }}" target="_blank" class="text-decoration-none">Website</a>
+                                </div>
+                            </li>
+                        {% endif %}
+                    </ul>
+                </div>
+            </div>
+
+            {% if profile.is_freelancer %}
+                <!-- Professional Info -->
+                <div class="card border-0 shadow-sm mb-4">
+                    <div class="card-body">
+                        <h5 class="card-title mb-4">Professional Info</h5>
+                        {% if profile.hourly_rate %}
+                            <div class="mb-3">
+                                <div class="d-flex align-items-center text-muted">
+                                    <i class="bi bi-currency-dollar me-2"></i>
+                                    ${{ profile.hourly_rate }}/hour
+                                </div>
+                            </div>
+                        {% endif %}
+                        {% if profile.availability %}
+                            <div class="mb-3">
+                                <div class="d-flex align-items-center text-muted">
+                                    <i class="bi bi-calendar-check me-2"></i>
+                                    {{ profile.availability }}
+                                </div>
+                            </div>
+                        {% endif %}
+                        {% if profile.languages %}
+                            <div class="mb-3">
+                                <div class="d-flex align-items-center text-muted">
+                                    <i class="bi bi-translate me-2"></i>
+                                    {{ profile.languages }}
+                                </div>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Social Links -->
+                <div class="card border-0 shadow-sm">
+                    <div class="card-body">
+                        <h5 class="card-title mb-4">Social Links</h5>
+                        <div class="d-flex gap-3">
+                            {% if profile.linkedin %}
+                                <a href="{{ profile.linkedin }}" target="_blank" class="text-decoration-none">
+                                    <i class="bi bi-linkedin h4 text-muted"></i>
+                                </a>
+                            {% endif %}
+                            {% if profile.github %}
+                                <a href="{{ profile.github }}" target="_blank" class="text-decoration-none">
+                                    <i class="bi bi-github h4 text-muted"></i>
+                                </a>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %} 

@@ -1,0 +1,21 @@
+<!-- Project Status and Actions -->
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <span class="badge {% if project.status == 'completed' %}bg-success{% elif project.status == 'in_progress' %}bg-primary{% else %}bg-warning{% endif %} p-2">
+            {{ project.get_status_display }}
+        </span>
+    </div>
+    <div>
+        {% if project.status == 'completed' %}
+            {% if can_review %}
+                <a href="{% url 'leave_review' project.id %}" class="btn btn-success">
+                    <i class="bi bi-star me-2"></i>Leave Review
+                </a>
+            {% elif user_review %}
+                <a href="{% url 'project_reviews' project.id %}" class="btn btn-outline-primary">
+                    <i class="bi bi-star-fill me-2"></i>View Reviews
+                </a>
+            {% endif %}
+        {% endif %}
+    </div>
+</div> 

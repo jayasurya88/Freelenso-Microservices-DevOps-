@@ -1,0 +1,136 @@
+{% extends 'base.html' %}
+
+{% block title %}Deposit Funds{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card shadow">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">Deposit Funds</h5>
+                </div>
+                <div class="card-body">
+                    {% if messages %}
+                    {% for message in messages %}
+                    <div class="alert alert-{{ message.tags }}">
+                        {{ message }}
+                    </div>
+                    {% endfor %}
+                    {% endif %}
+
+                    <div class="alert alert-info mb-4">
+                        <i class="fas fa-info-circle me-2"></i>
+                        Current wallet balance: <strong>{{ wallet.balance }} {{ wallet.currency }}</strong>
+                    </div>
+
+                    <form method="post" id="deposit-form">
+                        {% csrf_token %}
+                        
+                        <div class="mb-3">
+                            <label for="amount" class="form-label">Amount to Deposit ({{ wallet.currency }})</label>
+                            <input type="number" class="form-control form-control-lg" id="amount" name="amount" min="10" step="0.01" required>
+                            <div class="form-text">Minimum deposit amount is 10 {{ wallet.currency }}</div>
+                        </div>
+
+                        <div class="d-grid gap-2">
+                            <button type="button" class="btn btn-primary btn-lg" onclick="initiateRazorpayPayment()">Continue to Payment</button>
+                            <a href="{% url 'wallet_dashboard' %}" class="btn btn-outline-secondary">Cancel</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+
+<style>
+    /* Removed payment method styles */
+</style>
+
+<script>
+    function initiateRazorpayPayment() {
+        const amount = document.getElementById('amount').value;
+        if (!amount || parseFloat(amount) < 10) {
+            alert('Please enter a valid amount (minimum 10 {{ wallet.currency }}).');
+            return;
+        }
+
+        fetch("{% url 'create_razorpay_order' %}", {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': '{{ csrf_token }}'
+            },
+            body: JSON.stringify({ amount: amount })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.error) {
+                alert('Error creating payment order: ' + data.error);
+                return;
+            }
+            
+            const options = {
+                "key": data.razorpay_key,
+                "amount": data.amount,
+                "currency": data.currency,
+                "name": "Freelenso",
+                "description": "Wallet Deposit",
+                "image": "/static/images/favicon.png",
+                "order_id": data.order_id,
+                "handler": function (response){
+                    verifyPayment(response);
+                },
+                "prefill": {
+                    "name": "{{ request.user.get_full_name }}",
+                    "email": "{{ request.user.email }}",
+                },
+                "notes": {
+                    "address": "Razorpay Corporate Office"
+                },
+                "theme": {
+                    "color": "#3399cc"
+                }
+            };
+            
+            const rzp1 = new Razorpay(options);
+            rzp1.on('payment.failed', function (response){
+                alert("Payment Failed: " + response.error.description);
+                console.error("Razorpay Error:", response.error);
+            });
+            rzp1.open();
+        })
+        .catch(error => {
+            console.error('Error fetching Razorpay order:', error);
+            alert('An error occurred while initiating payment. Please try again.');
+        });
+    }
+
+    function verifyPayment(response) {
+        fetch("{% url 'verify_razorpay_payment' %}", {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': '{{ csrf_token }}'
+            },
+            body: JSON.stringify(response)
+        })
+        .then(verifyResponse => verifyResponse.json())
+        .then(verifyData => {
+            if (verifyData.success) {
+                alert('Payment successful! Your wallet has been updated.');
+                window.location.href = "{% url 'wallet_dashboard' %}"; 
+            } else {
+                alert('Payment verification failed: ' + (verifyData.error || 'Unknown error'));
+            }
+        })
+        .catch(error => {
+            console.error('Error verifying payment:', error);
+            alert('An error occurred during payment verification.');
+        });
+    }
+</script>
+{% endblock %} 

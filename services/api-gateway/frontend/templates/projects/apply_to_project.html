@@ -1,0 +1,104 @@
+{% extends 'base.html' %}
+
+{% block title %}Apply to {{ project.title }}{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body p-4">
+                    <h2 class="card-title mb-4">Apply to Project</h2>
+                    
+                    <!-- Project Summary -->
+                    <div class="bg-light rounded p-3 mb-4">
+                        <h5 class="mb-3">Project Details</h5>
+                        <p class="mb-2"><strong>Title:</strong> {{ project.title }}</p>
+                        <p class="mb-2"><strong>Budget Range:</strong> ${{ project.budget_min }} - ${{ project.budget_max }}</p>
+                        <p class="mb-2"><strong>Duration:</strong> {{ project.get_duration_display }}</p>
+                        <p class="mb-0"><strong>Required Skills:</strong> {{ project.required_skills }}</p>
+                    </div>
+                    
+                    <form method="POST" id="applicationForm">
+                        {% csrf_token %}
+                        
+                        <!-- Cover Letter -->
+                        <div class="mb-4">
+                            <label for="cover_letter" class="form-label">Cover Letter</label>
+                            <textarea class="form-control" id="cover_letter" name="cover_letter" rows="6" required></textarea>
+                            <div class="form-text">
+                                Explain why you're the best fit for this project. Highlight your relevant experience and approach to the project.
+                            </div>
+                        </div>
+                        
+                        <!-- Proposed Budget -->
+                        <div class="mb-4">
+                            <label for="proposed_budget" class="form-label">Your Proposed Budget ($)</label>
+                            <input type="number" class="form-control" id="proposed_budget" name="proposed_budget" 
+                                   min="{{ project.budget_min }}" max="{{ project.budget_max }}" step="0.01" required>
+                            <div class="form-text">
+                                Enter your proposed budget within the client's range (${{ project.budget_min }} - ${{ project.budget_max }})
+                            </div>
+                        </div>
+                        
+                        <!-- Estimated Duration -->
+                        <div class="mb-4">
+                            <label for="estimated_duration" class="form-label">Estimated Duration</label>
+                            <select class="form-select" id="estimated_duration" name="estimated_duration" required>
+                                {% for key, value in duration_choices %}
+                                    <option value="{{ key }}" {% if key == project.duration %}selected{% endif %}>
+                                        {{ value }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                            <div class="form-text">
+                                Select how long you estimate it will take to complete the project
+                            </div>
+                        </div>
+                        
+                        <!-- Terms Agreement -->
+                        <div class="mb-4">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="terms" required>
+                                <label class="form-check-label" for="terms">
+                                    I understand that my proposal is binding and I commit to delivering the project as described if selected.
+                                </label>
+                            </div>
+                        </div>
+                        
+                        <!-- Action Buttons -->
+                        <div class="d-flex justify-content-between">
+                            <a href="{% url 'project_detail' project.id %}" class="btn btn-outline-secondary">
+                                <i class="bi bi-arrow-left me-2"></i>Back to Project
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-send me-2"></i>Submit Application
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.getElementById('applicationForm');
+    const proposedBudgetInput = document.getElementById('proposed_budget');
+    const minBudget = {{ project.budget_min }};
+    const maxBudget = {{ project.budget_max }};
+    
+    form.addEventListener('submit', function(e) {
+        const proposedBudget = parseFloat(proposedBudgetInput.value);
+        
+        if (proposedBudget < minBudget || proposedBudget > maxBudget) {
+            e.preventDefault();
+            alert('Proposed budget must be between $' + minBudget + ' and $' + maxBudget);
+        }
+    });
+});
+</script>
+{% endblock %}
+{% endblock %} 

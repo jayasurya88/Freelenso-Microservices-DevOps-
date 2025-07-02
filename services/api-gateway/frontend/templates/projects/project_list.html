@@ -1,0 +1,120 @@
+{% extends 'base.html' %}
+
+{% block title %}Browse Projects{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <!-- Search and Filters -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body">
+                    <form method="GET" class="row g-3">
+                        <!-- Search Bar -->
+                        <div class="col-md-6">
+                            <div class="input-group">
+                                <input type="text" name="q" class="form-control" placeholder="Search projects..." value="{{ search_query }}">
+                                <button class="btn btn-primary" type="submit">
+                                    <i class="bi bi-search"></i>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Filters -->
+                        <div class="col-md-2">
+                            <select name="category" class="form-select">
+                                <option value="">All Categories</option>
+                                {% for cat in categories %}
+                                    <option value="{{ cat }}" {% if category == cat %}selected{% endif %}>{{ cat }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <div class="col-md-2">
+                            <select name="experience_level" class="form-select">
+                                <option value="">Experience Level</option>
+                                {% for key, value in experience_levels.items %}
+                                    <option value="{{ key }}" {% if experience_level == key %}selected{% endif %}>{{ value }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <div class="col-md-2">
+                            <select name="duration" class="form-select">
+                                <option value="">Project Duration</option>
+                                {% for key, value in durations.items %}
+                                    <option value="{{ key }}" {% if duration == key %}selected{% endif %}>{{ value }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Projects List -->
+    <div class="row">
+        <div class="col-12">
+            {% if projects %}
+                {% for project in projects %}
+                    <div class="card border-0 shadow-sm mb-4">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <h5 class="card-title mb-0">
+                                    <a href="{% url 'project_detail' project.id %}" class="text-decoration-none text-dark">
+                                        {{ project.title }}
+                                    </a>
+                                </h5>
+                                <span class="badge bg-primary">{{ project.get_experience_level_display }}</span>
+                            </div>
+                            
+                            <p class="text-muted mb-3">{{ project.description|truncatewords:50 }}</p>
+                            
+                            <div class="d-flex flex-wrap gap-2 mb-3">
+                                {% for skill in project.required_skills.split %}
+                                    <span class="badge bg-light text-dark">{{ skill }}</span>
+                                {% endfor %}
+                            </div>
+                            
+                            <div class="row align-items-center">
+                                <div class="col-auto">
+                                    <span class="text-muted">
+                                        <i class="bi bi-clock me-1"></i>
+                                        {{ project.get_duration_display }}
+                                    </span>
+                                </div>
+                                <div class="col-auto">
+                                    <span class="text-muted">
+                                        <i class="bi bi-currency-dollar me-1"></i>
+                                        ${{ project.budget_min }} - ${{ project.budget_max }}
+                                    </span>
+                                </div>
+                                <div class="col-auto">
+                                    <span class="text-muted">
+                                        <i class="bi bi-geo-alt me-1"></i>
+                                        {{ project.client.country|default:"Location not specified" }}
+                                    </span>
+                                </div>
+                                <div class="col text-end">
+                                    <a href="{% url 'project_detail' project.id %}" class="btn btn-outline-primary">
+                                        View Details
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                {% endfor %}
+            {% else %}
+                <div class="card border-0 shadow-sm">
+                    <div class="card-body text-center py-5">
+                        <i class="bi bi-search text-muted" style="font-size: 3rem;"></i>
+                        <h5 class="mt-3">No Projects Found</h5>
+                        <p class="text-muted">Try adjusting your search criteria or check back later for new projects.</p>
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %} 

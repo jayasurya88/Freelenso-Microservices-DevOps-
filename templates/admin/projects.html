@@ -1,0 +1,426 @@
+{% extends 'admin/admin_base.html' %}
+
+{% block title %}Projects Management{% endblock %}
+
+{% block page_title %}Projects Management{% endblock %}
+{% block page_subtitle %}Monitor and manage all projects on the platform{% endblock %}
+
+{% block content %}
+<!-- Project Statistics -->
+<div class="row mb-4">
+    <div class="col-xl-3 col-md-6">
+        <div class="data-card h-100">
+            <div class="card-body">
+                <div class="d-flex align-items-center">
+                    <div class="rounded-circle bg-primary bg-opacity-10 p-3 me-3">
+                        <i class="bi bi-briefcase fs-4 text-primary"></i>
+                    </div>
+                    <div>
+                        <div class="fs-5 fw-bold">{{ total_projects }}</div>
+                        <div class="text-muted">Total Projects</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-xl-3 col-md-6">
+        <div class="data-card h-100">
+            <div class="card-body">
+                <div class="d-flex align-items-center">
+                    <div class="rounded-circle bg-success bg-opacity-10 p-3 me-3">
+                        <i class="bi bi-check-circle fs-4 text-success"></i>
+                    </div>
+                    <div>
+                        <div class="fs-5 fw-bold">{{ completed_projects }}</div>
+                        <div class="text-muted">Completed</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-xl-3 col-md-6">
+        <div class="data-card h-100">
+            <div class="card-body">
+                <div class="d-flex align-items-center">
+                    <div class="rounded-circle bg-warning bg-opacity-10 p-3 me-3">
+                        <i class="bi bi-hourglass-split fs-4 text-warning"></i>
+                    </div>
+                    <div>
+                        <div class="fs-5 fw-bold">{{ in_progress_projects }}</div>
+                        <div class="text-muted">In Progress</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-xl-3 col-md-6">
+        <div class="data-card h-100">
+            <div class="card-body">
+                <div class="d-flex align-items-center">
+                    <div class="rounded-circle bg-info bg-opacity-10 p-3 me-3">
+                        <i class="bi bi-plus-circle fs-4 text-info"></i>
+                    </div>
+                    <div>
+                        <div class="fs-5 fw-bold">{{ new_projects }}</div>
+                        <div class="text-muted">New (7 days)</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Filters and Search -->
+<div class="data-card mb-4">
+    <div class="data-card-header">
+        <h5 class="data-card-title">Filters</h5>
+    </div>
+    <div class="card-body pt-0">
+        <form method="get" class="row g-3 align-items-end">
+            <!-- Search Field -->
+            <div class="col-lg-4 col-md-6">
+                <label for="search" class="form-label">Search</label>
+                <div class="input-group">
+                    <span class="input-group-text"><i class="bi bi-search"></i></span>
+                    <input type="text" class="form-control" id="search" name="search" placeholder="Search project title, description..." value="{{ search }}">
+                </div>
+            </div>
+            
+            <!-- Status Filter -->
+            <div class="col-lg-3 col-md-6">
+                <label for="status" class="form-label">Status</label>
+                <select class="form-select" id="status" name="status">
+                    <option value="" {% if status == '' %}selected{% endif %}>All Status</option>
+                    <option value="open" {% if status == 'open' %}selected{% endif %}>Open</option>
+                    <option value="in_progress" {% if status == 'in_progress' %}selected{% endif %}>In Progress</option>
+                    <option value="completed" {% if status == 'completed' %}selected{% endif %}>Completed</option>
+                    <option value="cancelled" {% if status == 'cancelled' %}selected{% endif %}>Cancelled</option>
+                </select>
+            </div>
+            
+            <!-- Category Filter -->
+            <div class="col-lg-3 col-md-6">
+                <label for="category" class="form-label">Category</label>
+                <select class="form-select" id="category" name="category">
+                    <option value="" {% if category == '' %}selected{% endif %}>All Categories</option>
+                    {% for cat in categories %}
+                        <option value="{{ cat.id }}" {% if category == cat.id|stringformat:'i' %}selected{% endif %}>{{ cat.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            
+            <!-- Filter Button -->
+            <div class="col-lg-2 col-md-6 d-flex">
+                <button type="submit" class="btn btn-primary flex-fill">
+                    <i class="bi bi-filter me-2"></i> Apply Filters
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Projects Table -->
+<div class="data-card">
+    <div class="data-card-header d-flex justify-content-between align-items-center">
+        <h5 class="data-card-title mb-0">Projects</h5>
+        <span class="badge bg-primary">{{ projects.count }} Projects</span>
+    </div>
+    <div class="table-responsive">
+        <table class="table table-hover align-middle">
+            <thead>
+                <tr>
+                    <th>Project</th>
+                    <th>Client</th>
+                    <th>Freelancer</th>
+                    <th>Budget</th>
+                    <th>Status</th>
+                    <th>Created</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for project in projects %}
+                <tr>
+                    <td>
+                        <div>
+                            <div class="fw-semibold">{{ project.title|truncatechars:40 }}</div>
+                            <div class="small text-muted">{{ project.category.name }}</div>
+                        </div>
+                    </td>
+                    <td>
+                        <div class="d-flex align-items-center">
+                            <div class="user-avatar me-2" style="width: 32px; height: 32px; font-size: 0.8rem;">
+                                {{ project.client.user.username|slice:":1"|upper }}
+                            </div>
+                            <div>{{ project.client.user.username }}</div>
+                        </div>
+                    </td>
+                    <td>
+                        {% if project.freelancer %}
+                            <div class="d-flex align-items-center">
+                                <div class="user-avatar me-2" style="width: 32px; height: 32px; font-size: 0.8rem;">
+                                    {{ project.freelancer.user.username|slice:":1"|upper }}
+                                </div>
+                                <div>{{ project.freelancer.user.username }}</div>
+                            </div>
+                        {% else %}
+                            <span class="badge bg-secondary">Not Assigned</span>
+                        {% endif %}
+                    </td>
+                    <td>${{ project.budget }}</td>
+                    <td>
+                        {% if project.status == 'open' %}
+                        <span class="badge bg-info">Open</span>
+                        {% elif project.status == 'in_progress' %}
+                        <span class="badge bg-warning">In Progress</span>
+                        {% elif project.status == 'completed' %}
+                        <span class="badge bg-success">Completed</span>
+                        {% elif project.status == 'cancelled' %}
+                        <span class="badge bg-danger">Cancelled</span>
+                        {% else %}
+                        <span class="badge bg-secondary">{{ project.status }}</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <div>{{ project.created_at|date:"M d, Y" }}</div>
+                        <small class="text-muted">{{ project.created_at|time:"h:i A" }}</small>
+                    </td>
+                    <td>
+                        <div class="dropdown">
+                            <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" id="projectActionDropdown{{ project.id }}" data-bs-toggle="dropdown" aria-expanded="false">
+                                Actions
+                            </button>
+                            <ul class="dropdown-menu" aria-labelledby="projectActionDropdown{{ project.id }}">
+                                <li><a class="dropdown-item" href="{% url 'project_detail' project.id %}" target="_blank"><i class="bi bi-eye me-2"></i> View Project</a></li>
+                                <li><a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#projectModal{{ project.id }}"><i class="bi bi-info-circle me-2"></i> Details</a></li>
+                                <li><hr class="dropdown-divider"></li>
+                                {% if project.status == 'open' or project.status == 'in_progress' %}
+                                <li><a class="dropdown-item text-danger" href="#" data-bs-toggle="modal" data-bs-target="#cancelProjectModal{{ project.id }}"><i class="bi bi-x-circle me-2"></i> Cancel Project</a></li>
+                                {% endif %}
+                            </ul>
+                        </div>
+                        
+                        <!-- Project Details Modal -->
+                        <div class="modal fade" id="projectModal{{ project.id }}" tabindex="-1" aria-labelledby="projectModalLabel{{ project.id }}" aria-hidden="true">
+                            <div class="modal-dialog modal-dialog-centered modal-lg">
+                                <div class="modal-content">
+                                    <div class="modal-header">
+                                        <h5 class="modal-title" id="projectModalLabel{{ project.id }}">Project Details</h5>
+                                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                    </div>
+                                    <div class="modal-body">
+                                        <h4 class="mb-3">{{ project.title }}</h4>
+                                        
+                                        <div class="row mb-4">
+                                            <div class="col-md-6">
+                                                <div class="mb-3">
+                                                    <strong>Client:</strong>
+                                                    <div>{{ project.client.user.username }}</div>
+                                                </div>
+                                                <div class="mb-3">
+                                                    <strong>Budget:</strong>
+                                                    <div>${{ project.budget }}</div>
+                                                </div>
+                                                <div class="mb-3">
+                                                    <strong>Category:</strong>
+                                                    <div>{{ project.category.name }}</div>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <div class="mb-3">
+                                                    <strong>Freelancer:</strong>
+                                                    <div>{% if project.freelancer %}{{ project.freelancer.user.username }}{% else %}Not Assigned{% endif %}</div>
+                                                </div>
+                                                <div class="mb-3">
+                                                    <strong>Status:</strong>
+                                                    <div>
+                                                        {% if project.status == 'open' %}
+                                                        <span class="badge bg-info">Open</span>
+                                                        {% elif project.status == 'in_progress' %}
+                                                        <span class="badge bg-warning">In Progress</span>
+                                                        {% elif project.status == 'completed' %}
+                                                        <span class="badge bg-success">Completed</span>
+                                                        {% elif project.status == 'cancelled' %}
+                                                        <span class="badge bg-danger">Cancelled</span>
+                                                        {% else %}
+                                                        <span class="badge bg-secondary">{{ project.status }}</span>
+                                                        {% endif %}
+                                                    </div>
+                                                </div>
+                                                <div class="mb-3">
+                                                    <strong>Created:</strong>
+                                                    <div>{{ project.created_at|date:"M d, Y H:i" }}</div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="mb-4">
+                                            <strong>Description:</strong>
+                                            <div class="p-3 bg-light rounded mt-2">{{ project.description|linebreaks }}</div>
+                                        </div>
+                                        
+                                        <div class="row mb-4">
+                                            <div class="col-md-6">
+                                                <strong>Skills Required:</strong>
+                                                <div class="mt-2">
+                                                    {% for skill in project.required_skills.all %}
+                                                    <span class="badge bg-secondary me-1 mb-1">{{ skill.name }}</span>
+                                                    {% empty %}
+                                                    <span class="text-muted">No skills specified</span>
+                                                    {% endfor %}
+                                                </div>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <strong>Duration:</strong>
+                                                <div class="mt-2">{{ project.duration }}</div>
+                                            </div>
+                                        </div>
+                                        
+                                        {% if project.milestones.exists %}
+                                        <div class="mb-4">
+                                            <strong>Milestones:</strong>
+                                            <div class="table-responsive mt-2">
+                                                <table class="table table-sm">
+                                                    <thead>
+                                                        <tr>
+                                                            <th>Title</th>
+                                                            <th>Amount</th>
+                                                            <th>Status</th>
+                                                            <th>Due Date</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                        {% for milestone in project.milestones.all %}
+                                                        <tr>
+                                                            <td>{{ milestone.title }}</td>
+                                                            <td>${{ milestone.amount }}</td>
+                                                            <td>
+                                                                {% if milestone.status == 'pending' %}
+                                                                <span class="badge bg-warning">Pending</span>
+                                                                {% elif milestone.status == 'completed' %}
+                                                                <span class="badge bg-success">Completed</span>
+                                                                {% elif milestone.status == 'funded' %}
+                                                                <span class="badge bg-info">Funded</span>
+                                                                {% else %}
+                                                                <span class="badge bg-secondary">{{ milestone.status }}</span>
+                                                                {% endif %}
+                                                            </td>
+                                                            <td>{% if milestone.due_date %}{{ milestone.due_date|date:"M d, Y" }}{% else %}Not set{% endif %}</td>
+                                                        </tr>
+                                                        {% endfor %}
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                        </div>
+                                        {% endif %}
+                                        
+                                        <div class="row">
+                                            <div class="col-md-6">
+                                                <strong>Proposals:</strong>
+                                                <div class="mt-2">{{ project.proposals.count }} proposals received</div>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <strong>Last Updated:</strong>
+                                                <div class="mt-2">{{ project.updated_at|date:"M d, Y H:i" }}</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="modal-footer">
+                                        <a href="{% url 'project_detail' project.id %}" class="btn btn-primary" target="_blank">View Full Project</a>
+                                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Cancel Project Modal -->
+                        <div class="modal fade" id="cancelProjectModal{{ project.id }}" tabindex="-1" aria-labelledby="cancelProjectModalLabel{{ project.id }}" aria-hidden="true">
+                            <div class="modal-dialog modal-dialog-centered">
+                                <div class="modal-content">
+                                    <div class="modal-header">
+                                        <h5 class="modal-title" id="cancelProjectModalLabel{{ project.id }}">Cancel Project</h5>
+                                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                    </div>
+                                    <div class="modal-body">
+                                        <div class="text-center mb-4">
+                                            <i class="bi bi-exclamation-triangle-fill text-danger fs-1"></i>
+                                            <h5 class="my-3">Are you sure you want to cancel this project?</h5>
+                                            <p class="text-muted">
+                                                This will cancel the project "<strong>{{ project.title|truncatechars:50 }}</strong>" and notify all involved parties.
+                                                Any funds in escrow will be returned to the client.
+                                            </p>
+                                        </div>
+                                        <form method="post" action="{% url 'admin_cancel_project' project.id %}" id="cancelProjectForm{{ project.id }}">
+                                            {% csrf_token %}
+                                            <div class="mb-3">
+                                                <label for="cancelReason{{ project.id }}" class="form-label">Reason for Cancellation</label>
+                                                <textarea class="form-control" id="cancelReason{{ project.id }}" name="cancel_reason" rows="3" required></textarea>
+                                            </div>
+                                        </form>
+                                    </div>
+                                    <div class="modal-footer">
+                                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                                        <button type="submit" form="cancelProjectForm{{ project.id }}" class="btn btn-danger">Cancel Project</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="7" class="text-center py-4">
+                        <i class="bi bi-briefcase fs-1 d-block mb-3 text-muted"></i>
+                        <p class="mb-0">No projects found matching your criteria</p>
+                        <a href="{% url 'admin_projects' %}" class="btn btn-sm btn-outline-primary mt-3">Clear Filters</a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Pagination -->
+<div class="mt-4 d-flex justify-content-center">
+    <nav aria-label="Page navigation">
+        <ul class="pagination">
+            {% if projects.has_previous %}
+            <li class="page-item">
+                <a class="page-link" href="?page={{ projects.previous_page_number }}{% if search %}&search={{ search }}{% endif %}{% if status %}&status={{ status }}{% endif %}{% if category %}&category={{ category }}{% endif %}" aria-label="Previous">
+                    <span aria-hidden="true">&laquo;</span>
+                </a>
+            </li>
+            {% else %}
+            <li class="page-item disabled">
+                <a class="page-link" href="#" tabindex="-1" aria-disabled="true">&laquo;</a>
+            </li>
+            {% endif %}
+            
+            {% for i in projects.paginator.page_range %}
+                {% if projects.number == i %}
+                <li class="page-item active" aria-current="page">
+                    <span class="page-link">{{ i }}</span>
+                </li>
+                {% else %}
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ i }}{% if search %}&search={{ search }}{% endif %}{% if status %}&status={{ status }}{% endif %}{% if category %}&category={{ category }}{% endif %}">{{ i }}</a>
+                </li>
+                {% endif %}
+            {% endfor %}
+            
+            {% if projects.has_next %}
+            <li class="page-item">
+                <a class="page-link" href="?page={{ projects.next_page_number }}{% if search %}&search={{ search }}{% endif %}{% if status %}&status={{ status }}{% endif %}{% if category %}&category={{ category }}{% endif %}" aria-label="Next">
+                    <span aria-hidden="true">&raquo;</span>
+                </a>
+            </li>
+            {% else %}
+            <li class="page-item disabled">
+                <a class="page-link" href="#" tabindex="-1" aria-disabled="true">&raquo;</a>
+            </li>
+            {% endif %}
+        </ul>
+    </nav>
+</div>
+{% endblock %} 

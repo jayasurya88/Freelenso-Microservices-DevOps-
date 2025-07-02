@@ -1,0 +1,109 @@
+{% extends 'base.html' %}
+
+{% block title %}Leave Review - {{ project.title }}{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white">
+                    <h4 class="mb-0">Leave a Review</h4>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-info mb-4">
+                        <i class="bi bi-info-circle me-2"></i> Please provide your honest review of the project. Your feedback helps build trust in the community.
+                    </div>
+                    
+                    <form method="post" class="needs-validation" novalidate>
+                        {% csrf_token %}
+                        
+                        <!-- Rating -->
+                        <div class="mb-4">
+                            <label class="form-label">Rating <span class="text-danger">*</span></label>
+                            <div class="rating-input d-flex gap-2">
+                                {% for i in "54321" %}
+                                <div class="form-check">
+                                    <input class="form-check-input visually-hidden" type="radio" name="rating" value="{{ i }}" id="star{{ i }}" required>
+                                    <label class="form-check-label" for="star{{ i }}">
+                                        <i class="bi bi-star-fill fs-4" style="cursor: pointer;"></i>
+                                    </label>
+                                </div>
+                                {% endfor %}
+                            </div>
+                            <div class="invalid-feedback">
+                                Please select a rating.
+                            </div>
+                        </div>
+                        
+                        <!-- Review Text -->
+                        <div class="mb-4">
+                            <label for="review_text" class="form-label">Review <span class="text-danger">*</span></label>
+                            <textarea class="form-control" id="review_text" name="review_text" rows="5" required 
+                                    placeholder="Share your experience with this project..."></textarea>
+                            <div class="invalid-feedback">
+                                Please provide your review.
+                            </div>
+                        </div>
+                        
+                        <!-- Public/Private Toggle -->
+                        <div class="mb-4">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="is_public" name="is_public" checked>
+                                <label class="form-check-label" for="is_public">
+                                    Make this review public
+                                </label>
+                            </div>
+                        </div>
+                        
+                        <div class="d-flex justify-content-between">
+                            <a href="{% url 'project_detail' project_id=project.id %}" class="btn btn-outline-secondary">
+                                <i class="bi bi-arrow-left me-2"></i> Back to Project
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-check-circle me-2"></i> Submit Review
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Star rating functionality
+    const ratingInputs = document.querySelectorAll('.rating-input input[type="radio"]');
+    const stars = document.querySelectorAll('.rating-input i.bi-star-fill');
+    
+    function updateStars(selectedIndex) {
+        stars.forEach((star, index) => {
+            if (index <= selectedIndex) {
+                star.classList.add('text-warning');
+            } else {
+                star.classList.remove('text-warning');
+            }
+        });
+    }
+    
+    ratingInputs.forEach((input, index) => {
+        input.addEventListener('change', () => {
+            updateStars(index);
+        });
+    });
+    
+    // Form validation
+    const form = document.querySelector('form');
+    form.addEventListener('submit', function(event) {
+        if (!form.checkValidity()) {
+            event.preventDefault();
+            event.stopPropagation();
+        }
+        form.classList.add('was-validated');
+    });
+});
+</script>
+{% endblock %}
+{% endblock %} 

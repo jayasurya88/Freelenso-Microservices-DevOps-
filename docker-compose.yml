@@ -1,0 +1,164 @@
+version: '3.8'
+
+services:
+  # User Service
+  user-service:
+    build: ./services/user-service
+    image: freelenso-user-service:latest
+    ports:
+      - "8001:8000"
+    environment:
+      - DATABASE_URL=postgresql://postgres:postgres@user-db:5432/user_service
+    depends_on:
+      - user-db
+
+  # Project Service
+  project-service:
+    build: ./services/project-service
+    image: freelenso-project-service:latest
+    ports:
+      - "8002:8000"
+    environment:
+      - DATABASE_URL=postgresql://postgres:postgres@project-db:5432/project_service
+    depends_on:
+      - project-db
+
+  # Payment Service
+  payment-service:
+    build: ./services/payment-service
+    image: freelenso-payment-service:latest
+    ports:
+      - "8003:8000"
+    environment:
+      - DATABASE_URL=postgresql://postgres:postgres@payment-db:5432/payment_service
+    depends_on:
+      - payment-db
+
+  # Notification Service
+  notification-service:
+    build: ./services/notification-service
+    image: freelenso-notification-service:latest
+    ports:
+      - "8004:8000"
+    environment:
+      - REDIS_URL=redis://redis:6379/0
+      - DATABASE_URL=postgresql://postgres:postgres@notification-db:5432/notification_service
+    depends_on:
+      - redis
+      - notification-db
+
+  # Django Frontend Service
+  web:
+    build: .
+    image: freelenso-web:latest
+    ports:
+      - "8000:8000"
+    volumes:
+      - .:/app
+    environment:
+      - POSTGRES_DB=freelenso_db
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_HOST=freelenso-db
+      - POSTGRES_PORT=5432
+    depends_on:
+      - freelenso-db
+
+  # API Gateway
+  api-gateway:
+    build: ./services/api-gateway
+    image: freelenso-api-gateway:latest
+    ports:
+      - "80:80"
+    volumes:
+      - ./services/api-gateway/nginx.conf:/etc/nginx/nginx.conf
+    depends_on:
+      - user-service
+      - project-service
+      - payment-service
+      - notification-service
+      - web
+
+  # Main Django Database
+  freelenso-db:
+    image: postgres:13
+    environment:
+      - POSTGRES_DB=freelenso_db
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+    volumes:
+      - freelenso_db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # Databases
+  user-db:
+    image: postgres:13
+    environment:
+      - POSTGRES_DB=user_service
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+    volumes:
+      - user_db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  project-db:
+    image: postgres:13
+    environment:
+      - POSTGRES_DB=project_service
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+    volumes:
+      - project_db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  payment-db:
+    image: postgres:13
+    environment:
+      - POSTGRES_DB=payment_service
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+    volumes:
+      - payment_db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  notification-db:
+    image: postgres:13
+    environment:
+      - POSTGRES_DB=notification_service
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+    volumes:
+      - notification_db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:6
+    ports:
+      - "6379:6379"
+
+volumes:
+  user_db_data:
+  project_db_data:
+  payment_db_data:
+  notification_db_data:
+  freelenso_db_data: 

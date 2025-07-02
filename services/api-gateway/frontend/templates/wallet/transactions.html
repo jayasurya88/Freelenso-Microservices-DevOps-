@@ -1,0 +1,257 @@
+{% extends 'base.html' %}
+
+{% block title %}Transaction History{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2 class="fw-bold mb-0">
+                    <i class="bi bi-clock-history me-2 text-primary"></i>Transaction History
+                </h2>
+                <a href="{% url 'wallet_dashboard' %}" class="btn btn-outline-primary">
+                    <i class="bi bi-wallet2 me-2"></i>Back to Wallet
+                </a>
+            </div>
+        </div>
+    </div>
+
+    {% if messages %}
+    <div class="row mb-4">
+        <div class="col-12">
+            {% for message in messages %}
+            <div class="alert alert-{{ message.tags }} shadow-sm border-0">
+                {{ message }}
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card shadow-sm border-0">
+                <div class="card-header bg-white py-3">
+                    <h5 class="fw-bold mb-0">
+                        <i class="bi bi-funnel me-2 text-primary"></i>Filter Transactions
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <form method="get" action="{% url 'wallet_transactions' %}" class="row g-3">
+                        <div class="col-md-5">
+                            <label for="type" class="form-label fw-medium">Transaction Type</label>
+                            <select class="form-select" id="type" name="type">
+                                <option value="" {% if not transaction_type %}selected{% endif %}>All Types</option>
+                                {% for type_id, type_name in transaction_types %}
+                                <option value="{{ type_id }}" {% if transaction_type == type_id %}selected{% endif %}>{{ type_name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-5">
+                            <label for="status" class="form-label fw-medium">Status</label>
+                            <select class="form-select" id="status" name="status">
+                                <option value="" {% if not status %}selected{% endif %}>All Statuses</option>
+                                {% for status_id, status_name in status_choices %}
+                                <option value="{{ status_id }}" {% if status == status_id %}selected{% endif %}>{{ status_name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-2 d-flex align-items-end">
+                            <button type="submit" class="btn btn-primary w-100">
+                                <i class="bi bi-search me-2"></i>Apply
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-12">
+            <div class="card shadow-sm border-0">
+                <div class="card-header bg-white py-3">
+                    <h5 class="fw-bold mb-0">
+                        <i class="bi bi-arrow-left-right me-2 text-primary"></i>Transactions
+                    </h5>
+                </div>
+                <div class="card-body p-0">
+                    {% if page_obj %}
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th class="ps-4">Date</th>
+                                    <th>Transaction ID</th>
+                                    <th>Description</th>
+                                    <th>Amount</th>
+                                    <th>Type</th>
+                                    <th>Status</th>
+                                    <th class="pe-4">Details</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for transaction in page_obj %}
+                                <tr>
+                                    <td class="ps-4">{{ transaction.created_at|date:"M d, Y H:i" }}</td>
+                                    <td><small class="text-muted">{{ transaction.transaction_id }}</small></td>
+                                    <td>{{ transaction.description }}</td>
+                                    <td class="fw-semibold {% if transaction.transaction_type == 'deposit' or transaction.transaction_type == 'release' %}text-success{% elif transaction.transaction_type == 'withdrawal' or transaction.transaction_type == 'escrow' or transaction.transaction_type == 'fee' %}text-danger{% endif %}">
+                                        {% if transaction.transaction_type == 'deposit' or transaction.transaction_type == 'release' %}+{% elif transaction.transaction_type == 'withdrawal' or transaction.transaction_type == 'escrow' or transaction.transaction_type == 'fee' %}-{% endif %}
+                                        {{ transaction.amount }} {{ wallet.currency }}
+                                        {% if transaction.fee_amount %}
+                                        <small class="d-block text-muted">Fee: {{ transaction.fee_amount }} {{ wallet.currency }}</small>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if transaction.transaction_type == 'deposit' %}
+                                        <span class="badge rounded-pill bg-success-subtle text-success">Deposit</span>
+                                        {% elif transaction.transaction_type == 'withdrawal' %}
+                                        <span class="badge rounded-pill bg-warning-subtle text-warning">Withdrawal</span>
+                                        {% elif transaction.transaction_type == 'escrow' %}
+                                        <span class="badge rounded-pill bg-info-subtle text-info">Escrow</span>
+                                        {% elif transaction.transaction_type == 'release' %}
+                                        <span class="badge rounded-pill bg-primary-subtle text-primary">Release</span>
+                                        {% elif transaction.transaction_type == 'refund' %}
+                                        <span class="badge rounded-pill bg-secondary-subtle text-secondary">Refund</span>
+                                        {% elif transaction.transaction_type == 'fee' %}
+                                        <span class="badge rounded-pill bg-dark-subtle text-dark">Fee</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if transaction.status == 'pending' %}
+                                        <span class="badge rounded-pill bg-warning-subtle text-warning">Pending</span>
+                                        {% elif transaction.status == 'completed' %}
+                                        <span class="badge rounded-pill bg-success-subtle text-success">Completed</span>
+                                        {% elif transaction.status == 'failed' %}
+                                        <span class="badge rounded-pill bg-danger-subtle text-danger">Failed</span>
+                                        {% elif transaction.status == 'cancelled' %}
+                                        <span class="badge rounded-pill bg-secondary-subtle text-secondary">Cancelled</span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="pe-4">
+                                        {% if transaction.project %}
+                                        <a href="{% url 'project_detail' transaction.project.id %}" class="btn btn-sm btn-outline-primary rounded-pill">
+                                            <i class="bi bi-briefcase me-1"></i> Project
+                                        </a>
+                                        {% endif %}
+                                        
+                                        {% if transaction.milestone %}
+                                        <a href="{% url 'project_milestones' transaction.project.id %}" class="btn btn-sm btn-outline-info rounded-pill">
+                                            <i class="bi bi-list-check me-1"></i> Milestone
+                                        </a>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    <!-- Pagination -->
+                    {% if page_obj.has_other_pages %}
+                    <nav aria-label="Transaction pagination" class="mt-4 mb-3 px-4">
+                        <ul class="pagination justify-content-center">
+                            {% if page_obj.has_previous %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page=1{% if transaction_type %}&type={{ transaction_type }}{% endif %}{% if status %}&status={{ status }}{% endif %}" aria-label="First">
+                                    <span aria-hidden="true">&laquo;&laquo;</span>
+                                </a>
+                            </li>
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if transaction_type %}&type={{ transaction_type }}{% endif %}{% if status %}&status={{ status }}{% endif %}" aria-label="Previous">
+                                    <span aria-hidden="true">&laquo;</span>
+                                </a>
+                            </li>
+                            {% endif %}
+                            
+                            {% for i in page_obj.paginator.page_range %}
+                            {% if page_obj.number == i %}
+                            <li class="page-item active"><span class="page-link">{{ i }}</span></li>
+                            {% elif i > page_obj.number|add:'-3' and i < page_obj.number|add:'3' %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ i }}{% if transaction_type %}&type={{ transaction_type }}{% endif %}{% if status %}&status={{ status }}{% endif %}">{{ i }}</a>
+                            </li>
+                            {% endif %}
+                            {% endfor %}
+                            
+                            {% if page_obj.has_next %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if transaction_type %}&type={{ transaction_type }}{% endif %}{% if status %}&status={{ status }}{% endif %}" aria-label="Next">
+                                    <span aria-hidden="true">&raquo;</span>
+                                </a>
+                            </li>
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}{% if transaction_type %}&type={{ transaction_type }}{% endif %}{% if status %}&status={{ status }}{% endif %}" aria-label="Last">
+                                    <span aria-hidden="true">&raquo;&raquo;</span>
+                                </a>
+                            </li>
+                            {% endif %}
+                        </ul>
+                    </nav>
+                    {% endif %}
+                    
+                    {% else %}
+                    <div class="text-center py-5">
+                        <div class="mb-3">
+                            <i class="bi bi-receipt text-muted" style="font-size: 3rem;"></i>
+                        </div>
+                        <h5 class="text-muted fw-bold mb-2">No transactions found</h5>
+                        <p class="text-muted">Adjust your filters or check back later after making transactions.</p>
+                        {% if not transaction_type and not status %}
+                        <a href="{% url 'wallet_deposit' %}" class="btn btn-primary mt-2">
+                            <i class="bi bi-plus-circle me-2"></i>Make a Deposit
+                        </a>
+                        {% else %}
+                        <a href="{% url 'wallet_transactions' %}" class="btn btn-outline-secondary mt-2">
+                            <i class="bi bi-x-circle me-2"></i>Clear Filters
+                        </a>
+                        {% endif %}
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+[data-bs-theme="dark"] .bg-light {
+    background-color: rgba(255, 255, 255, 0.05) !important;
+}
+
+[data-bs-theme="dark"] .card {
+    background-color: #1e293b;
+    border-color: #374151;
+}
+
+[data-bs-theme="dark"] .table-light {
+    background-color: rgba(255, 255, 255, 0.05);
+}
+
+[data-bs-theme="dark"] .badge.rounded-pill.bg-success-subtle {
+    background-color: rgba(25, 135, 84, 0.2) !important;
+}
+
+[data-bs-theme="dark"] .badge.rounded-pill.bg-warning-subtle {
+    background-color: rgba(255, 193, 7, 0.2) !important;
+}
+
+[data-bs-theme="dark"] .badge.rounded-pill.bg-info-subtle {
+    background-color: rgba(13, 202, 240, 0.2) !important;
+}
+
+[data-bs-theme="dark"] .badge.rounded-pill.bg-primary-subtle {
+    background-color: rgba(13, 110, 253, 0.2) !important;
+}
+
+[data-bs-theme="dark"] .badge.rounded-pill.bg-secondary-subtle {
+    background-color: rgba(108, 117, 125, 0.2) !important;
+}
+
+[data-bs-theme="dark"] .badge.rounded-pill.bg-dark-subtle {
+    background-color: rgba(33, 37, 41, 0.2) !important;
+}
+</style>
+{% endblock %} 

@@ -1,0 +1,160 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Notifications{% endblock %}
+
+{% block content %}
+<div class="container my-4">
+    <div class="row mb-3">
+        <div class="col-md-8 mx-auto d-flex justify-content-between align-items-center">
+            <h4 class="mb-0 d-flex align-items-center">
+                <i class="bi bi-bell me-2 text-primary"></i> Your Notifications
+            </h4>
+            <div>
+                <a href="{% url 'dashboard' %}" class="btn btn-outline-secondary">
+                    <i class="bi bi-arrow-left me-2"></i>Back to Dashboard
+                </a>
+            </div>
+        </div>
+    </div>
+    
+    <div class="row">
+        <div class="col-md-8 mx-auto">
+            <div class="card shadow-sm border-0">
+                <div class="card-header d-flex justify-content-between align-items-center bg-light py-3">
+                    <h5 class="mb-0 fw-bold">All Notifications</h5>
+                    {% if notifications %}
+                        <a href="?mark_read=true" class="btn btn-primary">
+                            <i class="bi bi-check-all me-2"></i>Mark All as Read
+                        </a>
+                    {% endif %}
+                </div>
+                
+                <div class="card-body p-0">
+                    {% if notifications %}
+                        <div class="list-group list-group-flush">
+                            {% for notification in notifications %}
+                                <div class="list-group-item list-group-item-action p-0">
+                                    <div class="d-flex p-3 {% if not notification.is_read %}notification-unread{% endif %}">
+                                        <div class="notification-icon rounded-circle me-3" 
+                                            {% if notification.notification_type == 'message' %}
+                                                style="background-color: rgba(13, 110, 253, 0.1); color: #0d6efd;"
+                                            {% elif notification.notification_type == 'application' %}
+                                                style="background-color: rgba(25, 135, 84, 0.1); color: #198754;"
+                                            {% elif notification.notification_type == 'milestone' %}
+                                                style="background-color: rgba(255, 193, 7, 0.1); color: #ffc107;"
+                                            {% elif notification.notification_type == 'project' %}
+                                                style="background-color: rgba(13, 202, 240, 0.1); color: #0dcaf0;"
+                                            {% elif notification.notification_type == 'payment' or notification.notification_type == 'wallet_deposit' %}
+                                                style="background-color: rgba(220, 53, 69, 0.1); color: #dc3545;"
+                                            {% elif notification.notification_type == 'review' %}
+                                                style="background-color: rgba(111, 66, 193, 0.1); color: #6f42c1;"
+                                            {% else %}
+                                                style="background-color: rgba(108, 117, 125, 0.1); color: #6c757d;"
+                                            {% endif %}>
+                                            {% if notification.notification_type == 'message' %}
+                                                <i class="bi bi-chat-text"></i>
+                                            {% elif notification.notification_type == 'application' %}
+                                                <i class="bi bi-file-earmark-text"></i>
+                                            {% elif notification.notification_type == 'milestone' %}
+                                                <i class="bi bi-flag"></i>
+                                            {% elif notification.notification_type == 'project' %}
+                                                <i class="bi bi-briefcase"></i>
+                                            {% elif notification.notification_type == 'payment' or notification.notification_type == 'wallet_deposit' %}
+                                                <i class="bi bi-credit-card"></i>
+                                            {% elif notification.notification_type == 'review' %}
+                                                <i class="bi bi-star"></i>
+                                            {% else %}
+                                                <i class="bi bi-bell"></i>
+                                            {% endif %}
+                                        </div>
+                                        
+                                        <div class="flex-grow-1">
+                                            <div class="d-flex justify-content-between align-items-start mb-1">
+                                                <p class="mb-1 notification-text fw-medium">{{ notification.message }}</p>
+                                                <small class="text-muted ms-2 flex-shrink-0">{{ notification.created_at|timesince }} ago</small>
+                                            </div>
+                                            
+                                            {% if notification.project %}
+                                                <div class="mt-2 d-flex flex-wrap gap-2">
+                                                    <a href="{% url 'project_detail' notification.project.id %}" class="btn btn-sm btn-outline-primary">
+                                                        <i class="bi bi-briefcase me-1"></i> View Project
+                                                    </a>
+                                                    
+                                                    {% if notification.notification_type == 'message' %}
+                                                        <a href="{% url 'chat_room' notification.project.id %}" class="btn btn-sm btn-primary">
+                                                            <i class="bi bi-chat me-1"></i> Open Chat
+                                                        </a>
+                                                    {% elif notification.notification_type == 'milestone' %}
+                                                        <a href="{% url 'project_milestones' notification.project.id %}" class="btn btn-sm btn-primary">
+                                                            <i class="bi bi-flag me-1"></i> View Milestones
+                                                        </a>
+                                                    {% endif %}
+                                                </div>
+                                            {% elif notification.notification_type == 'wallet_deposit' or notification.notification_type == 'payment' %}
+                                                <div class="mt-2">
+                                                    <a href="{% url 'wallet_dashboard' %}" class="btn btn-sm btn-primary">
+                                                        <i class="bi bi-wallet me-1"></i> Go to Wallet
+                                                    </a>
+                                                </div>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="text-center py-5">
+                            <div class="mb-3">
+                                <i class="bi bi-bell-slash text-muted" style="font-size: 3rem;"></i>
+                            </div>
+                            <h5 class="text-muted mb-1">No notifications yet</h5>
+                            <p class="text-muted">We'll notify you when there's activity related to your account.</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .notification-unread {
+        position: relative;
+        padding-left: 2.5rem !important;
+        background-color: rgba(var(--bs-primary-rgb), 0.05) !important;
+    }
+    
+    .notification-unread::before {
+        content: '';
+        position: absolute;
+        top: 50%;
+        left: 1rem;
+        transform: translateY(-50%);
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background-color: var(--bs-primary);
+        box-shadow: 0 0 0 2px rgba(var(--bs-primary-rgb), 0.2);
+    }
+    
+    [data-bs-theme="dark"] .notification-unread {
+        background-color: rgba(167, 139, 250, 0.15) !important;
+    }
+    
+    [data-bs-theme="dark"] .notification-unread::before {
+        background-color: var(--accent-color);
+        box-shadow: 0 0 0 2px rgba(167, 139, 250, 0.3);
+    }
+    
+    .notification-icon {
+        width: 46px;
+        height: 46px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.25rem;
+        flex-shrink: 0;
+    }
+</style>
+{% endblock %} 

@@ -1,0 +1,52 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-8 mx-auto">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">
+                        <i class="bi bi-trash"></i> Clean Up Messages
+                    </h5>
+                    <a href="{% url 'message_list' %}" class="btn btn-outline-secondary btn-sm">
+                        <i class="bi bi-arrow-left"></i> Back to Messages
+                    </a>
+                </div>
+                <div class="card-body">
+                    {% if improper_messages %}
+                        <div class="alert alert-warning">
+                            <p>Found {{ count }} messages with improper formatting. These messages appear to be displaying sender information rather than message content.</p>
+                            <p>Deleting these messages will remove them permanently from the database.</p>
+                        </div>
+                        <form method="post">
+                            {% csrf_token %}
+                            <button type="submit" name="confirm" class="btn btn-danger mb-4">
+                                <i class="bi bi-trash"></i> Delete All Improper Messages
+                            </button>
+                        </form>
+                        <div class="list-group">
+                            {% for message in improper_messages %}
+                                <div class="list-group-item">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <div>
+                                            <p class="mb-0">{{ message.message }}</p>
+                                            <small class="text-muted">From: {{ message.sender.user.username }} in project: {{ message.room.project.title }}</small>
+                                        </div>
+                                        <small class="text-muted">{{ message.created_at|date:"M d, Y H:i" }}</small>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="alert alert-success">
+                            <p>No improper messages found! All messages appear to be formatted correctly.</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

@@ -1,0 +1,133 @@
+/* Ensure light background for the selection container */
+.selection-container {
+    padding: 2rem;
+    border-radius: 12px;
+    text-align: center;
+    background: #fff !important; /* Force a white background */
+    box-shadow: var(--box-shadow-light); /* Maintain the light shadow */
+}
+
+/* Ensure dark mode does not override the background */
+.dark-mode .selection-container {
+    background: #fff !important; /* Keep white in dark mode */
+}
+
+/* Account Selection */
+.account-options {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    margin-bottom: 20px;
+    align-items: center;
+}
+
+/* Hide default radio button */
+input[type="radio"] {
+    display: none;
+}
+
+/* Custom styled selection cards */
+.account-card {
+    border: 2px solid var(--border-color);
+    padding: 15px;
+    width: 100%;
+    max-width: 300px;
+    cursor: pointer;
+    text-align: left;
+    transition: 0.3s;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: #fff; /* Ensure white background */
+    color: var(--text-color);
+    position: relative;
+    border-radius: 10px;
+    overflow: hidden;
+}
+
+/* Custom radio button circle */
+.account-card::before {
+    content: "";
+    width: 20px;
+    height: 20px;
+    border: 2px solid var(--border-color);
+    border-radius: 50%;
+    display: inline-block;
+    position: absolute;
+    right: 15px;
+    transition: background 0.3s, border-color 0.3s;
+}
+
+/* Checked state effect */
+input[type="radio"]:checked + label::before {
+    background-color: #ff5722;
+    border-color: #ff5722;
+    box-shadow: 0px 0px 5px #ff5722;
+}
+
+/* Hover and selection effect */
+.account-card:hover, input[type="radio"]:checked + label {
+    background-color: #f5f5f5; /* Light gray on hover */
+    border-color: var(--text-color);
+    color: var(--text-color);
+}
+
+/* Create Account Button */
+.create-btn {
+    background-color: #ff9800;
+    color: black;
+    border: none;
+    padding: 12px 25px;
+    font-size: 16px;
+    font-weight: bold;
+    cursor: not-allowed;
+    width: 100%;
+    transition: 0.3s;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    border-radius: 8px;
+}
+
+.create-btn.enabled {
+    background-color: #ff5722;
+    color: white;
+    cursor: pointer;
+}
+
+.create-btn:hover {
+    background-color: #e64a19;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .selection-container {
+        width: 95%;
+        padding: 20px;
+    }
+
+    .account-card {
+        font-size: 14px;
+        padding: 12px;
+    }
+
+    .create-btn {
+        font-size: 14px;
+        padding: 10px 20px;
+    }
+}
+
+@media (max-width: 480px) {
+    .selection-container {
+        padding: 15px;
+    }
+
+    .account-card {
+        font-size: 13px;
+        padding: 10px;
+    }
+
+    .create-btn {
+        font-size: 13px;
+        padding: 8px 15px;
+    }
+}

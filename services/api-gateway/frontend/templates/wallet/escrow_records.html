@@ -1,0 +1,275 @@
+{% extends 'base.html' %}
+
+{% block title %}Escrow Records{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2 class="fw-bold mb-0">
+                    <i class="bi bi-shield-lock me-2 text-primary"></i>Escrow Records
+                </h2>
+                <a href="{% url 'wallet_dashboard' %}" class="btn btn-outline-primary">
+                    <i class="bi bi-wallet2 me-2"></i>Back to Wallet
+                </a>
+            </div>
+        </div>
+    </div>
+
+    {% if messages %}
+    <div class="row mb-4">
+        <div class="col-12">
+            {% for message in messages %}
+            <div class="alert alert-{{ message.tags }} shadow-sm border-0">
+                {{ message }}
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card shadow-sm border-0">
+                <div class="card-body p-4">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h5 class="fw-bold mb-0">
+                            <i class="bi bi-info-circle me-2 text-primary"></i>Escrow Information
+                        </h5>
+                        <div class="badge bg-primary-subtle text-primary px-3 py-2 rounded-pill fs-6 fw-semibold">
+                            Total in Escrow: {{ total_escrow }} {{ wallet.currency }}
+                        </div>
+                    </div>
+                    
+                    <div class="p-3 bg-light rounded-3">
+                        <div class="d-flex">
+                            <i class="bi bi-shield-lock text-primary fs-4 me-3 flex-shrink-0 mt-1"></i>
+                            <div>
+                                {% if is_client %}
+                                <p class="mb-0"><strong>What is escrow?</strong> When you fund a milestone, the money is held in escrow until the milestone is completed and you approve it. 
+                                This protects both you and the freelancer by ensuring payment is released only when work is completed satisfactorily.</p>
+                                {% elif is_freelancer %}
+                                <p class="mb-0"><strong>What is escrow?</strong> When a client funds a milestone, the money is held in escrow until you complete the milestone and the client approves it.
+                                This protects both you and the client by ensuring payment is guaranteed when work is completed satisfactorily.</p>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-12">
+            <div class="card shadow-sm border-0">
+                <div class="card-header bg-white py-3">
+                    <h5 class="fw-bold mb-0">
+                        <i class="bi bi-list-check me-2 text-primary"></i>Active Escrow Records
+                    </h5>
+                </div>
+                <div class="card-body p-0">
+                    {% if page_obj %}
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th class="ps-4">Date</th>
+                                    <th>Project</th>
+                                    <th>Milestone</th>
+                                    <th>Amount</th>
+                                    <th>Status</th>
+                                    <th class="pe-4">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for escrow in page_obj %}
+                                <tr>
+                                    <td class="ps-4">{{ escrow.date|date:"M d, Y H:i" }}</td>
+                                    <td>
+                                        <a href="{% url 'project_detail' escrow.project.id %}" class="text-decoration-none fw-medium">{{ escrow.project.title }}</a>
+                                    </td>
+                                    <td>{{ escrow.milestone.title }}</td>
+                                    <td class="text-danger fw-semibold">
+                                        {{ escrow.amount }} {{ wallet.currency }}
+                                    </td>
+                                    <td>
+                                        {% if escrow.status == 'funded' %}
+                                        <span class="badge rounded-pill bg-primary-subtle text-primary">Funded</span>
+                                        {% elif escrow.status == 'completed' %}
+                                        <span class="badge rounded-pill bg-info-subtle text-info">Completed</span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="pe-4">
+                                        <a href="{% url 'project_milestones' escrow.project.id %}" class="btn btn-sm btn-outline-primary rounded-pill">
+                                            <i class="bi bi-eye me-1"></i> View
+                                        </a>
+                                        
+                                        {% if is_client and escrow.status == 'completed' %}
+                                        <a href="{% url 'approve_milestone' escrow.project.id escrow.milestone.id %}" class="btn btn-sm btn-success rounded-pill">
+                                            <i class="bi bi-check-circle me-1"></i> Approve
+                                        </a>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    <!-- Pagination -->
+                    {% if page_obj.has_other_pages %}
+                    <nav aria-label="Escrow records pagination" class="mt-4 mb-3 px-4">
+                        <ul class="pagination justify-content-center">
+                            {% if page_obj.has_previous %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page=1" aria-label="First">
+                                    <span aria-hidden="true">&laquo;&laquo;</span>
+                                </a>
+                            </li>
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ page_obj.previous_page_number }}" aria-label="Previous">
+                                    <span aria-hidden="true">&laquo;</span>
+                                </a>
+                            </li>
+                            {% endif %}
+                            
+                            {% for i in page_obj.paginator.page_range %}
+                            {% if page_obj.number == i %}
+                            <li class="page-item active"><span class="page-link">{{ i }}</span></li>
+                            {% elif i > page_obj.number|add:'-3' and i < page_obj.number|add:'3' %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ i }}">{{ i }}</a>
+                            </li>
+                            {% endif %}
+                            {% endfor %}
+                            
+                            {% if page_obj.has_next %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ page_obj.next_page_number }}" aria-label="Next">
+                                    <span aria-hidden="true">&raquo;</span>
+                                </a>
+                            </li>
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}" aria-label="Last">
+                                    <span aria-hidden="true">&raquo;&raquo;</span>
+                                </a>
+                            </li>
+                            {% endif %}
+                        </ul>
+                    </nav>
+                    {% endif %}
+                    
+                    {% else %}
+                    <div class="text-center py-5">
+                        <div class="mb-3">
+                            <i class="bi bi-shield-lock text-muted" style="font-size: 3rem;"></i>
+                        </div>
+                        <h5 class="text-muted fw-bold mb-2">No active escrow records found</h5>
+                        {% if is_client %}
+                        <p class="text-muted">You don't have any active milestones funded at the moment.</p>
+                        <a href="{% url 'my_projects' %}" class="btn btn-sm btn-primary mt-2">
+                            <i class="bi bi-briefcase me-1"></i>View My Projects
+                        </a>
+                        {% elif is_freelancer %}
+                        <p class="text-muted">No clients have funded milestones for your projects yet.</p>
+                        <a href="{% url 'my_projects' %}" class="btn btn-sm btn-primary mt-2">
+                            <i class="bi bi-briefcase me-1"></i>View My Projects
+                        </a>
+                        {% endif %}
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card shadow-sm border-0">
+                <div class="card-header bg-white py-3">
+                    <h5 class="fw-bold mb-0">
+                        <i class="bi bi-info-circle me-2 text-primary"></i>How Escrow Works
+                    </h5>
+                </div>
+                <div class="card-body p-4">
+                    <div class="row g-4">
+                        <div class="col-md-4">
+                            <div class="card h-100 border-0 shadow-sm">
+                                <div class="card-body p-4">
+                                    <div class="text-center mb-3">
+                                        <div class="rounded-circle bg-primary-subtle d-inline-flex align-items-center justify-content-center mb-3" style="width: 80px; height: 80px;">
+                                            <i class="bi bi-wallet2 text-primary" style="font-size: 2rem;"></i>
+                                        </div>
+                                        <h5 class="fw-bold">1. Fund Milestone</h5>
+                                    </div>
+                                    <p class="text-muted mb-0">Client funds a milestone by transferring money to escrow, securing the payment for the freelancer.</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="card h-100 border-0 shadow-sm">
+                                <div class="card-body p-4">
+                                    <div class="text-center mb-3">
+                                        <div class="rounded-circle bg-primary-subtle d-inline-flex align-items-center justify-content-center mb-3" style="width: 80px; height: 80px;">
+                                            <i class="bi bi-check-circle text-primary" style="font-size: 2rem;"></i>
+                                        </div>
+                                        <h5 class="fw-bold">2. Complete Work</h5>
+                                    </div>
+                                    <p class="text-muted mb-0">Freelancer completes the milestone and marks it as done, notifying the client for review.</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="card h-100 border-0 shadow-sm">
+                                <div class="card-body p-4">
+                                    <div class="text-center mb-3">
+                                        <div class="rounded-circle bg-primary-subtle d-inline-flex align-items-center justify-content-center mb-3" style="width: 80px; height: 80px;">
+                                            <i class="bi bi-cash-coin text-primary" style="font-size: 2rem;"></i>
+                                        </div>
+                                        <h5 class="fw-bold">3. Release Payment</h5>
+                                    </div>
+                                    <p class="text-muted mb-0">Client approves the work and payment is released from escrow to the freelancer's wallet.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    /* Dark mode adjustments */
+    [data-bs-theme="dark"] .bg-light {
+        background-color: rgba(255, 255, 255, 0.05) !important;
+    }
+    
+    [data-bs-theme="dark"] .card {
+        background-color: #1e293b;
+        border-color: #374151;
+    }
+    
+    [data-bs-theme="dark"] .table-light {
+        background-color: rgba(255, 255, 255, 0.05);
+    }
+    
+    [data-bs-theme="dark"] .bg-primary-subtle {
+        background-color: rgba(13, 110, 253, 0.2) !important;
+    }
+    
+    [data-bs-theme="dark"] .bg-info-subtle {
+        background-color: rgba(13, 202, 240, 0.2) !important;
+    }
+    
+    [data-bs-theme="dark"] .text-decoration-none {
+        color: #e2e8f0 !important;
+    }
+    
+    [data-bs-theme="dark"] .text-decoration-none:hover {
+        color: var(--primary-color) !important;
+    }
+</style>
+{% endblock %} 

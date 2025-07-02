@@ -1,0 +1,80 @@
+{% extends 'base.html' %}
+
+{% block title %}Delete Payment Method{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card shadow">
+                <div class="card-header bg-danger text-white">
+                    <h5 class="mb-0">Delete Payment Method</h5>
+                </div>
+                <div class="card-body text-center">
+                    {% if messages %}
+                    {% for message in messages %}
+                    <div class="alert alert-{{ message.tags }}">
+                        {{ message }}
+                    </div>
+                    {% endfor %}
+                    {% endif %}
+
+                    <div class="py-4">
+                        <i class="fas fa-exclamation-triangle fa-4x text-danger mb-4"></i>
+                        <h4>Are you sure you want to delete this payment method?</h4>
+                        <p class="text-muted mt-3">This action cannot be undone. Once deleted, you will need to re-add this payment method if you want to use it in the future.</p>
+                    </div>
+
+                    <div class="card mb-4">
+                        <div class="card-body">
+                            <h6 class="card-title mb-3">Payment Method Details</h6>
+                            
+                            {% if payment_method.method_type == 'bank' %}
+                            <div class="text-start">
+                                <p><i class="fas fa-university text-primary me-2"></i><strong>Bank Account</strong></p>
+                                <p><strong>Bank:</strong> {{ payment_method.bank_name }}</p>
+                                <p><strong>Account:</strong> **** {{ payment_method.account_number|slice:"-4:" }}</p>
+                                <p><strong>Account Holder:</strong> {{ payment_method.account_holder }}</p>
+                                <p class="mb-0"><strong>IFSC:</strong> {{ payment_method.ifsc_code }}</p>
+                            </div>
+                            {% elif payment_method.method_type == 'upi' %}
+                            <div class="text-start">
+                                <p><i class="fas fa-mobile-alt text-success me-2"></i><strong>UPI</strong></p>
+                                <p class="mb-0"><strong>UPI ID:</strong> {{ payment_method.upi_id }}</p>
+                            </div>
+                            {% elif payment_method.method_type == 'card' %}
+                            <div class="text-start">
+                                <p><i class="fas fa-credit-card text-info me-2"></i><strong>Card</strong></p>
+                                <p><strong>Card Number:</strong> **** **** **** {{ payment_method.card_last_digits }}</p>
+                                <p><strong>Card Type:</strong> {{ payment_method.card_type }}</p>
+                                <p class="mb-0"><strong>Expiry:</strong> {{ payment_method.card_expiry }}</p>
+                            </div>
+                            {% elif payment_method.method_type == 'paypal' %}
+                            <div class="text-start">
+                                <p><i class="fab fa-paypal text-primary me-2"></i><strong>PayPal</strong></p>
+                                <p class="mb-0"><strong>Email:</strong> {{ payment_method.paypal_email }}</p>
+                            </div>
+                            {% endif %}
+                            
+                            {% if payment_method.is_default %}
+                            <div class="alert alert-warning mt-3 mb-0">
+                                <i class="fas fa-exclamation-circle me-2"></i>
+                                This is your default payment method. If deleted, another payment method will be set as default if available.
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <form method="post" action="{% url 'delete_payment_method' payment_method.id %}">
+                        {% csrf_token %}
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-danger">Yes, Delete This Payment Method</button>
+                            <a href="{% url 'payment_methods' %}" class="btn btn-outline-secondary">Cancel</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

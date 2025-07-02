@@ -1,0 +1,257 @@
+{% extends 'admin/admin_base.html' %}
+
+{% block title %}Transactions Management{% endblock %}
+
+{% block page_title %}Transactions Management{% endblock %}
+{% block page_subtitle %}Monitor and manage all financial transactions on the platform{% endblock %}
+
+{% block content %}
+<!-- Filters and Search -->
+<div class="data-card mb-4">
+    <div class="data-card-header">
+        <h5 class="data-card-title">Filters</h5>
+    </div>
+    <div class="card-body pt-0">
+        <form method="get" class="row g-3 align-items-end">
+            <!-- Search Field -->
+            <div class="col-lg-4 col-md-6">
+                <label for="search" class="form-label">Search</label>
+                <div class="input-group">
+                    <span class="input-group-text"><i class="bi bi-search"></i></span>
+                    <input type="text" class="form-control" id="search" name="search" placeholder="Search transaction ID, description..." value="{{ search }}">
+                </div>
+            </div>
+            
+            <!-- Transaction Type Filter -->
+            <div class="col-lg-3 col-md-6">
+                <label for="type" class="form-label">Transaction Type</label>
+                <select class="form-select" id="type" name="type">
+                    <option value="" {% if transaction_type == '' %}selected{% endif %}>All Types</option>
+                    {% for type_code, type_name in transaction_types %}
+                        <option value="{{ type_code }}" {% if transaction_type == type_code %}selected{% endif %}>{{ type_name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            
+            <!-- Status Filter -->
+            <div class="col-lg-3 col-md-6">
+                <label for="status" class="form-label">Status</label>
+                <select class="form-select" id="status" name="status">
+                    <option value="" {% if status == '' %}selected{% endif %}>All Status</option>
+                    {% for status_code, status_name in status_choices %}
+                        <option value="{{ status_code }}" {% if status == status_code %}selected{% endif %}>{{ status_name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            
+            <!-- Filter Button -->
+            <div class="col-lg-2 col-md-6 d-flex">
+                <button type="submit" class="btn btn-primary flex-fill">
+                    <i class="bi bi-filter me-2"></i> Apply Filters
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Transactions Table -->
+<div class="data-card">
+    <div class="data-card-header d-flex justify-content-between align-items-center">
+        <h5 class="data-card-title mb-0">Transactions</h5>
+        <span class="badge bg-primary">{{ transactions.count }} Transactions</span>
+    </div>
+    <div class="table-responsive">
+        <table class="table table-hover align-middle">
+            <thead>
+                <tr>
+                    <th>Transaction ID</th>
+                    <th>User</th>
+                    <th>Type</th>
+                    <th>Amount</th>
+                    <th>Status</th>
+                    <th>Date</th>
+                    <th>Details</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for transaction in transactions %}
+                <tr>
+                    <td><small class="text-muted">{{ transaction.transaction_id }}</small></td>
+                    <td>
+                        <div class="d-flex align-items-center">
+                            <div class="user-avatar me-2" style="width: 32px; height: 32px; font-size: 0.8rem;">
+                                {{ transaction.wallet.user.user.username|slice:":1"|upper }}
+                            </div>
+                            <div>{{ transaction.wallet.user.user.username }}</div>
+                        </div>
+                    </td>
+                    <td>
+                        {% if transaction.transaction_type == 'deposit' %}
+                        <span class="badge bg-success">Deposit</span>
+                        {% elif transaction.transaction_type == 'withdrawal' %}
+                        <span class="badge bg-warning">Withdrawal</span>
+                        {% elif transaction.transaction_type == 'escrow' %}
+                        <span class="badge bg-info">Escrow</span>
+                        {% elif transaction.transaction_type == 'release' %}
+                        <span class="badge bg-primary">Release</span>
+                        {% elif transaction.transaction_type == 'fee' %}
+                        <span class="badge bg-secondary">Fee</span>
+                        {% elif transaction.transaction_type == 'refund' %}
+                        <span class="badge bg-danger">Refund</span>
+                        {% else %}
+                        <span class="badge bg-dark">{{ transaction.transaction_type }}</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <div>${{ transaction.amount }}</div>
+                        {% if transaction.fee_amount > 0 %}
+                        <small class="text-muted">Fee: ${{ transaction.fee_amount }}</small>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if transaction.status == 'completed' %}
+                        <span class="badge bg-success">Completed</span>
+                        {% elif transaction.status == 'pending' %}
+                        <span class="badge bg-warning">Pending</span>
+                        {% elif transaction.status == 'failed' %}
+                        <span class="badge bg-danger">Failed</span>
+                        {% elif transaction.status == 'cancelled' %}
+                        <span class="badge bg-secondary">Cancelled</span>
+                        {% else %}
+                        <span class="badge bg-secondary">{{ transaction.status }}</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <div>{{ transaction.created_at|date:"M d, Y" }}</div>
+                        <small class="text-muted">{{ transaction.created_at|time:"h:i A" }}</small>
+                    </td>
+                    <td>
+                        <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#transactionModal{{ transaction.id }}">
+                            <i class="bi bi-info-circle"></i>
+                        </button>
+                        
+                        <!-- Transaction Details Modal -->
+                        <div class="modal fade" id="transactionModal{{ transaction.id }}" tabindex="-1" aria-labelledby="transactionModalLabel{{ transaction.id }}" aria-hidden="true">
+                            <div class="modal-dialog modal-dialog-centered">
+                                <div class="modal-content">
+                                    <div class="modal-header">
+                                        <h5 class="modal-title" id="transactionModalLabel{{ transaction.id }}">Transaction Details</h5>
+                                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                    </div>
+                                    <div class="modal-body">
+                                        <div class="mb-3">
+                                            <strong>Transaction ID:</strong>
+                                            <div>{{ transaction.transaction_id }}</div>
+                                        </div>
+                                        <div class="mb-3">
+                                            <strong>User:</strong>
+                                            <div>{{ transaction.wallet.user.user.username }} ({{ transaction.wallet.user.user.email }})</div>
+                                        </div>
+                                        <div class="mb-3">
+                                            <strong>Description:</strong>
+                                            <div>{{ transaction.description }}</div>
+                                        </div>
+                                        <div class="row mb-3">
+                                            <div class="col-md-6">
+                                                <strong>Project:</strong>
+                                                <div>{% if transaction.project %}{{ transaction.project.title }}{% else %}N/A{% endif %}</div>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <strong>Milestone:</strong>
+                                                <div>{% if transaction.milestone %}{{ transaction.milestone.title }}{% else %}N/A{% endif %}</div>
+                                            </div>
+                                        </div>
+                                        <div class="row mb-3">
+                                            <div class="col-md-6">
+                                                <strong>Amount:</strong>
+                                                <div>${{ transaction.amount }}</div>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <strong>Fee:</strong>
+                                                <div>${{ transaction.fee_amount }}</div>
+                                            </div>
+                                        </div>
+                                        <div class="row mb-3">
+                                            <div class="col-md-6">
+                                                <strong>Type:</strong>
+                                                <div>
+                                                    {% if transaction.transaction_type == 'deposit' %}
+                                                    <span class="badge bg-success">Deposit</span>
+                                                    {% elif transaction.transaction_type == 'withdrawal' %}
+                                                    <span class="badge bg-warning">Withdrawal</span>
+                                                    {% elif transaction.transaction_type == 'escrow' %}
+                                                    <span class="badge bg-info">Escrow</span>
+                                                    {% elif transaction.transaction_type == 'release' %}
+                                                    <span class="badge bg-primary">Release</span>
+                                                    {% elif transaction.transaction_type == 'fee' %}
+                                                    <span class="badge bg-secondary">Fee</span>
+                                                    {% else %}
+                                                    <span class="badge bg-dark">{{ transaction.transaction_type }}</span>
+                                                    {% endif %}
+                                                </div>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <strong>Status:</strong>
+                                                <div>
+                                                    {% if transaction.status == 'completed' %}
+                                                    <span class="badge bg-success">Completed</span>
+                                                    {% elif transaction.status == 'pending' %}
+                                                    <span class="badge bg-warning">Pending</span>
+                                                    {% elif transaction.status == 'failed' %}
+                                                    <span class="badge bg-danger">Failed</span>
+                                                    {% else %}
+                                                    <span class="badge bg-secondary">{{ transaction.status }}</span>
+                                                    {% endif %}
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="row">
+                                            <div class="col-md-6">
+                                                <strong>Created:</strong>
+                                                <div>{{ transaction.created_at|date:"M d, Y H:i:s" }}</div>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <strong>Updated:</strong>
+                                                <div>{{ transaction.updated_at|date:"M d, Y H:i:s" }}</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="modal-footer">
+                                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="7" class="text-center py-4">
+                        <i class="bi bi-cash-stack fs-1 d-block mb-3 text-muted"></i>
+                        <p class="mb-0">No transactions found matching your criteria</p>
+                        <a href="{% url 'admin_transactions' %}" class="btn btn-sm btn-outline-primary mt-3">Clear Filters</a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Pagination (to be implemented) -->
+<div class="mt-4 d-flex justify-content-center">
+    <nav aria-label="Page navigation">
+        <ul class="pagination">
+            <li class="page-item disabled">
+                <a class="page-link" href="#" tabindex="-1" aria-disabled="true">Previous</a>
+            </li>
+            <li class="page-item active"><a class="page-link" href="#">1</a></li>
+            <li class="page-item"><a class="page-link" href="#">2</a></li>
+            <li class="page-item"><a class="page-link" href="#">3</a></li>
+            <li class="page-item">
+                <a class="page-link" href="#">Next</a>
+            </li>
+        </ul>
+    </nav>
+</div>
+{% endblock %} 

@@ -1,0 +1,143 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Messages{% endblock %}
+
+{% block content %}
+<div class="message-list-container">
+    <div class="row mb-3">
+        <div class="col-md-8 mx-auto d-flex justify-content-between align-items-center">
+            <h4 class="mb-0 d-flex align-items-center fw-bold">
+                <i class="bi bi-chat-text me-2 text-primary"></i> Your Messages
+            </h4>
+            <div>
+                <a href="{% url 'dashboard' %}" class="btn btn-outline-secondary">
+                    <i class="bi bi-arrow-left me-2"></i>Back to Dashboard
+                </a>
+            </div>
+        </div>
+    </div>
+    
+    <div class="row">
+        <div class="col-md-8 mx-auto">
+            <div class="card shadow-sm border-0">
+                <div class="card-header d-flex justify-content-between align-items-center bg-light py-3">
+                    <h5 class="mb-0 fw-bold text-primary">Recent Conversations</h5>
+                </div>
+                
+                <div class="card-body p-0">
+                    {% if chat_rooms %}
+                        <div class="list-group list-group-flush">
+                            {% for room in chat_rooms %}
+                                <a href="{% url 'chat_room' room.project.id %}" class="list-group-item list-group-item-action p-0">
+                                    <div class="d-flex p-3 {% if room.unread_count > 0 %}chat-unread{% endif %}">
+                                        <div class="chat-avatar rounded-circle me-3 d-flex align-items-center justify-content-center" 
+                                            style="width: 50px; height: 50px; background-color: rgba(var(--bs-primary-rgb), 0.1); color: var(--primary-color); font-size: 1.5rem;">
+                                            {% if room.project.client == user.userprofile %}
+                                                {% if room.project.assigned_freelancer.profile_picture %}
+                                                    <img src="{{ room.project.assigned_freelancer.profile_picture.url }}" alt="{{ room.project.assigned_freelancer.user.username }}" class="rounded-circle" style="width: 100%; height: 100%; object-fit: cover;">
+                                                {% else %}
+                                                    <i class="bi bi-person-circle"></i>
+                                                {% endif %}
+                                            {% else %}
+                                                {% if room.project.client.profile_picture %}
+                                                    <img src="{{ room.project.client.profile_picture.url }}" alt="{{ room.project.client.user.username }}" class="rounded-circle" style="width: 100%; height: 100%; object-fit: cover;">
+                                                {% else %}
+                                                    <i class="bi bi-person-circle"></i>
+                                                {% endif %}
+                                            {% endif %}
+                                        </div>
+                                        
+                                        <div class="flex-grow-1">
+                                            <div class="d-flex justify-content-between align-items-start mb-1">
+                                                <h6 class="mb-0 fw-bold text-truncate" style="max-width: 70%;">
+                                                    {{ room.project.title }}
+                                                </h6>
+                                                <div class="d-flex align-items-center">
+                                                    <small class="text-muted me-2">{{ room.last_message_at|date:"M d, Y" }}</small>
+                                                    {% if room.unread_count > 0 %}
+                                                        <span class="badge bg-primary rounded-pill">{{ room.unread_count }}</span>
+                                                    {% endif %}
+                                                </div>
+                                            </div>
+                                            
+                                            <p class="mb-1 small text-muted">
+                                                <span class="fw-medium">
+                                                    {% if room.project.client == user.userprofile %}
+                                                        {{ room.project.assigned_freelancer.user.get_full_name|default:room.project.assigned_freelancer.user.username }}
+                                                    {% else %}
+                                                        {{ room.project.client.user.get_full_name|default:room.project.client.user.username }}
+                                                    {% endif %}
+                                                </span>
+                                                <span class="mx-1">•</span>
+                                                <span>{{ room.project.get_status_display }}</span>
+                                            </p>
+                                            
+                                            {% if room.last_message %}
+                                                <p class="mb-0 text-truncate" style="max-width: 90%;">
+                                                    {% if room.last_message.sender == user.userprofile %}
+                                                        <span class="text-muted"><i class="bi bi-check-all me-1"></i> You:</span>
+                                                    {% else %}
+                                                        <span class="fw-medium">{{ room.last_message.sender.user.username }}:</span>
+                                                    {% endif %}
+                                                    <span class="{% if room.unread_count > 0 and room.last_message.sender != user.userprofile %}fw-medium text-dark{% else %}text-muted{% endif %}">
+                                                        {{ room.last_message.message }}
+                                                    </span>
+                                                </p>
+                                            {% else %}
+                                                <p class="mb-0 text-muted fst-italic">No messages yet</p>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </a>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="text-center py-5">
+                            <div class="mb-3">
+                                <i class="bi bi-chat-text text-muted" style="font-size: 3rem;"></i>
+                            </div>
+                            <h5 class="text-muted mb-1">No messages yet</h5>
+                            <p class="text-muted">Start a conversation by joining or creating a project!</p>
+                            <div class="mt-3">
+                                <a href="{% url 'project_list' %}" class="btn btn-primary">
+                                    <i class="bi bi-search me-2"></i>Find Projects
+                                </a>
+                                {% if user.userprofile.is_client %}
+                                    <a href="{% url 'create_project' %}" class="btn btn-outline-primary ms-2">
+                                        <i class="bi bi-plus-circle me-2"></i>Post a Project
+                                    </a>
+                                {% endif %}
+                            </div>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .message-list-container {
+        min-height: calc(100vh - 280px); /* Adjust value based on header and footer height */
+    }
+    
+    .chat-unread {
+        position: relative;
+        background-color: rgba(var(--bs-primary-rgb), 0.05) !important;
+    }
+    
+    [data-bs-theme="dark"] .chat-unread {
+        background-color: rgba(167, 139, 250, 0.15) !important;
+    }
+    
+    .chat-avatar {
+        flex-shrink: 0;
+    }
+    
+    [data-bs-theme="dark"] .chat-avatar {
+        background-color: rgba(167, 139, 250, 0.2) !important;
+        color: var(--accent-color) !important;
+    }
+</style>
+{% endblock %} 
