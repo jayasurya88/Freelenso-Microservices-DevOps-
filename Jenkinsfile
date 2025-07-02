@@ -9,10 +9,7 @@ pipeline {
         PAYMENT_SERVICE_IMAGE = "${DOCKER_USERNAME}/freelenso-payment-service:latest"
         WEB_IMAGE = "${DOCKER_USERNAME}/freelenso-web:latest"
         API_GATEWAY_IMAGE = "${DOCKER_USERNAME}/freelenso-api-gateway:latest"
-    }
-
-    tools {
-        'hudson.plugins.sonar.SonarRunnerInstallation' 'sonar-scanner'
+        SCANNER_HOME = tool 'sonar-scanner'
     }
 
     stages {
@@ -31,20 +28,17 @@ pipeline {
 
         stage('SonarQube Analysis') {
             steps {
-                script {
-                    def scannerHome = tool 'sonar-scanner'
-                    withSonarQubeEnv('sonar') {
-                        sh """
-                            ${scannerHome}/bin/sonar-scanner \
-                            -Dsonar.projectName=freelenso-microservices \
-                            -Dsonar.projectKey=freelenso-microservices \
-                            -Dsonar.sources=services,core,freelenso \
-                            -Dsonar.language=py \
-                            -Dsonar.python.version=3 \
-                            -Dsonar.host.url=http://172.22.2.14:9000 \
-                            -Dsonar.sourceEncoding=UTF-8
-                        """
-                    }
+                withSonarQubeEnv('sonar') {
+                    sh """
+                        ${SCANNER_HOME}/bin/sonar-scanner \
+                        -Dsonar.projectName=freelenso-microservices \
+                        -Dsonar.projectKey=freelenso-microservices \
+                        -Dsonar.sources=services,core,freelenso \
+                        -Dsonar.language=py \
+                        -Dsonar.python.version=3 \
+                        -Dsonar.host.url=http://172.22.2.14:9000 \
+                        -Dsonar.sourceEncoding=UTF-8
+                    """
                 }
             }
         }
@@ -61,7 +55,7 @@ pipeline {
                         echo "=== Requirements content ==="
                         cat requirements.txt || echo "requirements.txt not found"
                         '''
-                        withDockerRegistry(credentialsId: 'docker-cred', toolName: 'docker') {
+                        withDockerRegistry(credentialsId: 'docker', toolName: 'docker') {
                             sh "docker build -t ${USER_SERVICE_IMAGE} ."
                             sh "docker push ${USER_SERVICE_IMAGE}"
                         }
@@ -82,7 +76,7 @@ pipeline {
                         echo "=== Requirements content ==="
                         cat requirements.txt || echo "requirements.txt not found"
                         '''
-                        withDockerRegistry(credentialsId: 'docker-cred', toolName: 'docker') {
+                        withDockerRegistry(credentialsId: 'docker', toolName: 'docker') {
                             sh "docker build -t ${PROJECT_SERVICE_IMAGE} ."
                             sh "docker push ${PROJECT_SERVICE_IMAGE}"
                         }
@@ -103,7 +97,7 @@ pipeline {
                         echo "=== Requirements content ==="
                         cat requirements.txt || echo "requirements.txt not found"
                         '''
-                        withDockerRegistry(credentialsId: 'docker-cred', toolName: 'docker') {
+                        withDockerRegistry(credentialsId: 'docker', toolName: 'docker') {
                             sh "docker build -t ${NOTIFICATION_SERVICE_IMAGE} ."
                             sh "docker push ${NOTIFICATION_SERVICE_IMAGE}"
                         }
@@ -124,7 +118,7 @@ pipeline {
                         echo "=== Requirements content ==="
                         cat requirements.txt || echo "requirements.txt not found"
                         '''
-                        withDockerRegistry(credentialsId: 'docker-cred', toolName: 'docker') {
+                        withDockerRegistry(credentialsId: 'docker', toolName: 'docker') {
                             sh "docker build -t ${PAYMENT_SERVICE_IMAGE} ."
                             sh "docker push ${PAYMENT_SERVICE_IMAGE}"
                         }
@@ -144,7 +138,7 @@ pipeline {
                     echo "=== Requirements content ==="
                     cat requirements.txt || echo "requirements.txt not found"
                     '''
-                    withDockerRegistry(credentialsId: 'docker-cred', toolName: 'docker') {
+                    withDockerRegistry(credentialsId: 'docker', toolName: 'docker') {
                         sh "docker build -t ${WEB_IMAGE} ."
                         sh "docker push ${WEB_IMAGE}"
                     }
@@ -164,7 +158,7 @@ pipeline {
                         echo "=== Requirements content ==="
                         cat requirements.txt || echo "requirements.txt not found"
                         '''
-                        withDockerRegistry(credentialsId: 'docker-cred', toolName: 'docker') {
+                        withDockerRegistry(credentialsId: 'docker', toolName: 'docker') {
                             sh "docker build -t ${API_GATEWAY_IMAGE} ."
                             sh "docker push ${API_GATEWAY_IMAGE}"
                         }
@@ -176,42 +170,19 @@ pipeline {
         stage('Docker Scout Analysis') {
             steps {
                 script {
-                    withDockerRegistry(credentialsId: 'docker-cred', toolName: 'docker') {
-                        sh "docker-scout quickview ${USER_SERVICE_IMAGE}"
-                        sh "docker-scout quickview ${PROJECT_SERVICE_IMAGE}"
-                        sh "docker-scout quickview ${WEB_IMAGE}"
+                    withDockerRegistry(credentialsId: 'docker', toolName: 'docker') {
+                        sh """
+                            docker-scout quickview ${USER_SERVICE_IMAGE}
+                            docker-scout quickview ${PROJECT_SERVICE_IMAGE}
+                            docker-scout quickview ${NOTIFICATION_SERVICE_IMAGE}
+                            docker-scout quickview ${PAYMENT_SERVICE_IMAGE}
+                            docker-scout quickview ${WEB_IMAGE}
+                            docker-scout quickview ${API_GATEWAY_IMAGE}
+                            
+                            docker-scout cves ${USER_SERVICE_IMAGE}
+                            docker-scout recommendations ${USER_SERVICE_IMAGE}
+                        """
                     }
-                }
-            }
-        }
-
-        stage('Deploy to Kubernetes') {
-            steps {
-                script {
-                    sh "kubectl apply -f k8s/"
-                    sh """
-                    kubectl wait --for=condition=available --timeout=300s deployment/user-db
-                    kubectl wait --for=condition=available --timeout=300s deployment/project-db
-                    kubectl wait --for=condition=available --timeout=300s deployment/notification-db
-                    kubectl wait --for=condition=available --timeout=300s deployment/user-service
-                    kubectl wait --for=condition=available --timeout=300s deployment/project-service
-                    kubectl wait --for=condition=available --timeout=300s deployment/notification-service
-                    kubectl wait --for=condition=available --timeout=300s deployment/payment-service
-                    kubectl wait --for=condition=available --timeout=300s deployment/web
-                    kubectl wait --for=condition=available --timeout=300s deployment/api-gateway
-                    """
-                }
-            }
-        }
-
-        stage('Verify Deployment') {
-            steps {
-                script {
-                    sh """
-                    kubectl get pods
-                    kubectl get services
-                    kubectl get deployments
-                    """
                 }
             }
         }
@@ -219,14 +190,18 @@ pipeline {
 
     post {
         success {
-            script {
-                echo 'Pipeline completed successfully!'
-            }
+            echo '🚀 Pipeline successful!'
+            archiveArtifacts artifacts: 'trivy-fs-report.html', allowEmptyArchive: true
         }
         failure {
-            script {
-                echo '❗ Pipeline failed. Check logs above.'
-            }
+            echo '❗ Pipeline failed. Check logs above.'
+            sh '''
+            echo "=== Error Investigation ==="
+            docker ps -a
+            '''
+        }
+        always {
+            archiveArtifacts artifacts: 'trivy-fs-report.html', allowEmptyArchive: true
         }
     }
 } 
