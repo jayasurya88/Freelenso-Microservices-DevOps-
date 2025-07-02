@@ -9,6 +9,7 @@ pipeline {
         PAYMENT_SERVICE_IMAGE = "${DOCKER_USERNAME}/freelenso-payment-service:latest"
         WEB_IMAGE = "${DOCKER_USERNAME}/freelenso-web:latest"
         API_GATEWAY_IMAGE = "${DOCKER_USERNAME}/freelenso-api-gateway:latest"
+        SCANNER_HOME = tool 'sonar-scanner'
     }
 
     tools {
@@ -31,20 +32,17 @@ pipeline {
 
         stage('SonarQube Analysis') {
             steps {
-                script {
-                    def scannerHome = tool 'sonar-scanner'
-                    withSonarQubeEnv('sonar') {
-                        sh """
-                            ${scannerHome}/bin/sonar-scanner \
-                            -Dsonar.projectName=freelenso-microservices \
-                            -Dsonar.projectKey=freelenso-microservices \
-                            -Dsonar.sources=services,core,freelenso \
-                            -Dsonar.language=py \
-                            -Dsonar.python.version=3 \
-                            -Dsonar.host.url=http://localhost:9000 \
-                            -Dsonar.sourceEncoding=UTF-8
-                        """
-                    }
+                withSonarQubeEnv('sonar') {
+                    sh """
+                        ${SCANNER_HOME}/bin/sonar-scanner \
+                        -Dsonar.projectName=freelenso-microservices \
+                        -Dsonar.projectKey=freelenso-microservices \
+                        -Dsonar.sources=services,core,freelenso \
+                        -Dsonar.language=py \
+                        -Dsonar.python.version=3 \
+                        -Dsonar.host.url=http://localhost:9000 \
+                        -Dsonar.sourceEncoding=UTF-8
+                    """
                 }
             }
         }
