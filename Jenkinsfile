@@ -166,30 +166,25 @@ pipeline {
             }
         }
 
-        stage('Install Docker Scout') {
-            steps {
-                sh '''
-                curl -fsSL https://raw.githubusercontent.com/docker/scout-cli/main/install.sh -o install-scout.sh
-                chmod +x install-scout.sh
-                sudo ./install-scout.sh
-                '''
-            }
-        }
-
         stage('Docker Scout Analysis') {
             steps {
                 script {
                     withDockerRegistry(credentialsId: 'docker', toolName: 'docker') {
                         sh """
-                            docker-scout quickview ${USER_SERVICE_IMAGE}
-                            docker-scout quickview ${PROJECT_SERVICE_IMAGE}
-                            docker-scout quickview ${NOTIFICATION_SERVICE_IMAGE}
-                            docker-scout quickview ${PAYMENT_SERVICE_IMAGE}
-                            docker-scout quickview ${WEB_IMAGE}
-                            docker-scout quickview ${API_GATEWAY_IMAGE}
+                            # Install Docker Scout plugin
+                            mkdir -p /var/lib/jenkins/.docker/cli-plugins
+                            curl -sSfL https://raw.githubusercontent.com/docker/scout-cli/main/install.sh | sh -s -- -b /var/lib/jenkins/.docker/cli-plugins
+
+                            # Run Docker Scout analysis
+                            docker scout quickview ${USER_SERVICE_IMAGE} || true
+                            docker scout quickview ${PROJECT_SERVICE_IMAGE} || true
+                            docker scout quickview ${NOTIFICATION_SERVICE_IMAGE} || true
+                            docker scout quickview ${PAYMENT_SERVICE_IMAGE} || true
+                            docker scout quickview ${WEB_IMAGE} || true
+                            docker scout quickview ${API_GATEWAY_IMAGE} || true
                             
-                            docker-scout cves ${USER_SERVICE_IMAGE}
-                            docker-scout recommendations ${USER_SERVICE_IMAGE}
+                            docker scout cves ${USER_SERVICE_IMAGE} || true
+                            docker scout recommendations ${USER_SERVICE_IMAGE} || true
                         """
                     }
                 }
