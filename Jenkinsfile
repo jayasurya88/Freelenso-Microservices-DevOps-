@@ -1,6 +1,10 @@
 pipeline {
     agent any
 
+    triggers {
+        githubPush()
+    }
+
     environment {
         DOCKER_USERNAME = 'jayasurya88'
         USER_SERVICE_IMAGE = "${DOCKER_USERNAME}/freelenso-user-service:latest"
