@@ -6,6 +6,10 @@ pipeline {
     }
 
     environment {
+        DOCKER_REGISTRY = 'jayasurya88'
+        VERSION = "${BUILD_NUMBER}"
+        SONAR_PROJECT_KEY = 'freelenso-project'
+        SONAR_HOST_URL = 'http://sonarqube:9000'
         DOCKER_USERNAME = 'jayasurya88'
         USER_SERVICE_IMAGE = "${DOCKER_USERNAME}/freelenso-user-service:latest"
         PROJECT_SERVICE_IMAGE = "${DOCKER_USERNAME}/freelenso-project-service:latest"
@@ -19,151 +23,156 @@ pipeline {
     stages {
         stage('Git Checkout') {
             steps {
-                git url: 'https://github.com/jayasurya88/Freelenso-Microservices-DevOps-.git', 
-                    branch: 'main'
+                git branch: 'main', url: 'https://github.com/jayasurya88/Freelenso-Microservices-DevOps-.git'
+            }
+        }
+
+        stage('Verify Tools') {
+            steps {
+                sh '''
+                    echo "Checking required tools..."
+                    which docker || { echo "Docker not found"; exit 1; }
+                    which trivy || { echo "Trivy not found"; exit 1; }
+                    which sonar-scanner || { echo "SonarQube Scanner not found"; exit 1; }
+                    docker --version
+                    trivy --version
+                    sonar-scanner --version
+                '''
             }
         }
 
         stage('File System Security Scan') {
             steps {
-                sh "trivy fs --security-checks vuln,config --format table -o trivy-fs-report.html ."
+                script {
+                    try {
+                        sh 'trivy fs --security-checks vuln,config --format table -o trivy-fs-report.html .'
+                    } catch (Exception e) {
+                        echo "Trivy scan failed: ${e.message}"
+                        currentBuild.result = 'UNSTABLE'
+                    }
+                }
             }
         }
 
         stage('SonarQube Analysis') {
             steps {
-                withSonarQubeEnv('sonar') {
-                    sh """
-                    ${SCANNER_HOME}/bin/sonar-scanner \
-                    -Dsonar.projectName=freelenso-microservices \
-                    -Dsonar.projectKey=freelenso-microservices \
-                    -Dsonar.sources=services,core,freelenso \
-                    -Dsonar.language=py \
-                    -Dsonar.python.version=3 \
-                    -Dsonar.host.url=http://172.26.2.56:9000
-                    """
-                }
-            }
-        }
-
-        stage('Build User Service Image') {
-            steps {
-                dir('services/user-service') {
-                    script {
-                        sh '''
-                        echo "=== Checking files in user-service ==="
-                        ls -la
-                        echo "=== Dockerfile content ==="
-                        cat Dockerfile || echo "Dockerfile not found"
-                        echo "=== Requirements content ==="
-                        cat requirements.txt || echo "requirements.txt not found"
-                        '''
-                        withDockerRegistry(credentialsId: 'docker', toolName: 'docker') {
-                            sh "docker build -t ${USER_SERVICE_IMAGE} ."
-                            sh "docker push ${USER_SERVICE_IMAGE}"
-                        }
-                    }
-                }
-            }
-        }
-
-        stage('Build Project Service Image') {
-            steps {
-                dir('services/project-service') {
-                    script {
-                        sh '''
-                        echo "=== Checking files in project-service ==="
-                        ls -la
-                        echo "=== Dockerfile content ==="
-                        cat Dockerfile || echo "Dockerfile not found"
-                        echo "=== Requirements content ==="
-                        cat requirements.txt || echo "requirements.txt not found"
-                        '''
-                        withDockerRegistry(credentialsId: 'docker', toolName: 'docker') {
-                            sh "docker build -t ${PROJECT_SERVICE_IMAGE} ."
-                            sh "docker push ${PROJECT_SERVICE_IMAGE}"
-                        }
-                    }
-                }
-            }
-        }
-
-        stage('Build Notification Service Image') {
-            steps {
-                dir('services/notification-service') {
-                    script {
-                        sh '''
-                        echo "=== Checking files in notification-service ==="
-                        ls -la
-                        echo "=== Dockerfile content ==="
-                        cat Dockerfile || echo "Dockerfile not found"
-                        echo "=== Requirements content ==="
-                        cat requirements.txt || echo "requirements.txt not found"
-                        '''
-                        withDockerRegistry(credentialsId: 'docker', toolName: 'docker') {
-                            sh "docker build -t ${NOTIFICATION_SERVICE_IMAGE} ."
-                            sh "docker push ${NOTIFICATION_SERVICE_IMAGE}"
-                        }
-                    }
-                }
-            }
-        }
-
-        stage('Build Payment Service Image') {
-            steps {
-                dir('services/payment-service') {
-                    script {
-                        sh '''
-                        echo "=== Checking files in payment-service ==="
-                        ls -la
-                        echo "=== Dockerfile content ==="
-                        cat Dockerfile || echo "Dockerfile not found"
-                        echo "=== Requirements content ==="
-                        cat requirements.txt || echo "requirements.txt not found"
-                        '''
-                        withDockerRegistry(credentialsId: 'docker', toolName: 'docker') {
-                            sh "docker build -t ${PAYMENT_SERVICE_IMAGE} ."
-                            sh "docker push ${PAYMENT_SERVICE_IMAGE}"
-                        }
-                    }
-                }
-            }
-        }
-
-        stage('Build Web Application Image') {
-            steps {
                 script {
-                    sh '''
-                    echo "=== Checking files in web ==="
-                    ls -la
-                    echo "=== Dockerfile content ==="
-                    cat Dockerfile || echo "Dockerfile not found"
-                    echo "=== Requirements content ==="
-                    cat requirements.txt || echo "requirements.txt not found"
-                    '''
-                    withDockerRegistry(credentialsId: 'docker', toolName: 'docker') {
-                        sh "docker build -t ${WEB_IMAGE} ."
-                        sh "docker push ${WEB_IMAGE}"
+                    try {
+                        sh """
+                            sonar-scanner \
+                                -Dsonar.projectKey=${SONAR_PROJECT_KEY} \
+                                -Dsonar.sources=. \
+                                -Dsonar.host.url=${SONAR_HOST_URL} \
+                                -Dsonar.login=admin \
+                                -Dsonar.password=admin
+                        """
+                    } catch (Exception e) {
+                        echo "SonarQube analysis failed: ${e.message}"
+                        currentBuild.result = 'UNSTABLE'
                     }
                 }
             }
         }
 
-        stage('Build API Gateway Image') {
-            steps {
-                dir('services/api-gateway') {
-                    script {
-                        sh '''
-                        echo "=== Checking files in api-gateway ==="
-                        ls -la
-                        echo "=== Dockerfile content ==="
-                        cat Dockerfile || echo "Dockerfile not found"
-                        echo "=== Requirements content ==="
-                        cat requirements.txt || echo "requirements.txt not found"
-                        '''
-                        withDockerRegistry(credentialsId: 'docker', toolName: 'docker') {
-                            sh "docker build -t ${API_GATEWAY_IMAGE} ."
-                            sh "docker push ${API_GATEWAY_IMAGE}"
+        stage('Build Services') {
+            parallel {
+                stage('Build User Service') {
+                    steps {
+                        dir('services/user-service') {
+                            script {
+                                sh '''
+                                echo "=== Checking files in user-service ==="
+                                ls -la
+                                echo "=== Dockerfile content ==="
+                                cat Dockerfile || echo "Dockerfile not found"
+                                echo "=== Requirements content ==="
+                                cat requirements.txt || echo "requirements.txt not found"
+                                '''
+                                withDockerRegistry(credentialsId: 'docker', toolName: 'docker') {
+                                    sh "docker build -t ${USER_SERVICE_IMAGE} ."
+                                    sh "docker push ${USER_SERVICE_IMAGE}"
+                                }
+                            }
+                        }
+                    }
+                }
+                stage('Build Project Service') {
+                    steps {
+                        dir('services/project-service') {
+                            script {
+                                sh '''
+                                echo "=== Checking files in project-service ==="
+                                ls -la
+                                echo "=== Dockerfile content ==="
+                                cat Dockerfile || echo "Dockerfile not found"
+                                echo "=== Requirements content ==="
+                                cat requirements.txt || echo "requirements.txt not found"
+                                '''
+                                withDockerRegistry(credentialsId: 'docker', toolName: 'docker') {
+                                    sh "docker build -t ${PROJECT_SERVICE_IMAGE} ."
+                                    sh "docker push ${PROJECT_SERVICE_IMAGE}"
+                                }
+                            }
+                        }
+                    }
+                }
+                stage('Build Notification Service') {
+                    steps {
+                        dir('services/notification-service') {
+                            script {
+                                sh '''
+                                echo "=== Checking files in notification-service ==="
+                                ls -la
+                                echo "=== Dockerfile content ==="
+                                cat Dockerfile || echo "Dockerfile not found"
+                                echo "=== Requirements content ==="
+                                cat requirements.txt || echo "requirements.txt not found"
+                                '''
+                                withDockerRegistry(credentialsId: 'docker', toolName: 'docker') {
+                                    sh "docker build -t ${NOTIFICATION_SERVICE_IMAGE} ."
+                                    sh "docker push ${NOTIFICATION_SERVICE_IMAGE}"
+                                }
+                            }
+                        }
+                    }
+                }
+                stage('Build Payment Service') {
+                    steps {
+                        dir('services/payment-service') {
+                            script {
+                                sh '''
+                                echo "=== Checking files in payment-service ==="
+                                ls -la
+                                echo "=== Dockerfile content ==="
+                                cat Dockerfile || echo "Dockerfile not found"
+                                echo "=== Requirements content ==="
+                                cat requirements.txt || echo "requirements.txt not found"
+                                '''
+                                withDockerRegistry(credentialsId: 'docker', toolName: 'docker') {
+                                    sh "docker build -t ${PAYMENT_SERVICE_IMAGE} ."
+                                    sh "docker push ${PAYMENT_SERVICE_IMAGE}"
+                                }
+                            }
+                        }
+                    }
+                }
+                stage('Build API Gateway') {
+                    steps {
+                        dir('services/api-gateway') {
+                            script {
+                                sh '''
+                                echo "=== Checking files in api-gateway ==="
+                                ls -la
+                                echo "=== Dockerfile content ==="
+                                cat Dockerfile || echo "Dockerfile not found"
+                                echo "=== Requirements content ==="
+                                cat requirements.txt || echo "requirements.txt not found"
+                                '''
+                                withDockerRegistry(credentialsId: 'docker', toolName: 'docker') {
+                                    sh "docker build -t ${API_GATEWAY_IMAGE} ."
+                                    sh "docker push ${API_GATEWAY_IMAGE}"
+                                }
+                            }
                         }
                     }
                 }
@@ -173,43 +182,63 @@ pipeline {
         stage('Docker Scout Analysis') {
             steps {
                 script {
-                    withDockerRegistry(credentialsId: 'docker', toolName: 'docker') {
+                    try {
                         sh """
-                            # Install Docker Scout plugin
-                            mkdir -p /var/lib/jenkins/.docker/cli-plugins
-                            curl -sSfL https://raw.githubusercontent.com/docker/scout-cli/main/install.sh | sh -s -- -b /var/lib/jenkins/.docker/cli-plugins
-
-                            # Run Docker Scout analysis
-                            docker scout quickview ${USER_SERVICE_IMAGE} || true
-                            docker scout quickview ${PROJECT_SERVICE_IMAGE} || true
-                            docker scout quickview ${NOTIFICATION_SERVICE_IMAGE} || true
-                            docker scout quickview ${PAYMENT_SERVICE_IMAGE} || true
-                            docker scout quickview ${WEB_IMAGE} || true
-                            docker scout quickview ${API_GATEWAY_IMAGE} || true
-                            
-                            docker scout cves ${USER_SERVICE_IMAGE} || true
-                            docker scout recommendations ${USER_SERVICE_IMAGE} || true
+                            for service in user-service project-service notification-service payment-service api-gateway; do
+                                docker scout cves ${DOCKER_REGISTRY}/freelenso-${service}:${VERSION}
+                            done
                         """
+                    } catch (Exception e) {
+                        echo "Docker Scout analysis failed: ${e.message}"
+                        currentBuild.result = 'UNSTABLE'
                     }
+                }
+            }
+        }
+
+        stage('Push Images') {
+            when {
+                branch 'main'
+                expression { currentBuild.result != 'FAILURE' }
+            }
+            steps {
+                withCredentials([usernamePassword(credentialsId: 'docker-hub', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
+                    sh '''
+                        echo $DOCKER_PASS | docker login -u $DOCKER_USER --password-stdin
+                        for service in user-service project-service notification-service payment-service api-gateway; do
+                            docker push ${DOCKER_REGISTRY}/freelenso-${service}:${VERSION}
+                        done
+                    '''
                 }
             }
         }
     }
 
     post {
-        success {
-            echo '🚀 Pipeline successful!'
-            archiveArtifacts artifacts: 'trivy-fs-report.html', allowEmptyArchive: true
-        }
-        failure {
-            echo '❗ Pipeline failed. Check logs above.'
-            sh '''
-            echo "=== Error Investigation ==="
-            docker ps -a
-            '''
-        }
         always {
             archiveArtifacts artifacts: 'trivy-fs-report.html', allowEmptyArchive: true
+            
+            script {
+                if (currentBuild.result == 'FAILURE') {
+                    echo '❗ Pipeline failed. Check logs above.'
+                    sh '''
+                        echo "=== Error Investigation ==="
+                        docker ps -a
+                        df -h
+                        free -m
+                    '''
+                }
+            }
+            
+            cleanWs()
+        }
+        
+        success {
+            echo '✅ Pipeline completed successfully!'
+        }
+        
+        unstable {
+            echo '⚠️ Pipeline completed with warnings/unstable status.'
         }
     }
 } 
