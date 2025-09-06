@@ -125,3 +125,4 @@ Commit your changes (git commit -m 'Add your feature')
 Push to the branch (git push origin feature/your-feature)
 
 Open a Pull Request
+# Updated for Azure deployment
