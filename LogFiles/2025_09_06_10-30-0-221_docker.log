@@ -1,0 +1,360 @@
+2025-09-06T11:52:28.9656624Z Container start method called.
+2025-09-06T11:52:28.9764833Z Establishing network.
+2025-09-06T11:52:28.9772180Z Pulling image: docker.io/library/nginx:latest.
+2025-09-06T11:52:33.2474469Z Image docker.io/library/nginx:latest is pulled from registry docker.io
+2025-09-06T11:52:33.2546099Z Container is starting.
+2025-09-06T11:52:33.2550197Z Establishing user namespace if not established already.
+2025-09-06T11:52:33.2551454Z Establishing network if not established already.
+2025-09-06T11:52:33.2552183Z Mounting volumes.
+2025-09-06T11:52:33.2585107Z Nested mountpoint volatile/logs
+2025-09-06T11:52:33.2635973Z Nested mountpoint 
+2025-09-06T11:52:33.2865735Z Creating container.
+2025-09-06T11:52:33.2876174Z Creating pipes for streaming container io.
+2025-09-06T11:52:33.2891282Z Creating stdout named pipe at /podr/container/pipe/077e61a17ee5_freelenso-web-1757158189/stdout_d1f85ef9d3a648648358658c7ce036f1.
+2025-09-06T11:52:33.2922805Z Successfully created stdout named pipe at: /podr/container/pipe/077e61a17ee5_freelenso-web-1757158189/stdout_d1f85ef9d3a648648358658c7ce036f1.
+2025-09-06T11:52:33.2973516Z Opening named pipe /podr/container/pipe/077e61a17ee5_freelenso-web-1757158189/stdout_d1f85ef9d3a648648358658c7ce036f1 for reading in non-blocking mode.
+2025-09-06T11:52:33.2975764Z Successfully opened named pipe: /podr/container/pipe/077e61a17ee5_freelenso-web-1757158189/stdout_d1f85ef9d3a648648358658c7ce036f1.
+2025-09-06T11:52:33.2994515Z Successfully removed non-blocking flag from /podr/container/pipe/077e61a17ee5_freelenso-web-1757158189/stdout_d1f85ef9d3a648648358658c7ce036f1.
+2025-09-06T11:52:33.3001873Z Creating stderr named pipe at /podr/container/pipe/077e61a17ee5_freelenso-web-1757158189/stderr_5e955db5b3f744859525b9e8dac87ccb.
+2025-09-06T11:52:33.3014107Z Successfully created stderr named pipe at: /podr/container/pipe/077e61a17ee5_freelenso-web-1757158189/stderr_5e955db5b3f744859525b9e8dac87ccb.
+2025-09-06T11:52:33.3018217Z Opening named pipe /podr/container/pipe/077e61a17ee5_freelenso-web-1757158189/stderr_5e955db5b3f744859525b9e8dac87ccb for reading in non-blocking mode.
+2025-09-06T11:52:33.3034009Z Successfully opened named pipe: /podr/container/pipe/077e61a17ee5_freelenso-web-1757158189/stderr_5e955db5b3f744859525b9e8dac87ccb.
+2025-09-06T11:52:33.3039078Z Successfully removed non-blocking flag from /podr/container/pipe/077e61a17ee5_freelenso-web-1757158189/stderr_5e955db5b3f744859525b9e8dac87ccb.
+2025-09-06T11:52:33.3061426Z Overriding PORT environment variable with port exposed by container image.
+2025-09-06T11:52:33.3991691Z Container image exposes ports: 80. Resolved main port to 80.
+2025-09-06T11:52:33.3999347Z Setting value of PORT variable to 80
+2025-09-06T11:52:33.4005200Z Creating container with image: docker.io/library/nginx:latest from registry: docker.io and fully qualified image name: docker.io/library/nginx:latest
+2025-09-06T11:52:34.3927222Z Starting container: 077e61a17ee5_freelenso-web-1757158189.
+2025-09-06T11:52:34.5013311Z Starting watchers and probes.
+2025-09-06T11:52:34.5161455Z Starting metrics collection.
+2025-09-06T11:52:34.5197290Z Container is running.
+2025-09-06T11:52:34.6137684Z Container start method finished after 5646 ms.
+2025-09-06T11:52:35.8797144Z Site startup probe succeeded after 1.221831 seconds.
+2025-09-06T11:52:36.8461658Z Site started.
+2025-09-06T12:01:34.2632532Z Container start method called.
+2025-09-06T12:01:34.2658412Z Establishing network.
+2025-09-06T12:01:34.2675459Z Pulling image: docker.io/jayasurya88/freelenso-web:latest.
+2025-09-06T12:01:54.8198751Z Container pull image interrupted. Revert by terminate.
+2025-09-06T12:01:54.8200562Z Container is terminating. Grace period: 5 seconds.
+2025-09-06T12:01:54.8217555Z Container spec TerminationMessagePolicy  path 
+2025-09-06T12:01:54.8232309Z Container is terminated. Total time elapsed: 2 ms.
+2025-09-06T12:01:54.8234787Z Site container: freelenso-web-1757158189 terminated during site startup.
+2025-09-06T12:01:54.8404806Z Site container: freelenso-web-1757158189 terminated. Stopping the entire site.
+2025-09-06T12:01:54.8696528Z Site: freelenso-web-1757158189 stopped.
+2025-09-06T12:01:55.4082345Z Container start method called.
+2025-09-06T12:01:55.4084690Z Establishing network.
+2025-09-06T12:01:55.4085986Z Pulling image: docker.io/jayasurya88/freelenso-web:latest.
+2025-09-06T12:02:06.2789808Z Image docker.io/jayasurya88/freelenso-web:latest is pulled from registry docker.io
+2025-09-06T12:02:06.2791738Z Container is starting.
+2025-09-06T12:02:06.2793038Z Establishing user namespace if not established already.
+2025-09-06T12:02:06.2794912Z Establishing network if not established already.
+2025-09-06T12:02:06.2796246Z Mounting volumes.
+2025-09-06T12:02:06.2799144Z Nested mountpoint volatile/logs
+2025-09-06T12:02:06.2890976Z Nested mountpoint 
+2025-09-06T12:02:06.3017678Z Creating container.
+2025-09-06T12:02:06.3020530Z Creating pipes for streaming container io.
+2025-09-06T12:02:06.3021868Z Creating stdout named pipe at /podr/container/pipe/5a6b116a3cae_freelenso-web-1757158189/stdout_388c5e779b0c495e931b239e3abe3f83.
+2025-09-06T12:02:06.3182257Z Successfully created stdout named pipe at: /podr/container/pipe/5a6b116a3cae_freelenso-web-1757158189/stdout_388c5e779b0c495e931b239e3abe3f83.
+2025-09-06T12:02:06.3184571Z Opening named pipe /podr/container/pipe/5a6b116a3cae_freelenso-web-1757158189/stdout_388c5e779b0c495e931b239e3abe3f83 for reading in non-blocking mode.
+2025-09-06T12:02:06.3187418Z Successfully opened named pipe: /podr/container/pipe/5a6b116a3cae_freelenso-web-1757158189/stdout_388c5e779b0c495e931b239e3abe3f83.
+2025-09-06T12:02:06.3188860Z Successfully removed non-blocking flag from /podr/container/pipe/5a6b116a3cae_freelenso-web-1757158189/stdout_388c5e779b0c495e931b239e3abe3f83.
+2025-09-06T12:02:06.3190184Z Creating stderr named pipe at /podr/container/pipe/5a6b116a3cae_freelenso-web-1757158189/stderr_6cc83e080e9546f989e625026228e8b2.
+2025-09-06T12:02:06.3191406Z Successfully created stderr named pipe at: /podr/container/pipe/5a6b116a3cae_freelenso-web-1757158189/stderr_6cc83e080e9546f989e625026228e8b2.
+2025-09-06T12:02:06.3193008Z Opening named pipe /podr/container/pipe/5a6b116a3cae_freelenso-web-1757158189/stderr_6cc83e080e9546f989e625026228e8b2 for reading in non-blocking mode.
+2025-09-06T12:02:06.3194430Z Successfully opened named pipe: /podr/container/pipe/5a6b116a3cae_freelenso-web-1757158189/stderr_6cc83e080e9546f989e625026228e8b2.
+2025-09-06T12:02:06.3196446Z Successfully removed non-blocking flag from /podr/container/pipe/5a6b116a3cae_freelenso-web-1757158189/stderr_6cc83e080e9546f989e625026228e8b2.
+2025-09-06T12:02:06.3198453Z Overriding PORT environment variable with port exposed by container image.
+2025-09-06T12:02:06.3576954Z Container image exposes ports: 8000. Resolved main port to 8000.
+2025-09-06T12:02:06.3579578Z Setting value of PORT variable to 8000
+2025-09-06T12:02:06.3581870Z Creating container with image: docker.io/jayasurya88/freelenso-web:latest from registry: docker.io and fully qualified image name: docker.io/jayasurya88/freelenso-web:latest
+2025-09-06T12:02:07.4163048Z Starting container: 5a6b116a3cae_freelenso-web-1757158189.
+2025-09-06T12:02:07.4356770Z Starting watchers and probes.
+2025-09-06T12:02:07.4373264Z Starting metrics collection.
+2025-09-06T12:02:07.4388196Z Container is running.
+2025-09-06T12:02:08.1273843Z Container start method finished after 12718 ms.
+2025-09-06T12:02:15.3811268Z Site startup probe failed after 7.210908 seconds.
+2025-09-06T12:02:15.8839581Z Failed to start site. Revert by stopping site.
+2025-09-06T12:02:16.0197485Z Container is terminating. Grace period: 5 seconds.
+2025-09-06T12:02:16.7748113Z Stop and delete container. Retry count = 0
+2025-09-06T12:02:16.7840936Z Stopping container: 5a6b116a3cae_freelenso-web-1757158189.
+2025-09-06T12:02:21.2811293Z Deleting container: 5a6b116a3cae_freelenso-web-1757158189. Retry count = 0
+2025-09-06T12:02:22.2958790Z Container spec TerminationMessagePolicy  path 
+2025-09-06T12:02:22.3200869Z Container is terminated. Total time elapsed: 6278 ms.
+2025-09-06T12:02:22.3208230Z Site container: freelenso-web-1757158189 terminated during site startup.
+2025-09-06T12:02:22.3215164Z Site: freelenso-web-1757158189 stopped.
+2025-09-06T12:02:43.0191595Z Container is terminating. Grace period: 5 seconds.
+2025-09-06T12:02:43.0252494Z Stop and delete container. Retry count = 0
+2025-09-06T12:02:43.0254064Z Stopping container: 077e61a17ee5_freelenso-web-1757158189.
+2025-09-06T12:02:43.1069356Z Deleting container: 077e61a17ee5_freelenso-web-1757158189. Retry count = 0
+2025-09-06T12:02:43.1815980Z Container spec TerminationMessagePolicy  path 
+2025-09-06T12:02:43.1817997Z Container is terminated. Total time elapsed: 162 ms.
+2025-09-06T12:02:43.1818726Z Site: freelenso-web-1757158189 stopped.
+2025-09-06T12:10:20.7294191Z Container start method called.
+2025-09-06T12:10:20.7296529Z Establishing network.
+2025-09-06T12:10:20.7307688Z Pulling image: docker.io/jayasurya88/freelenso-web:latest.
+2025-09-06T12:10:39.3400302Z Image docker.io/jayasurya88/freelenso-web:latest is pulled from registry docker.io
+2025-09-06T12:10:39.3402497Z Container is starting.
+2025-09-06T12:10:39.3403621Z Establishing user namespace if not established already.
+2025-09-06T12:10:39.3404788Z Establishing network if not established already.
+2025-09-06T12:10:39.3405937Z Mounting volumes.
+2025-09-06T12:10:39.3408040Z Nested mountpoint volatile/logs
+2025-09-06T12:10:39.3426460Z Nested mountpoint 
+2025-09-06T12:10:39.3711516Z Creating container.
+2025-09-06T12:10:39.3712866Z Creating pipes for streaming container io.
+2025-09-06T12:10:39.3714626Z Creating stdout named pipe at /podr/container/pipe/859ed8bd4e52_freelenso-web-1757158189/stdout_b2a013e7bb8b4a2bbf42892aa97bba55.
+2025-09-06T12:10:39.3732520Z Successfully created stdout named pipe at: /podr/container/pipe/859ed8bd4e52_freelenso-web-1757158189/stdout_b2a013e7bb8b4a2bbf42892aa97bba55.
+2025-09-06T12:10:39.3734962Z Opening named pipe /podr/container/pipe/859ed8bd4e52_freelenso-web-1757158189/stdout_b2a013e7bb8b4a2bbf42892aa97bba55 for reading in non-blocking mode.
+2025-09-06T12:10:39.3736935Z Successfully opened named pipe: /podr/container/pipe/859ed8bd4e52_freelenso-web-1757158189/stdout_b2a013e7bb8b4a2bbf42892aa97bba55.
+2025-09-06T12:10:39.3738711Z Successfully removed non-blocking flag from /podr/container/pipe/859ed8bd4e52_freelenso-web-1757158189/stdout_b2a013e7bb8b4a2bbf42892aa97bba55.
+2025-09-06T12:10:39.3740642Z Creating stderr named pipe at /podr/container/pipe/859ed8bd4e52_freelenso-web-1757158189/stderr_487f69c4b994446fbabeb0c17f180d02.
+2025-09-06T12:10:39.3742340Z Successfully created stderr named pipe at: /podr/container/pipe/859ed8bd4e52_freelenso-web-1757158189/stderr_487f69c4b994446fbabeb0c17f180d02.
+2025-09-06T12:10:39.3743376Z Opening named pipe /podr/container/pipe/859ed8bd4e52_freelenso-web-1757158189/stderr_487f69c4b994446fbabeb0c17f180d02 for reading in non-blocking mode.
+2025-09-06T12:10:39.3744682Z Successfully opened named pipe: /podr/container/pipe/859ed8bd4e52_freelenso-web-1757158189/stderr_487f69c4b994446fbabeb0c17f180d02.
+2025-09-06T12:10:39.3745705Z Successfully removed non-blocking flag from /podr/container/pipe/859ed8bd4e52_freelenso-web-1757158189/stderr_487f69c4b994446fbabeb0c17f180d02.
+2025-09-06T12:10:39.3754737Z Overriding PORT environment variable with port exposed by container image.
+2025-09-06T12:10:39.4293320Z Container image exposes ports: 8000. Resolved main port to 8000.
+2025-09-06T12:10:39.4294830Z Setting value of PORT variable to 8000
+2025-09-06T12:10:39.4296522Z Creating container with image: docker.io/jayasurya88/freelenso-web:latest from registry: docker.io and fully qualified image name: docker.io/jayasurya88/freelenso-web:latest
+2025-09-06T12:10:39.6393046Z Starting container: 859ed8bd4e52_freelenso-web-1757158189.
+2025-09-06T12:10:39.6648190Z Starting watchers and probes.
+2025-09-06T12:10:39.6682022Z Starting metrics collection.
+2025-09-06T12:10:39.6693863Z Container is running.
+2025-09-06T12:10:39.6914992Z Container start method finished after 18961 ms.
+2025-09-06T12:10:42.2198405Z Site startup probe succeeded after 2.5226968 seconds.
+2025-09-06T12:10:42.2504434Z Site started.
+2025-09-06T12:10:45.3771030Z Container start method called.
+2025-09-06T12:10:45.3772458Z Establishing network.
+2025-09-06T12:10:45.3773753Z Pulling image: docker.io/jayasurya88/freelenso-web:latest.
+2025-09-06T12:10:46.2605442Z Container is starting.
+2025-09-06T12:10:46.2607058Z Establishing user namespace if not established already.
+2025-09-06T12:10:46.2608592Z Establishing network if not established already.
+2025-09-06T12:10:46.2619371Z Mounting volumes.
+2025-09-06T12:10:46.2622292Z Nested mountpoint volatile/logs
+2025-09-06T12:10:46.2659464Z Nested mountpoint 
+2025-09-06T12:10:46.2784022Z Creating container.
+2025-09-06T12:10:46.2785035Z Creating pipes for streaming container io.
+2025-09-06T12:10:46.2786437Z Creating stdout named pipe at /podr/container/pipe/abd02b835a3a_freelenso-web-1757158189/stdout_e895f8e9a39c46e28a755017c0e1e481.
+2025-09-06T12:10:46.2788498Z Successfully created stdout named pipe at: /podr/container/pipe/abd02b835a3a_freelenso-web-1757158189/stdout_e895f8e9a39c46e28a755017c0e1e481.
+2025-09-06T12:10:46.2789405Z Opening named pipe /podr/container/pipe/abd02b835a3a_freelenso-web-1757158189/stdout_e895f8e9a39c46e28a755017c0e1e481 for reading in non-blocking mode.
+2025-09-06T12:10:46.2790683Z Successfully opened named pipe: /podr/container/pipe/abd02b835a3a_freelenso-web-1757158189/stdout_e895f8e9a39c46e28a755017c0e1e481.
+2025-09-06T12:10:46.2791750Z Successfully removed non-blocking flag from /podr/container/pipe/abd02b835a3a_freelenso-web-1757158189/stdout_e895f8e9a39c46e28a755017c0e1e481.
+2025-09-06T12:10:46.2792820Z Creating stderr named pipe at /podr/container/pipe/abd02b835a3a_freelenso-web-1757158189/stderr_ec30dd3e1d044fac94e08e7e104a1dbd.
+2025-09-06T12:10:46.2794326Z Successfully created stderr named pipe at: /podr/container/pipe/abd02b835a3a_freelenso-web-1757158189/stderr_ec30dd3e1d044fac94e08e7e104a1dbd.
+2025-09-06T12:10:46.2795493Z Opening named pipe /podr/container/pipe/abd02b835a3a_freelenso-web-1757158189/stderr_ec30dd3e1d044fac94e08e7e104a1dbd for reading in non-blocking mode.
+2025-09-06T12:10:46.2796711Z Successfully opened named pipe: /podr/container/pipe/abd02b835a3a_freelenso-web-1757158189/stderr_ec30dd3e1d044fac94e08e7e104a1dbd.
+2025-09-06T12:10:46.2797765Z Successfully removed non-blocking flag from /podr/container/pipe/abd02b835a3a_freelenso-web-1757158189/stderr_ec30dd3e1d044fac94e08e7e104a1dbd.
+2025-09-06T12:10:46.2798959Z Overriding PORT environment variable with port exposed by container image.
+2025-09-06T12:10:46.3173790Z Container image exposes ports: 8000. Resolved main port to 8000.
+2025-09-06T12:10:46.3175330Z Setting value of PORT variable to 8000
+2025-09-06T12:10:46.3177316Z Creating container with image: docker.io/jayasurya88/freelenso-web:latest from registry: docker.io and fully qualified image name: docker.io/jayasurya88/freelenso-web:latest
+2025-09-06T12:10:46.4720756Z Starting container: abd02b835a3a_freelenso-web-1757158189.
+2025-09-06T12:10:46.5092202Z Starting watchers and probes.
+2025-09-06T12:10:46.5109820Z Starting metrics collection.
+2025-09-06T12:10:46.5116875Z Container is running.
+2025-09-06T12:10:46.5279609Z Container start method finished after 1150 ms.
+2025-09-06T12:10:49.5829878Z Site startup probe succeeded after 3.0509694 seconds.
+2025-09-06T12:10:49.5959419Z Site started.
+2025-09-06T12:11:09.5997836Z Container is terminating. Grace period: 5 seconds.
+2025-09-06T12:11:09.6076908Z Stop and delete container. Retry count = 0
+2025-09-06T12:11:09.6085220Z Stopping container: 859ed8bd4e52_freelenso-web-1757158189.
+2025-09-06T12:11:09.7427126Z Deleting container: 859ed8bd4e52_freelenso-web-1757158189. Retry count = 0
+2025-09-06T12:11:09.8792771Z Container spec TerminationMessagePolicy  path 
+2025-09-06T12:11:09.8794681Z Container is terminated. Total time elapsed: 279 ms.
+2025-09-06T12:11:09.8795001Z Site: freelenso-web-1757158189 stopped.
+2025-09-06T12:15:35.6606760Z Container start method called.
+2025-09-06T12:15:35.6608347Z Establishing network.
+2025-09-06T12:15:35.6619088Z Pulling image: docker.io/jayasurya88/freelenso-web:latest.
+2025-09-06T12:15:49.3654677Z Image docker.io/jayasurya88/freelenso-web:latest is pulled from registry docker.io
+2025-09-06T12:15:49.3667869Z Container is starting.
+2025-09-06T12:15:49.3670218Z Establishing user namespace if not established already.
+2025-09-06T12:15:49.3689010Z Establishing network if not established already.
+2025-09-06T12:15:49.3691139Z Mounting volumes.
+2025-09-06T12:15:49.3693257Z Nested mountpoint volatile/logs
+2025-09-06T12:15:49.3741447Z Nested mountpoint 
+2025-09-06T12:15:49.4085920Z Creating container.
+2025-09-06T12:15:49.4087203Z Creating pipes for streaming container io.
+2025-09-06T12:15:49.4088497Z Creating stdout named pipe at /podr/container/pipe/b36a16930e99_freelenso-web-1757158189/stdout_a41d441e527e4284b785de05d625fc31.
+2025-09-06T12:15:49.4101351Z Successfully created stdout named pipe at: /podr/container/pipe/b36a16930e99_freelenso-web-1757158189/stdout_a41d441e527e4284b785de05d625fc31.
+2025-09-06T12:15:49.4102508Z Opening named pipe /podr/container/pipe/b36a16930e99_freelenso-web-1757158189/stdout_a41d441e527e4284b785de05d625fc31 for reading in non-blocking mode.
+2025-09-06T12:15:49.4103880Z Successfully opened named pipe: /podr/container/pipe/b36a16930e99_freelenso-web-1757158189/stdout_a41d441e527e4284b785de05d625fc31.
+2025-09-06T12:15:49.4105185Z Successfully removed non-blocking flag from /podr/container/pipe/b36a16930e99_freelenso-web-1757158189/stdout_a41d441e527e4284b785de05d625fc31.
+2025-09-06T12:15:49.4106478Z Creating stderr named pipe at /podr/container/pipe/b36a16930e99_freelenso-web-1757158189/stderr_f73353a0bd7f42f29a96d14afc7750c1.
+2025-09-06T12:15:49.4108440Z Successfully created stderr named pipe at: /podr/container/pipe/b36a16930e99_freelenso-web-1757158189/stderr_f73353a0bd7f42f29a96d14afc7750c1.
+2025-09-06T12:15:49.4109581Z Opening named pipe /podr/container/pipe/b36a16930e99_freelenso-web-1757158189/stderr_f73353a0bd7f42f29a96d14afc7750c1 for reading in non-blocking mode.
+2025-09-06T12:15:49.4110825Z Successfully opened named pipe: /podr/container/pipe/b36a16930e99_freelenso-web-1757158189/stderr_f73353a0bd7f42f29a96d14afc7750c1.
+2025-09-06T12:15:49.4111986Z Successfully removed non-blocking flag from /podr/container/pipe/b36a16930e99_freelenso-web-1757158189/stderr_f73353a0bd7f42f29a96d14afc7750c1.
+2025-09-06T12:15:49.4113264Z Overriding PORT environment variable with port exposed by container image.
+2025-09-06T12:15:49.4449850Z Container image exposes ports: 8000. Resolved main port to 8000.
+2025-09-06T12:15:49.4451455Z Setting value of PORT variable to 8000
+2025-09-06T12:15:49.4453301Z Creating container with image: docker.io/jayasurya88/freelenso-web:latest from registry: docker.io and fully qualified image name: docker.io/jayasurya88/freelenso-web:latest
+2025-09-06T12:15:49.7231485Z Starting container: b36a16930e99_freelenso-web-1757158189.
+2025-09-06T12:15:49.7382401Z Starting watchers and probes.
+2025-09-06T12:15:49.7386837Z Starting metrics collection.
+2025-09-06T12:15:49.7388480Z Container is running.
+2025-09-06T12:15:49.8828803Z Container start method finished after 14222 ms.
+2025-09-06T12:15:52.7464246Z Site startup probe succeeded after 2.8617271 seconds.
+2025-09-06T12:15:52.8150763Z Site started.
+2025-09-06T12:16:12.8223167Z Container is terminating. Grace period: 5 seconds.
+2025-09-06T12:16:12.8249694Z Stop and delete container. Retry count = 0
+2025-09-06T12:16:12.8251174Z Stopping container: abd02b835a3a_freelenso-web-1757158189.
+2025-09-06T12:16:12.9637457Z Deleting container: abd02b835a3a_freelenso-web-1757158189. Retry count = 0
+2025-09-06T12:16:13.6525777Z Container spec TerminationMessagePolicy  path 
+2025-09-06T12:16:13.6527554Z Container is terminated. Total time elapsed: 830 ms.
+2025-09-06T12:16:13.6528022Z Site: freelenso-web-1757158189 stopped.
+2025-09-06T12:16:45.2259900Z Container is terminating. Grace period: 5 seconds.
+2025-09-06T12:16:45.2492823Z Stop and delete container. Retry count = 0
+2025-09-06T12:16:45.2495554Z Stopping container: b36a16930e99_freelenso-web-1757158189.
+2025-09-06T12:16:45.3898059Z Deleting container: b36a16930e99_freelenso-web-1757158189. Retry count = 0
+2025-09-06T12:16:45.4681461Z Container spec TerminationMessagePolicy  path 
+2025-09-06T12:16:45.4683132Z Container is terminated. Total time elapsed: 242 ms.
+2025-09-06T12:16:45.4683451Z Site: freelenso-web-1757158189 stopped.
+2025-09-06T12:17:58.6247220Z Container start method called.
+2025-09-06T12:17:58.6251254Z Establishing network.
+2025-09-06T12:17:58.6306416Z Pulling image: docker.io/jayasurya88/freelenso-web:latest.
+2025-09-06T12:17:58.8765318Z Container is starting.
+2025-09-06T12:17:58.8766609Z Establishing user namespace if not established already.
+2025-09-06T12:17:58.8767954Z Establishing network if not established already.
+2025-09-06T12:17:58.8774997Z Mounting volumes.
+2025-09-06T12:17:58.8779096Z Nested mountpoint volatile/logs
+2025-09-06T12:17:58.8800280Z Nested mountpoint 
+2025-09-06T12:17:58.8851878Z Creating container.
+2025-09-06T12:17:58.8853154Z Creating pipes for streaming container io.
+2025-09-06T12:17:58.8854473Z Creating stdout named pipe at /podr/container/pipe/4b104fe4f6b0_freelenso-web-1757158189/stdout_454f0ea10f434768bdfe78c69c213c7b.
+2025-09-06T12:17:58.8856593Z Successfully created stdout named pipe at: /podr/container/pipe/4b104fe4f6b0_freelenso-web-1757158189/stdout_454f0ea10f434768bdfe78c69c213c7b.
+2025-09-06T12:17:58.8857799Z Opening named pipe /podr/container/pipe/4b104fe4f6b0_freelenso-web-1757158189/stdout_454f0ea10f434768bdfe78c69c213c7b for reading in non-blocking mode.
+2025-09-06T12:17:58.8859131Z Successfully opened named pipe: /podr/container/pipe/4b104fe4f6b0_freelenso-web-1757158189/stdout_454f0ea10f434768bdfe78c69c213c7b.
+2025-09-06T12:17:58.8860343Z Successfully removed non-blocking flag from /podr/container/pipe/4b104fe4f6b0_freelenso-web-1757158189/stdout_454f0ea10f434768bdfe78c69c213c7b.
+2025-09-06T12:17:58.8861560Z Creating stderr named pipe at /podr/container/pipe/4b104fe4f6b0_freelenso-web-1757158189/stderr_fd882d3084464371b7105d0bc0c5d289.
+2025-09-06T12:17:58.8863133Z Successfully created stderr named pipe at: /podr/container/pipe/4b104fe4f6b0_freelenso-web-1757158189/stderr_fd882d3084464371b7105d0bc0c5d289.
+2025-09-06T12:17:58.8864240Z Opening named pipe /podr/container/pipe/4b104fe4f6b0_freelenso-web-1757158189/stderr_fd882d3084464371b7105d0bc0c5d289 for reading in non-blocking mode.
+2025-09-06T12:17:58.8872154Z Successfully opened named pipe: /podr/container/pipe/4b104fe4f6b0_freelenso-web-1757158189/stderr_fd882d3084464371b7105d0bc0c5d289.
+2025-09-06T12:17:58.8876435Z Successfully removed non-blocking flag from /podr/container/pipe/4b104fe4f6b0_freelenso-web-1757158189/stderr_fd882d3084464371b7105d0bc0c5d289.
+2025-09-06T12:17:58.8878281Z Overriding PORT environment variable with port exposed by container image.
+2025-09-06T12:17:58.9001680Z Container image exposes ports: 8000. Resolved main port to 8000.
+2025-09-06T12:17:58.9003050Z Setting value of PORT variable to 8000
+2025-09-06T12:17:58.9004545Z Creating container with image: docker.io/jayasurya88/freelenso-web:latest from registry: docker.io and fully qualified image name: docker.io/jayasurya88/freelenso-web:latest
+2025-09-06T12:17:59.4682480Z Starting container: 4b104fe4f6b0_freelenso-web-1757158189.
+2025-09-06T12:17:59.5091950Z Starting watchers and probes.
+2025-09-06T12:17:59.5094650Z Starting metrics collection.
+2025-09-06T12:17:59.5096120Z Container is running.
+2025-09-06T12:18:00.9452800Z Container start method finished after 2320 ms.
+2025-09-06T12:18:01.1129720Z Site startup probe succeeded after 0.1667257 seconds.
+2025-09-06T12:18:01.1268719Z Site started.
+2025-09-06T12:22:58.5493436Z Container start method called.
+2025-09-06T12:22:58.5495639Z Establishing network.
+2025-09-06T12:22:58.5496937Z Pulling image: docker.io/jayasurya88/freelenso-web:latest.
+2025-09-06T12:22:59.0296876Z Container is starting.
+2025-09-06T12:22:59.0308162Z Establishing user namespace if not established already.
+2025-09-06T12:22:59.0309542Z Establishing network if not established already.
+2025-09-06T12:22:59.0310586Z Mounting volumes.
+2025-09-06T12:22:59.0312014Z Nested mountpoint volatile/logs
+2025-09-06T12:22:59.0444533Z Nested mountpoint 
+2025-09-06T12:22:59.0646691Z Creating container.
+2025-09-06T12:22:59.0654923Z Creating pipes for streaming container io.
+2025-09-06T12:22:59.0664724Z Creating stdout named pipe at /podr/container/pipe/1ba8062a5740_freelenso-web-1757158189/stdout_e06326bd12f7446f915575178895d78a.
+2025-09-06T12:22:59.0687158Z Successfully created stdout named pipe at: /podr/container/pipe/1ba8062a5740_freelenso-web-1757158189/stdout_e06326bd12f7446f915575178895d78a.
+2025-09-06T12:22:59.0693862Z Opening named pipe /podr/container/pipe/1ba8062a5740_freelenso-web-1757158189/stdout_e06326bd12f7446f915575178895d78a for reading in non-blocking mode.
+2025-09-06T12:22:59.0698169Z Successfully opened named pipe: /podr/container/pipe/1ba8062a5740_freelenso-web-1757158189/stdout_e06326bd12f7446f915575178895d78a.
+2025-09-06T12:22:59.0706116Z Successfully removed non-blocking flag from /podr/container/pipe/1ba8062a5740_freelenso-web-1757158189/stdout_e06326bd12f7446f915575178895d78a.
+2025-09-06T12:22:59.0714148Z Creating stderr named pipe at /podr/container/pipe/1ba8062a5740_freelenso-web-1757158189/stderr_106cf30ca7c744af87a8e4e68cfbcb57.
+2025-09-06T12:22:59.0718646Z Successfully created stderr named pipe at: /podr/container/pipe/1ba8062a5740_freelenso-web-1757158189/stderr_106cf30ca7c744af87a8e4e68cfbcb57.
+2025-09-06T12:22:59.0723599Z Opening named pipe /podr/container/pipe/1ba8062a5740_freelenso-web-1757158189/stderr_106cf30ca7c744af87a8e4e68cfbcb57 for reading in non-blocking mode.
+2025-09-06T12:22:59.0730685Z Successfully opened named pipe: /podr/container/pipe/1ba8062a5740_freelenso-web-1757158189/stderr_106cf30ca7c744af87a8e4e68cfbcb57.
+2025-09-06T12:22:59.0732163Z Successfully removed non-blocking flag from /podr/container/pipe/1ba8062a5740_freelenso-web-1757158189/stderr_106cf30ca7c744af87a8e4e68cfbcb57.
+2025-09-06T12:22:59.0741127Z Overriding PORT environment variable with port exposed by container image.
+2025-09-06T12:22:59.1062481Z Container image exposes ports: 8000. Resolved main port to 8000.
+2025-09-06T12:22:59.1064100Z Setting value of PORT variable to 8000
+2025-09-06T12:22:59.1067242Z Creating container with image: docker.io/jayasurya88/freelenso-web:latest from registry: docker.io and fully qualified image name: docker.io/jayasurya88/freelenso-web:latest
+2025-09-06T12:23:02.1120422Z Starting container: 1ba8062a5740_freelenso-web-1757158189.
+2025-09-06T12:23:02.1419713Z Starting watchers and probes.
+2025-09-06T12:23:02.1439148Z Starting metrics collection.
+2025-09-06T12:23:02.1484339Z Container is running.
+2025-09-06T12:23:02.1663466Z Container start method finished after 3616 ms.
+2025-09-06T12:23:05.3853789Z Site startup probe succeeded after 3.1623019 seconds.
+2025-09-06T12:23:05.4597975Z Site started.
+2025-09-06T12:23:25.4930480Z Container is terminating. Grace period: 5 seconds.
+2025-09-06T12:23:25.5027760Z Stop and delete container. Retry count = 0
+2025-09-06T12:23:25.5029366Z Stopping container: 4b104fe4f6b0_freelenso-web-1757158189.
+2025-09-06T12:23:30.9646535Z Deleting container: 4b104fe4f6b0_freelenso-web-1757158189. Retry count = 0
+2025-09-06T12:23:31.2864332Z Container spec TerminationMessagePolicy  path 
+2025-09-06T12:23:31.2900268Z Container is terminated. Total time elapsed: 5796 ms.
+2025-09-06T12:23:31.2914358Z Site: freelenso-web-1757158189 stopped.
+2025-09-06T12:23:31.9469356Z Container start method called.
+2025-09-06T12:23:31.9472785Z Establishing network.
+2025-09-06T12:23:31.9474537Z Pulling image: docker.io/jayasurya88/freelenso-web@sha256:49c9aa1f18a46c00be99a28670760bac6c5a6393e1a50af268b6c32dad69a2f7.
+2025-09-06T12:23:32.2769036Z Image docker.io/jayasurya88/freelenso-web@sha256:49c9aa1f18a46c00be99a28670760bac6c5a6393e1a50af268b6c32dad69a2f7 is pulled from registry docker.io
+2025-09-06T12:23:32.2788045Z Container is starting.
+2025-09-06T12:23:32.2829835Z Establishing user namespace if not established already.
+2025-09-06T12:23:32.2842328Z Establishing network if not established already.
+2025-09-06T12:23:32.2862786Z Mounting volumes.
+2025-09-06T12:23:32.2877436Z Nested mountpoint volatile/logs
+2025-09-06T12:23:32.2948063Z Nested mountpoint 
+2025-09-06T12:23:32.3316178Z Creating container.
+2025-09-06T12:23:32.3317673Z Creating pipes for streaming container io.
+2025-09-06T12:23:32.3318912Z Creating stdout named pipe at /podr/container/pipe/e6c82d69f1f2_freelenso-web-1757158189/stdout_e1082c527a04473982ee70c16e6a33b7.
+2025-09-06T12:23:32.3321163Z Successfully created stdout named pipe at: /podr/container/pipe/e6c82d69f1f2_freelenso-web-1757158189/stdout_e1082c527a04473982ee70c16e6a33b7.
+2025-09-06T12:23:32.3322651Z Opening named pipe /podr/container/pipe/e6c82d69f1f2_freelenso-web-1757158189/stdout_e1082c527a04473982ee70c16e6a33b7 for reading in non-blocking mode.
+2025-09-06T12:23:32.3324093Z Successfully opened named pipe: /podr/container/pipe/e6c82d69f1f2_freelenso-web-1757158189/stdout_e1082c527a04473982ee70c16e6a33b7.
+2025-09-06T12:23:32.3325351Z Successfully removed non-blocking flag from /podr/container/pipe/e6c82d69f1f2_freelenso-web-1757158189/stdout_e1082c527a04473982ee70c16e6a33b7.
+2025-09-06T12:23:32.3326580Z Creating stderr named pipe at /podr/container/pipe/e6c82d69f1f2_freelenso-web-1757158189/stderr_fd9004bc9de44f90b47609757f3bbb69.
+2025-09-06T12:23:32.3328919Z Successfully created stderr named pipe at: /podr/container/pipe/e6c82d69f1f2_freelenso-web-1757158189/stderr_fd9004bc9de44f90b47609757f3bbb69.
+2025-09-06T12:23:32.3334006Z Opening named pipe /podr/container/pipe/e6c82d69f1f2_freelenso-web-1757158189/stderr_fd9004bc9de44f90b47609757f3bbb69 for reading in non-blocking mode.
+2025-09-06T12:23:32.3335283Z Successfully opened named pipe: /podr/container/pipe/e6c82d69f1f2_freelenso-web-1757158189/stderr_fd9004bc9de44f90b47609757f3bbb69.
+2025-09-06T12:23:32.3336479Z Successfully removed non-blocking flag from /podr/container/pipe/e6c82d69f1f2_freelenso-web-1757158189/stderr_fd9004bc9de44f90b47609757f3bbb69.
+2025-09-06T12:23:32.3337856Z Overriding PORT environment variable with port exposed by container image.
+2025-09-06T12:23:32.3717934Z Container image exposes ports: 8000. Resolved main port to 8000.
+2025-09-06T12:23:32.3720222Z Setting value of PORT variable to 8000
+2025-09-06T12:23:32.3722060Z Creating container with image: docker.io/jayasurya88/freelenso-web@sha256:49c9aa1f18a46c00be99a28670760bac6c5a6393e1a50af268b6c32dad69a2f7 from registry: docker.io and fully qualified image name: docker.io/jayasurya88/freelenso-web@sha256:49c9aa1f18a46c00be99a28670760bac6c5a6393e1a50af268b6c32dad69a2f7
+2025-09-06T12:23:32.6003380Z Starting container: e6c82d69f1f2_freelenso-web-1757158189.
+2025-09-06T12:23:32.6196536Z Starting watchers and probes.
+2025-09-06T12:23:32.6199181Z Starting metrics collection.
+2025-09-06T12:23:32.6200801Z Container is running.
+2025-09-06T12:23:32.6426539Z Container start method finished after 695 ms.
+2025-09-06T12:23:34.1111357Z Site startup probe succeeded after 1.4660771 seconds.
+2025-09-06T12:23:34.1462120Z Site started.
+2025-09-06T12:23:54.1603096Z Container is terminating. Grace period: 5 seconds.
+2025-09-06T12:23:54.1697424Z Stop and delete container. Retry count = 0
+2025-09-06T12:23:54.1699159Z Stopping container: 1ba8062a5740_freelenso-web-1757158189.
+2025-09-06T12:23:54.3093587Z Deleting container: 1ba8062a5740_freelenso-web-1757158189. Retry count = 0
+2025-09-06T12:23:54.4166736Z Container spec TerminationMessagePolicy  path 
+2025-09-06T12:23:54.4169016Z Container is terminated. Total time elapsed: 256 ms.
+2025-09-06T12:23:54.4170572Z Site: freelenso-web-1757158189 stopped.
+2025-09-06T12:23:54.7641172Z Container start method called.
+2025-09-06T12:23:54.7676157Z Establishing network.
+2025-09-06T12:23:54.7739542Z Pulling image: docker.io/jayasurya88/freelenso-web@sha256:49c9aa1f18a46c00be99a28670760bac6c5a6393e1a50af268b6c32dad69a2f7.
+2025-09-06T12:23:54.9031241Z Container is starting.
+2025-09-06T12:23:54.9033529Z Establishing user namespace if not established already.
+2025-09-06T12:23:54.9034682Z Establishing network if not established already.
+2025-09-06T12:23:54.9036533Z Mounting volumes.
+2025-09-06T12:23:54.9041557Z Nested mountpoint volatile/logs
+2025-09-06T12:23:54.9096881Z Nested mountpoint 
+2025-09-06T12:23:54.9149933Z Creating container.
+2025-09-06T12:23:54.9153283Z Creating pipes for streaming container io.
+2025-09-06T12:23:54.9154627Z Creating stdout named pipe at /podr/container/pipe/a95aba6a5623_freelenso-web-1757158189/stdout_851d419ba18c43b2b8ffe7beb16a5a4f.
+2025-09-06T12:23:54.9156500Z Successfully created stdout named pipe at: /podr/container/pipe/a95aba6a5623_freelenso-web-1757158189/stdout_851d419ba18c43b2b8ffe7beb16a5a4f.
+2025-09-06T12:23:54.9157396Z Opening named pipe /podr/container/pipe/a95aba6a5623_freelenso-web-1757158189/stdout_851d419ba18c43b2b8ffe7beb16a5a4f for reading in non-blocking mode.
+2025-09-06T12:23:54.9158538Z Successfully opened named pipe: /podr/container/pipe/a95aba6a5623_freelenso-web-1757158189/stdout_851d419ba18c43b2b8ffe7beb16a5a4f.
+2025-09-06T12:23:54.9159452Z Successfully removed non-blocking flag from /podr/container/pipe/a95aba6a5623_freelenso-web-1757158189/stdout_851d419ba18c43b2b8ffe7beb16a5a4f.
+2025-09-06T12:23:54.9160384Z Creating stderr named pipe at /podr/container/pipe/a95aba6a5623_freelenso-web-1757158189/stderr_634c8f4b35734478a8477a96586711da.
+2025-09-06T12:23:54.9161933Z Successfully created stderr named pipe at: /podr/container/pipe/a95aba6a5623_freelenso-web-1757158189/stderr_634c8f4b35734478a8477a96586711da.
+2025-09-06T12:23:54.9164291Z Opening named pipe /podr/container/pipe/a95aba6a5623_freelenso-web-1757158189/stderr_634c8f4b35734478a8477a96586711da for reading in non-blocking mode.
+2025-09-06T12:23:54.9167093Z Successfully opened named pipe: /podr/container/pipe/a95aba6a5623_freelenso-web-1757158189/stderr_634c8f4b35734478a8477a96586711da.
+2025-09-06T12:23:54.9169009Z Successfully removed non-blocking flag from /podr/container/pipe/a95aba6a5623_freelenso-web-1757158189/stderr_634c8f4b35734478a8477a96586711da.
+2025-09-06T12:23:54.9171485Z Overriding PORT environment variable with port exposed by container image.
+2025-09-06T12:23:54.9406958Z Container image exposes ports: 8000. Resolved main port to 8000.
+2025-09-06T12:23:54.9413824Z Setting value of PORT variable to 8000
+2025-09-06T12:23:54.9417247Z Creating container with image: docker.io/jayasurya88/freelenso-web@sha256:49c9aa1f18a46c00be99a28670760bac6c5a6393e1a50af268b6c32dad69a2f7 from registry: docker.io and fully qualified image name: docker.io/jayasurya88/freelenso-web@sha256:49c9aa1f18a46c00be99a28670760bac6c5a6393e1a50af268b6c32dad69a2f7
+2025-09-06T12:23:55.0922926Z Starting container: a95aba6a5623_freelenso-web-1757158189.
+2025-09-06T12:23:55.1192365Z Starting watchers and probes.
+2025-09-06T12:23:55.1201258Z Starting metrics collection.
+2025-09-06T12:23:55.1202977Z Container is running.
+2025-09-06T12:23:55.1699255Z Container start method finished after 405 ms.
+2025-09-06T12:23:56.4615677Z Site startup probe succeeded after 1.2879127 seconds.
+2025-09-06T12:23:56.4770945Z Site started.
+2025-09-06T12:24:16.4808745Z Container is terminating. Grace period: 5 seconds.
+2025-09-06T12:24:16.4824141Z Stop and delete container. Retry count = 0
+2025-09-06T12:24:16.4825454Z Stopping container: e6c82d69f1f2_freelenso-web-1757158189.
+2025-09-06T12:24:16.7469837Z Deleting container: e6c82d69f1f2_freelenso-web-1757158189. Retry count = 0
+2025-09-06T12:24:16.8639936Z Container spec TerminationMessagePolicy  path 
+2025-09-06T12:24:16.8657098Z Container is terminated. Total time elapsed: 384 ms.
+2025-09-06T12:24:16.8657482Z Site: freelenso-web-1757158189 stopped.

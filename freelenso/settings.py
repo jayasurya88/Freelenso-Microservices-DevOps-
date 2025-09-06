@@ -28,6 +28,7 @@ DEBUG = True
 
 ALLOWED_HOSTS = [
     'freelance-website-ad5n.onrender.com',
+    'freelenso-web-1757158189.azurewebsites.net',
     'localhost',
     '127.0.0.1',
     '0.0.0.0',
@@ -36,6 +37,7 @@ ALLOWED_HOSTS = [
 
 # CSRF trusted origins for Kubernetes/minikube deployment
 CSRF_TRUSTED_ORIGINS = [
+    'https://freelenso-web-1757158189.azurewebsites.net',
     'http://localhost',
     'http://127.0.0.1',
     'http://192.168.49.2:32656',
@@ -119,12 +121,8 @@ WSGI_APPLICATION = 'freelenso.wsgi.application'
 
 DATABASES = {
     "default": {
-        "ENGINE": "django.db.backends.postgresql",
-        "NAME": os.getenv("POSTGRES_DB", "freelenso_db"),
-        "USER": os.getenv("POSTGRES_USER", "postgres"),
-        "PASSWORD": os.getenv("POSTGRES_PASSWORD", "postgres"),
-        "HOST": os.getenv("POSTGRES_HOST", "localhost"),
-        "PORT": os.getenv("POSTGRES_PORT", "5432"),
+        "ENGINE": "django.db.backends.sqlite3",
+        "NAME": BASE_DIR / "db.sqlite3",
     }
 }
 
