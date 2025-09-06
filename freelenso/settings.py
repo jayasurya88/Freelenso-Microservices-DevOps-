@@ -34,6 +34,15 @@ ALLOWED_HOSTS = [
     '192.168.49.2',
 ]
 
+# CSRF trusted origins for Kubernetes/minikube deployment
+CSRF_TRUSTED_ORIGINS = [
+    'http://localhost',
+    'http://127.0.0.1',
+    'http://192.168.49.2:32656',
+    'http://192.168.49.2:31312',
+    'http://192.168.49.2',
+]
+
 
 # Application definition
 
