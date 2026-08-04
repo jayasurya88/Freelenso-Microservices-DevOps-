@@ -617,6 +617,378 @@
             checkWidth(); // Initial check
         });
     </script>
+
+    <!-- Freelenso AI Chatbot Floating Widget for Admin -->
+    <style>
+        .ai-chatbot-widget {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            z-index: 99999 !important;
+            font-family: 'Poppins', system-ui, -apple-system, sans-serif;
+        }
+
+        .ai-chatbot-btn {
+            width: 58px;
+            height: 58px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #4361ee, #3f37c9);
+            color: #ffffff;
+            border: none;
+            box-shadow: 0 8px 24px rgba(67, 97, 238, 0.4);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+        }
+
+        .ai-chatbot-btn:hover {
+            transform: scale(1.08) translateY(-2px);
+            box-shadow: 0 12px 28px rgba(67, 97, 238, 0.55);
+        }
+
+        .ai-chatbot-badge {
+            position: absolute;
+            top: -2px;
+            right: -2px;
+            background: #10b981;
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            border: 2px solid #ffffff;
+        }
+
+        .ai-chatbot-window {
+            position: fixed;
+            bottom: 94px;
+            right: 24px;
+            width: 380px;
+            height: 520px;
+            max-width: calc(100vw - 32px);
+            max-height: calc(100vh - 120px);
+            background: #ffffff;
+            border: 1px solid #e2e8f0;
+            border-radius: 1.25rem;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.18);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            z-index: 99999 !important;
+            opacity: 0;
+            visibility: hidden;
+            transform: translateY(20px) scale(0.95);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .ai-chatbot-window.active {
+            opacity: 1;
+            visibility: visible;
+            transform: translateY(0) scale(1);
+        }
+
+        .ai-chatbot-header {
+            background: linear-gradient(135deg, #4361ee, #3f37c9);
+            color: #ffffff;
+            padding: 0.9rem 1.25rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .ai-chatbot-title {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .ai-avatar {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+        }
+
+        .ai-chatbot-body {
+            flex: 1;
+            padding: 1rem;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 0.85rem;
+            background-color: #f8fafc;
+        }
+
+        .ai-msg {
+            max-width: 85%;
+            padding: 0.75rem 1rem;
+            border-radius: 1rem;
+            font-size: 0.88rem;
+            line-height: 1.45;
+            word-wrap: break-word;
+        }
+
+        .ai-msg-bot {
+            align-self: flex-start;
+            background: #ffffff;
+            color: #1e293b;
+            border: 1px solid #e2e8f0;
+            border-bottom-left-radius: 0.25rem;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        }
+
+        .ai-msg-user {
+            align-self: flex-end;
+            background: linear-gradient(135deg, #4361ee, #3f37c9);
+            color: #ffffff;
+            border-bottom-right-radius: 0.25rem;
+        }
+
+        .ai-quick-chips {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.4rem;
+            margin-top: 0.25rem;
+        }
+
+        .ai-chip {
+            background: rgba(67, 97, 238, 0.1);
+            color: #4361ee;
+            border: 1px solid rgba(67, 97, 238, 0.25);
+            padding: 0.35rem 0.75rem;
+            border-radius: 1rem;
+            font-size: 0.78rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .ai-chip:hover {
+            background: #4361ee;
+            color: #ffffff;
+        }
+
+        .ai-chatbot-footer {
+            padding: 0.75rem;
+            background: #ffffff;
+            border-top: 1px solid #e2e8f0;
+        }
+
+        .ai-chatbot-input-group {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .ai-chatbot-input {
+            flex: 1;
+            border: 1px solid #cbd5e1;
+            border-radius: 1.5rem;
+            padding: 0.55rem 1rem;
+            font-size: 0.88rem;
+            outline: none;
+            background: #f8fafc;
+            color: #0f172a;
+        }
+
+        .ai-chatbot-input:focus {
+            border-color: #4361ee;
+        }
+
+        .ai-chatbot-send-btn {
+            width: 38px;
+            height: 38px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #4361ee, #3f37c9);
+            color: #ffffff;
+            border: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: transform 0.2s ease;
+        }
+
+        .ai-chatbot-send-btn:hover {
+            transform: scale(1.05);
+        }
+
+        .ai-typing-indicator {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            padding: 0.5rem 0.85rem;
+            border-radius: 1rem;
+            background: #ffffff;
+            border: 1px solid #e2e8f0;
+            width: fit-content;
+            align-self: flex-start;
+        }
+
+        .ai-typing-dot {
+            width: 6px;
+            height: 6px;
+            background: #4361ee;
+            border-radius: 50%;
+            animation: aiBounce 1.4s infinite ease-in-out both;
+        }
+
+        .ai-typing-dot:nth-child(1) { animation-delay: -0.32s; }
+        .ai-typing-dot:nth-child(2) { animation-delay: -0.16s; }
+
+        @keyframes aiBounce {
+            0%, 80%, 100% { transform: scale(0); }
+            40% { transform: scale(1); }
+        }
+    </style>
+
+    <div class="ai-chatbot-widget">
+        <button id="aiChatbotToggleBtnAdmin" class="ai-chatbot-btn" title="Open Freelenso AI Assistant">
+            <i class="bi bi-robot fs-4"></i>
+            <span class="ai-chatbot-badge"></span>
+        </button>
+
+        <div id="aiChatbotWindowAdmin" class="ai-chatbot-window">
+            <div class="ai-chatbot-header">
+                <div class="ai-chatbot-title">
+                    <div class="ai-avatar">
+                        <i class="bi bi-robot"></i>
+                    </div>
+                    <div>
+                        <h6 class="mb-0 fw-bold">Freelenso AI</h6>
+                        <small class="text-white-50" style="font-size: 0.72rem;">● Admin Assistant</small>
+                    </div>
+                </div>
+                <div class="d-flex align-items-center gap-2">
+                    <button id="aiClearChatBtnAdmin" class="btn btn-sm text-white p-0 border-0" title="Clear Chat">
+                        <i class="bi bi-trash fs-6"></i>
+                    </button>
+                    <button id="aiCloseChatBtnAdmin" class="btn btn-sm text-white p-0 border-0" title="Close">
+                        <i class="bi bi-x-lg fs-6"></i>
+                    </button>
+                </div>
+            </div>
+
+            <div id="aiChatbotBodyAdmin" class="ai-chatbot-body">
+                <div class="ai-msg ai-msg-bot">
+                    Hello Admin! 👋 I'm your <strong>Freelenso AI Assistant</strong>. How can I help you manage users, projects, or withdrawals today?
+                </div>
+                <div class="ai-quick-chips" id="aiQuickChipsAdmin">
+                    <span class="ai-chip" onclick="sendQuickReplyAdmin('System Stats overview')">System Stats overview</span>
+                    <span class="ai-chip" onclick="sendQuickReplyAdmin('Withdrawals process')">Withdrawals process</span>
+                    <span class="ai-chip" onclick="sendQuickReplyAdmin('User management')">User management</span>
+                </div>
+            </div>
+
+            <div class="ai-chatbot-footer">
+                <div class="ai-chatbot-input-group">
+                    <input type="text" id="aiChatbotInputAdmin" class="ai-chatbot-input" placeholder="Ask Freelenso AI..." onkeypress="if(event.key==='Enter') sendAiMessageAdmin()">
+                    <button id="aiSendBtnAdmin" class="ai-chatbot-send-btn" onclick="sendAiMessageAdmin()">
+                        <i class="bi bi-send-fill"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const toggleBtn = document.getElementById('aiChatbotToggleBtnAdmin');
+            const windowEl = document.getElementById('aiChatbotWindowAdmin');
+            const closeBtn = document.getElementById('aiCloseChatBtnAdmin');
+            const clearBtn = document.getElementById('aiClearChatBtnAdmin');
+            const bodyEl = document.getElementById('aiChatbotBodyAdmin');
+            const inputEl = document.getElementById('aiChatbotInputAdmin');
+
+            if (toggleBtn && windowEl) {
+                toggleBtn.addEventListener('click', function() {
+                    windowEl.classList.toggle('active');
+                    if (windowEl.classList.contains('active')) {
+                        inputEl.focus();
+                    }
+                });
+
+                closeBtn.addEventListener('click', function() {
+                    windowEl.classList.remove('active');
+                });
+
+                clearBtn.addEventListener('click', function() {
+                    bodyEl.innerHTML = `
+                        <div class="ai-msg ai-msg-bot">
+                            Chat history cleared. How can I assist you now? 😊
+                        </div>
+                    `;
+                });
+            }
+        });
+
+        function sendQuickReplyAdmin(text) {
+            document.getElementById('aiChatbotInputAdmin').value = text;
+            sendAiMessageAdmin();
+        }
+
+        function sendAiMessageAdmin() {
+            const inputEl = document.getElementById('aiChatbotInputAdmin');
+            const bodyEl = document.getElementById('aiChatbotBodyAdmin');
+            const message = inputEl.value.trim();
+
+            if (!message) return;
+
+            const oldChips = document.getElementById('aiQuickChipsAdmin');
+            if (oldChips) oldChips.remove();
+
+            const userMsgEl = document.createElement('div');
+            userMsgEl.className = 'ai-msg ai-msg-user';
+            userMsgEl.textContent = message;
+            bodyEl.appendChild(userMsgEl);
+
+            inputEl.value = '';
+            bodyEl.scrollTop = bodyEl.scrollHeight;
+
+            const typingEl = document.createElement('div');
+            typingEl.className = 'ai-typing-indicator';
+            typingEl.id = 'aiTypingIndicatorAdmin';
+            typingEl.innerHTML = '<div class="ai-typing-dot"></div><div class="ai-typing-dot"></div><div class="ai-typing-dot"></div>';
+            bodyEl.appendChild(typingEl);
+            bodyEl.scrollTop = bodyEl.scrollHeight;
+
+            fetch('/ai-chat/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': (document.cookie.match(/csrftoken=([^;]+)/)||[,''])[1]
+                },
+                body: JSON.stringify({ message: message })
+            })
+            .then(res => res.json())
+            .then(data => {
+                const indicator = document.getElementById('aiTypingIndicatorAdmin');
+                if (indicator) indicator.remove();
+
+                if (data.status === 'success') {
+                    const botMsgEl = document.createElement('div');
+                    botMsgEl.className = 'ai-msg ai-msg-bot';
+                    botMsgEl.innerHTML = data.response.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>').replace(/\n/g, '<br>');
+                    bodyEl.appendChild(botMsgEl);
+                }
+                bodyEl.scrollTop = bodyEl.scrollHeight;
+            })
+            .catch(err => {
+                const indicator = document.getElementById('aiTypingIndicatorAdmin');
+                if (indicator) indicator.remove();
+
+                const errorMsgEl = document.createElement('div');
+                errorMsgEl.className = 'ai-msg ai-msg-bot text-danger';
+                errorMsgEl.textContent = "Error processing message.";
+                bodyEl.appendChild(errorMsgEl);
+            });
+        }
+    </script>
     {% block extra_js %}{% endblock %}
 </body>
 </html> 
+ 

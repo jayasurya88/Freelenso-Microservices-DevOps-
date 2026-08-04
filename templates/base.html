@@ -612,6 +612,12 @@
                                 <span>Wallet</span>
                             </a>
                         </li>
+                        <li class="nav-item me-2">
+                            <a class="nav-link d-flex align-items-center fw-semibold text-warning" href="#" onclick="event.preventDefault(); const w = document.getElementById('aiChatbotWindow'); if(w){ w.classList.toggle('active'); if(w.classList.contains('active')) document.getElementById('aiChatbotInput')?.focus(); }">
+                                <i class="bi bi-robot me-1 fs-5"></i>
+                                <span>AI Assistant</span>
+                            </a>
+                        </li>
                         {% if user.userprofile.is_client %}
                         <li class="nav-item me-2">
                             <a class="nav-link d-flex align-items-center" href="{% url 'create_project' %}">
@@ -631,10 +637,17 @@
                             </a>
                             <ul class="dropdown-menu dropdown-menu-end">
                                 <li>
+                                    <a class="dropdown-item d-flex align-items-center" href="#" onclick="event.preventDefault(); const w = document.getElementById('aiChatbotWindow'); if(w){ w.classList.add('active'); document.getElementById('aiChatbotInput')?.focus(); }">
+                                        <i class="bi bi-robot me-2 text-primary"></i>Ask AI Assistant
+                                    </a>
+                                </li>
+                                <li><hr class="dropdown-divider"></li>
+                                <li>
                                     <a class="dropdown-item d-flex align-items-center" href="{% url 'view_profile' %}">
                                         <i class="bi bi-person me-2"></i>View Profile
                                     </a>
                                 </li>
+
                                 <li>
                                     <a class="dropdown-item d-flex align-items-center" href="{% url 'edit_profile' %}">
                                         <i class="bi bi-pencil-square me-2"></i>Edit Profile
@@ -936,7 +949,7 @@
             position: fixed;
             bottom: 24px;
             right: 24px;
-            z-index: 1080;
+            z-index: 99999 !important;
             font-family: 'Inter', system-ui, -apple-system, sans-serif;
         }
 
@@ -987,12 +1000,13 @@
             display: flex;
             flex-direction: column;
             overflow: hidden;
-            z-index: 1080;
+            z-index: 99999 !important;
             opacity: 0;
             visibility: hidden;
             transform: translateY(20px) scale(0.95);
             transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
+
 
         .ai-chatbot-window.active {
             opacity: 1;
