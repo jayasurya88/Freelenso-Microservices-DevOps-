@@ -87,4 +87,8 @@ urlpatterns = [
     
     # Admin-only routes
     path('check-for-delays/', views.check_for_delays, name='check_for_delays'),
+    
+    # AI Chatbot Assistant API
+    path('ai-chat/', views.ai_chat_api, name='ai_chat_api'),
 ]
+

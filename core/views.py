@@ -2414,7 +2414,179 @@ def check_milestone_delay(request, milestone_id):
             )
         
         messages.success(request, f"Milestone '{milestone.title}' is now marked as delayed. Delay days: {delay_days}, Potential penalty: ${penalty_amount}")
-    else:
-        messages.info(request, f"Milestone '{milestone.title}' is not delayed.")
-    
     return redirect('project_milestones', project_id=project.id)
+
+
+from django.http import JsonResponse
+from django.views.decorators.csrf import csrf_exempt
+import json
+import os
+
+@csrf_exempt
+def ai_chat_api(request):
+    """API endpoint for the Freelenso AI Assistant chatbot"""
+    if request.method != 'POST':
+        return JsonResponse({'status': 'error', 'message': 'Only POST method allowed'}, status=405)
+    
+    try:
+        data = json.loads(request.body)
+        user_message = data.get('message', '').strip()
+    except (json.JSONDecodeError, AttributeError):
+        return JsonResponse({'status': 'error', 'message': 'Invalid JSON format'}, status=400)
+    
+    if not user_message:
+        return JsonResponse({'status': 'error', 'message': 'Message cannot be empty'}, status=400)
+    
+    # Gather User Context if logged in
+    user_context = {}
+    if request.user.is_authenticated:
+        try:
+            profile = request.user.userprofile
+            user_context = {
+                'username': request.user.username,
+                'is_freelancer': profile.is_freelancer,
+                'is_client': profile.is_client,
+                'wallet_balance': float(profile.wallet_balance),
+                'is_complete': profile.is_profile_complete()
+            }
+        except Exception:
+            user_context = {'username': request.user.username}
+
+    # Attempt Google Gemini API if key is available
+    gemini_api_key = os.environ.get('GEMINI_API_KEY')
+    if gemini_api_key:
+        try:
+            import google.generativeai as genai
+            genai.configure(api_key=gemini_api_key)
+            model = genai.GenerativeModel('gemini-1.5-flash')
+            system_prompt = (
+                "You are Freelenso AI, the intelligent virtual assistant for Freelenso freelance marketplace. "
+                f"Current user info: {user_context}. "
+                "Answer concisely, helpfully, and friendly. Guide users on project posting, bidding, milestones, wallet payments, and platform usage."
+            )
+            response = model.generate_content(f"{system_prompt}\n\nUser: {user_message}")
+            if response and response.text:
+                return JsonResponse({
+                    'status': 'success',
+                    'response': response.text,
+                    'quick_replies': get_default_quick_replies(user_context)
+                })
+        except Exception:
+            pass # Fallback to local AI engine on any API error
+
+    # Intelligent Freelenso Local AI Knowledge Engine
+    ai_response, quick_replies = get_freelenso_knowledge_response(user_message, user_context)
+    return JsonResponse({
+        'status': 'success',
+        'response': ai_response,
+        'quick_replies': quick_replies
+    })
+
+
+def get_default_quick_replies(user_context):
+    replies = ["How to post a project?", "How does milestone escrow work?", "How do I add funds to wallet?"]
+    if user_context.get('is_freelancer'):
+        replies.insert(0, "How do I bid on projects?")
+    return replies
+
+
+def get_freelenso_knowledge_response(message, user_context):
+    msg = message.lower()
+    username = user_context.get('username', 'there')
+    is_freelancer = user_context.get('is_freelancer', False)
+    is_client = user_context.get('is_client', False)
+
+    # Greetings
+    if any(k in msg for k in ['hi', 'hello', 'hey', 'greetings', 'who are you', 'what can you do']):
+        role_str = " (Freelancer)" if is_freelancer else (" (Client)" if is_client else "")
+        return (
+            f"Hello **{username}**{role_str}! 👋 I'm your **Freelenso AI Assistant**.\n\n"
+            "I can help you with:\n"
+            "• **Posting & Managing Projects**\n"
+            "• **Bids & Proposals** for freelancers\n"
+            "• **Milestones & Escrow Payments**\n"
+            "• **Wallet Deposits & Withdrawals**\n"
+            "• **Real-time Messaging & Reviews**\n\n"
+            "What would you like to know today?"
+        ), ["How to post a project?", "How does escrow work?", "How to bid?", "Wallet & Payments"]
+
+    # Posting Projects
+    if any(k in msg for k in ['post project', 'create project', 'hire', 'post job', 'new project', 'post a project']):
+        return (
+            "📌 **How to Post a Project on Freelenso**:\n\n"
+            "1. Click **Projects** in the navigation bar and select **Post a Project** (or go to `/projects/create/`).\n"
+            "2. Fill in the **Title**, **Description**, and **Required Skills**.\n"
+            "3. Set your **Budget Range (Min - Max)**, project **Duration**, and **Experience Level**.\n"
+            "4. Publish your project! Interested freelancers will submit proposals with their bids.\n\n"
+            "💡 *Tip: Break your project into milestones for milestone-based escrow payments!*"
+        ), ["How to manage bids?", "How does escrow work?", "Go to Projects"]
+
+    # Bidding & Proposals
+    if any(k in msg for k in ['bid', 'proposal', 'apply', 'find work', 'submit bid', 'how to bid']):
+        return (
+            "💼 **How to Bid on Projects (Freelancers)**:\n\n"
+            "1. Browse open projects under **Projects** (`/projects/`).\n"
+            "2. Click on a project that matches your skills.\n"
+            "3. Enter your **Bid Amount**, **Estimated Delivery Time**, and a compelling **Cover Letter**.\n"
+            "4. Submit your proposal! You can track your active applications under **My Applications**."
+        ), ["My Applications", "Complete Profile", "How do I get paid?"]
+
+    # Milestones & Escrow
+    if any(k in msg for k in ['milestone', 'escrow', 'fund', 'release payment', 'milestones']):
+        return (
+            "🔒 **Milestones & Secure Escrow**:\n\n"
+            "• **Creating Milestones**: Break projects into clear deliverables with due dates.\n"
+            "• **Funding Escrow**: Clients deposit funds into escrow for a specific milestone before work starts.\n"
+            "• **Work & Submission**: Freelancers work on the milestone and submit progress.\n"
+            "• **Approve & Release**: Once the client approves the work, funds are released directly from escrow into the freelancer's wallet balance."
+        ), ["Go to Wallet", "Post a Project", "How to withdraw?"]
+
+    # Wallet, Deposits & Payments
+    if any(k in msg for k in ['wallet', 'deposit', 'withdraw', 'razorpay', 'payment', 'balance', 'money']):
+        bal = user_context.get('wallet_balance', 0.0)
+        return (
+            f"💰 **Wallet & Payment Management**:\n\n"
+            f"• **Current Wallet Balance**: `${bal:.2f}`\n"
+            "• **Depositing Funds**: Navigate to **Wallet** (`/wallet/`) and select **Deposit**. You can add funds via Razorpay or simulated payment methods.\n"
+            "• **Withdrawing Funds**: Request withdrawals to your bank account or payment method.\n"
+            "• **Transaction History**: View all escrow holds, deposits, and earnings history in your Wallet Dashboard."
+        ), ["Go to Wallet", "How does escrow work?", "Payment Methods"]
+
+    # Profile & Account
+    if any(k in msg for k in ['profile', 'skills', 'hourly rate', 'avatar', 'bio', 'complete profile']):
+        is_comp = user_context.get('is_complete', False)
+        status_txt = "✅ Complete" if is_comp else "⚠️ Incomplete"
+        return (
+            f"👤 **Your Profile Status**: {status_txt}\n\n"
+            "A complete profile increases freelancer hiring rates by 80%!\n"
+            "1. Go to **Profile -> Edit Profile** (`/profile/edit/`).\n"
+            "2. Add your **Bio**, **Skills**, **Hourly Rate**, **Country**, **Languages**, and **Portfolio links** (GitHub/LinkedIn).\n"
+            "3. Upload a professional profile picture."
+        ), ["Edit Profile", "View My Profile"]
+
+    # Chat & Communication
+    if any(k in msg for k in ['chat', 'message', 'messaging', 'contact', 'talk']):
+        return (
+            "💬 **Real-time Messaging & Chat**:\n\n"
+            "Once a project is active, clients and freelancers can communicate directly in real-time!\n"
+            "• Access active chat rooms from the project workspace or **Messages** (`/messages/`).\n"
+            "• Supported features: instant message exchange, file attachments, and notification alerts."
+        ), ["Go to Messages", "View Projects"]
+
+    # Reviews & Ratings
+    if any(k in msg for k in ['review', 'rating', 'feedback', 'stars']):
+        return (
+            "⭐ **Reviews & Ratings**:\n\n"
+            "After a project is marked as **Completed**, both the client and freelancer can leave star ratings and written feedback to build platform reputation!"
+        ), ["My Projects", "Find Work"]
+
+    # Default / General Fallback
+    return (
+        f"I'm here to help with all things **Freelenso**! 😊\n\n"
+        "You can ask me about:\n"
+        "• Posting or bidding on projects\n"
+        "• Milestones & escrow security\n"
+        "• Wallet deposits via Razorpay & withdrawals\n"
+        "• Profile setup and messaging"
+    ), ["How to post a project?", "How does escrow work?", "How to bid?", "Wallet & Payments"]
+
