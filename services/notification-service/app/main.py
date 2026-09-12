@@ -1,9 +1,18 @@
 from fastapi import FastAPI, Depends, HTTPException, WebSocket, BackgroundTasks
 from sqlalchemy.orm import Session
 from typing import List
+import os
 import json
-import aioredis
 from datetime import datetime
+
+try:
+    import redis.asyncio as aioredis
+except ImportError:
+    try:
+        import aioredis
+    except ImportError:
+        aioredis = None
+
 from . import models, schemas, crud
 from .database import SessionLocal, engine
 
@@ -12,7 +21,11 @@ models.Base.metadata.create_all(bind=engine)
 app = FastAPI(title="Notification Service")
 
 # Redis connection for real-time notifications
-redis = aioredis.from_url("redis://redis:6379", decode_responses=True)
+redis_url = os.getenv("REDIS_URL", "redis://localhost:6379")
+try:
+    redis = aioredis.from_url(redis_url, decode_responses=True) if aioredis else None
+except Exception:
+    redis = None
 
 # Dependency
 def get_db():
@@ -39,12 +52,14 @@ async def create_notification(
         "created_at": db_notification.created_at.isoformat()
     }
     
-    # Publish to Redis for WebSocket clients
-    background_tasks.add_task(
-        redis.publish,
-        f"user:{notification.recipient_id}",
-        json.dumps(notification_data)
-    )
+    # Publish to Redis for WebSocket clients if available
+    if redis:
+        async def _safe_publish():
+            try:
+                await redis.publish(f"user:{notification.recipient_id}", json.dumps(notification_data))
+            except Exception:
+                pass
+        background_tasks.add_task(_safe_publish)
     
     return db_notification
 

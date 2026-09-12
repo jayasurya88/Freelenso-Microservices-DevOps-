@@ -919,12 +919,29 @@
                 clearBtn.addEventListener('click', function() {
                     bodyEl.innerHTML = `
                         <div class="ai-msg ai-msg-bot">
-                            Chat history cleared. How can I assist you now? 😊
+                            🛡️ Command Center chat cleared. How can I assist your administration?
+                        </div>
+                        <div class="ai-quick-chips" id="aiQuickChipsAdmin">
+                            <span class="ai-chip" onclick="sendQuickReplyAdmin('📊 Platform Stats')">📊 Platform Stats</span>
+                            <span class="ai-chip" onclick="sendQuickReplyAdmin('⏳ Pending Withdrawals')">⏳ Pending Withdrawals</span>
+                            <span class="ai-chip" onclick="sendQuickReplyAdmin('👥 User Management')">👥 User Management</span>
+                            <span class="ai-chip" onclick="sendQuickReplyAdmin('📁 All Projects')">📁 All Projects</span>
+                            <span class="ai-chip" onclick="sendQuickReplyAdmin('⚙️ Admin Quick Links')">⚙️ Admin Quick Links</span>
                         </div>
                     `;
                 });
             }
         });
+
+        function formatAiTextAdmin(text) {
+            if (!text) return '';
+            return text
+                .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" class="text-primary fw-bold text-decoration-underline" style="word-break: break-all;">$1</a>')
+                .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                .replace(/\*(.*?)\*/g, '<em>$1</em>')
+                .replace(/`([^`]+)`/g, '<code class="bg-light text-primary px-1 rounded">$1</code>')
+                .replace(/\n/g, '<br>');
+        }
 
         function sendQuickReplyAdmin(text) {
             document.getElementById('aiChatbotInputAdmin').value = text;
@@ -972,8 +989,22 @@
                 if (data.status === 'success') {
                     const botMsgEl = document.createElement('div');
                     botMsgEl.className = 'ai-msg ai-msg-bot';
-                    botMsgEl.innerHTML = data.response.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>').replace(/\n/g, '<br>');
+                    botMsgEl.innerHTML = formatAiTextAdmin(data.response);
                     bodyEl.appendChild(botMsgEl);
+
+                    if (data.quick_replies && data.quick_replies.length > 0) {
+                        const chipsContainer = document.createElement('div');
+                        chipsContainer.className = 'ai-quick-chips';
+                        chipsContainer.id = 'aiQuickChipsAdmin';
+                        data.quick_replies.forEach(reply => {
+                            const chip = document.createElement('span');
+                            chip.className = 'ai-chip';
+                            chip.textContent = reply;
+                            chip.onclick = function() { sendQuickReplyAdmin(reply); };
+                            chipsContainer.appendChild(chip);
+                        });
+                        bodyEl.appendChild(chipsContainer);
+                    }
                 }
                 bodyEl.scrollTop = bodyEl.scrollHeight;
             })

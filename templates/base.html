@@ -1268,6 +1268,7 @@
         function formatAiText(text) {
             if (!text) return '';
             let formatted = text
+                .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" class="text-primary fw-bold text-decoration-underline">$1</a>')
                 .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
                 .replace(/\*(.*?)\*/g, '<em>$1</em>')
                 .replace(/`([^`]+)`/g, '<code class="bg-light text-primary px-1 rounded">$1</code>')

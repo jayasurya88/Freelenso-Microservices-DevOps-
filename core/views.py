@@ -2440,17 +2440,26 @@ def ai_chat_api(request):
     # Gather User Context if logged in
     user_context = {}
     if request.user.is_authenticated:
+        is_admin_user = request.user.is_superuser or request.user.is_staff
         try:
             profile = request.user.userprofile
             user_context = {
                 'username': request.user.username,
+                'is_admin': is_admin_user,
                 'is_freelancer': profile.is_freelancer,
                 'is_client': profile.is_client,
                 'wallet_balance': float(profile.wallet_balance),
                 'is_complete': profile.is_profile_complete()
             }
         except Exception:
-            user_context = {'username': request.user.username}
+            user_context = {
+                'username': request.user.username,
+                'is_admin': is_admin_user,
+                'is_freelancer': False,
+                'is_client': False,
+                'wallet_balance': 0.0,
+                'is_complete': True
+            }
 
     # Attempt Google Gemini API if key is available
     gemini_api_key = os.environ.get('GEMINI_API_KEY')
@@ -2462,7 +2471,8 @@ def ai_chat_api(request):
             system_prompt = (
                 "You are Freelenso AI, the intelligent virtual assistant for Freelenso freelance marketplace. "
                 f"Current user info: {user_context}. "
-                "Answer concisely, helpfully, and friendly. Guide users on project posting, bidding, milestones, wallet payments, and platform usage."
+                "Answer concisely, helpfully, and friendly. Guide users on project posting, bidding, milestones, wallet payments, admin actions, and platform usage. "
+                "Always use markdown links like [Dashboard](/admin-dashboard/) where helpful."
             )
             response = model.generate_content(f"{system_prompt}\n\nUser: {user_message}")
             if response and response.text:
@@ -2484,61 +2494,236 @@ def ai_chat_api(request):
 
 
 def get_default_quick_replies(user_context):
-    replies = ["How to post a project?", "How does milestone escrow work?", "How do I add funds to wallet?"]
+    if user_context.get('is_admin'):
+        return ["📊 Platform Stats", "⏳ Pending Withdrawals", "👥 User Management", "📁 All Projects", "⚙️ Admin Quick Links"]
     if user_context.get('is_freelancer'):
-        replies.insert(0, "How do I bid on projects?")
-    return replies
+        return ["How to bid on jobs?", "How does escrow work?", "Complete Profile", "Wallet & Payments"]
+    if user_context.get('is_client'):
+        return ["How to post a project?", "How does escrow work?", "Fund a Milestone", "Wallet & Payments"]
+    return ["How to post a project?", "How does milestone escrow work?", "How do I add funds to wallet?"]
 
 
 def get_freelenso_knowledge_response(message, user_context):
     msg = message.lower()
     username = user_context.get('username', 'there')
+    is_admin = user_context.get('is_admin', False)
     is_freelancer = user_context.get('is_freelancer', False)
     is_client = user_context.get('is_client', False)
+
+    # -------------------------------------------------------------
+    # ADMIN SPECIFIC ACTIVITIES & INTELLIGENCE
+    # -------------------------------------------------------------
+    if is_admin:
+        # Admin Greetings
+        if any(k in msg for k in ['hi', 'hello', 'hey', 'greetings', 'who are you', 'help', 'start']):
+            try:
+                tot_u = User.objects.count()
+                tot_p = Project.objects.count()
+                pending_w = WithdrawalRequest.objects.filter(status='pending').count()
+                escrow_val = Wallet.objects.aggregate(total=Sum('escrow_balance'))['total'] or Decimal('0.00')
+            except Exception:
+                tot_u, tot_p, pending_w, escrow_val = 0, 0, 0, Decimal('0.00')
+
+            return (
+                f"🛡️ **Welcome, Administrator {username}!**\n\n"
+                f"I am your **Freelenso Command Center Assistant**. Here is your live platform snapshot:\n\n"
+                f"• 👥 **Total Users**: `{tot_u}` registered accounts\n"
+                f"• 📁 **Total Projects**: `{tot_p}` on platform\n"
+                f"• 💸 **Pending Payouts**: `{pending_w}` withdrawal requests waiting\n"
+                f"• 🔒 **Active Escrow Locked**: `${float(escrow_val):.2f}`\n\n"
+                f"What administrative task would you like to inspect today?"
+            ), ["📊 Platform Stats", "⏳ Pending Withdrawals", "👥 User Management", "📁 All Projects", "⚙️ Admin Quick Links"]
+
+        # Admin Live Platform Statistics
+        if any(k in msg for k in ['stat', 'metric', 'analytics', 'how many user', 'how many project', 'overview', 'platform state']):
+            try:
+                tot_users = User.objects.count()
+                active_users = User.objects.filter(is_active=True).count()
+                freelancers = UserProfile.objects.filter(is_freelancer=True).count()
+                clients = UserProfile.objects.filter(is_client=True).count()
+                tot_projects = Project.objects.count()
+                open_proj = Project.objects.filter(status='open').count()
+                in_prog_proj = Project.objects.filter(status='in_progress').count()
+                comp_proj = Project.objects.filter(status='completed').count()
+                tot_tx = Transaction.objects.count()
+                tot_bal = Wallet.objects.aggregate(total=Sum('balance'))['total'] or Decimal('0.00')
+                tot_esc = Wallet.objects.aggregate(total=Sum('escrow_balance'))['total'] or Decimal('0.00')
+            except Exception as e:
+                return f"⚠️ Unable to query live stats: {str(e)}", ["Admin Dashboard"]
+
+            return (
+                f"📊 **Real-time Freelenso Platform Analytics**:\n\n"
+                f"👥 **User Breakdown**:\n"
+                f"• Total Users: **{tot_users}** ({active_users} active)\n"
+                f"• Freelancers: **{freelancers}** | Clients: **{clients}**\n\n"
+                f"📁 **Project Breakdown**:\n"
+                f"• Total Projects: **{tot_projects}**\n"
+                f"• Open for Bids: **{open_proj}** | In Progress: **{in_prog_proj}** | Completed: **{comp_proj}**\n\n"
+                f"💳 **Financial Volume**:\n"
+                f"• Total Wallet Balance: **${float(tot_bal):.2f}**\n"
+                f"• Active Escrow Balance: **${float(tot_esc):.2f}**\n"
+                f"• Total Transactions Logged: **{tot_tx}**\n\n"
+                f"🔗 *Access full charts & growth rates at [System Statistics](/admin-dashboard/stats/) or [Admin Dashboard](/admin-dashboard/).*"
+            ), ["⏳ Pending Withdrawals", "👥 User Management", "📁 All Projects", "⚙️ Admin Quick Links"]
+
+        # Admin Withdrawal & Payout Management
+        if any(k in msg for k in ['withdraw', 'payout', 'pending payout', 'pending withdrawal', 'process withdrawal']):
+            try:
+                pending_qs = WithdrawalRequest.objects.filter(status='pending')
+                count = pending_qs.count()
+                total_req = pending_qs.aggregate(total=Sum('amount'))['total'] or Decimal('0.00')
+                recent_items = pending_qs.select_related('wallet__user').order_by('-created_at')[:3]
+                details = ""
+                for req in recent_items:
+                    u_name = req.wallet.user.username if req.wallet and req.wallet.user else "User"
+                    details += f"\n• **{u_name}**: `${float(req.amount):.2f}` via `{req.payment_method}` ({req.created_at.strftime('%b %d')})"
+            except Exception:
+                count, total_req, details = 0, Decimal('0.00'), ""
+
+            if count > 0:
+                return (
+                    f"💸 **Pending Withdrawal Requests**:\n\n"
+                    f"There are currently **{count} pending withdrawal requests** totaling **${float(total_req):.2f}**.{details}\n\n"
+                    f"👉 Click here to review and approve or reject payouts:\n"
+                    f"**[Process Withdrawals Dashboard](/admin-dashboard/withdrawals/)**"
+                ), ["Process Withdrawals", "📊 Platform Stats", "👥 User Management"]
+            else:
+                return (
+                    "✅ **No Pending Withdrawals**!\n\n"
+                    "All withdrawal requests have been processed. You can view full payout audit history here:\n"
+                    "**[View Withdrawals History](/admin-dashboard/withdrawals/)**"
+                ), ["📊 Platform Stats", "👥 User Management", "📁 All Projects"]
+
+        # Admin User Lookup & Management
+        if any(k in msg for k in ['user', 'manage user', 'ban', 'activate', 'deactivate', 'export user']):
+            # Check if admin asked to look up a specific user
+            words = msg.split()
+            target_username = None
+            for idx, w in enumerate(words):
+                if w in ['user', 'for', 'find', 'lookup'] and idx + 1 < len(words):
+                    candidate = words[idx + 1].strip('?.,!')
+                    if candidate not in ['management', 'stats', 'stat', 'all', 'export']:
+                        target_username = candidate
+                        break
+
+            if target_username:
+                target_user = User.objects.filter(username__icontains=target_username).first()
+                if target_user:
+                    p = getattr(target_user, 'userprofile', None)
+                    role = "Freelancer" if (p and p.is_freelancer) else ("Client" if (p and p.is_client) else "Member")
+                    status_str = "🟢 Active" if target_user.is_active else "🔴 Deactivated"
+                    wallet_bal = f"${float(p.wallet_balance):.2f}" if p else "$0.00"
+                    return (
+                        f"🔍 **User Profile Found: `{target_user.username}`**\n\n"
+                        f"• **Role**: {role}\n"
+                        f"• **Email**: `{target_user.email or 'N/A'}`\n"
+                        f"• **Account Status**: {status_str}\n"
+                        f"• **Wallet Balance**: `{wallet_bal}`\n"
+                        f"• **Joined**: {target_user.date_joined.strftime('%Y-%m-%d')}\n\n"
+                        f"🛠️ Actions:\n"
+                        f"• View & toggle active status: [Open User Management](/admin-dashboard/users/?q={target_user.username})\n"
+                        f"• Native Admin edit: [Django Admin User](/admin/auth/user/{target_user.id}/change/)"
+                    ), ["👥 User Management", "📊 Platform Stats", "Export Users CSV"]
+
+            return (
+                "👥 **User Management Activities**:\n\n"
+                "As an administrator, you can:\n"
+                "1. **Search & Filter Users**: By role (Clients vs Freelancers) or status (Active vs Deactivated).\n"
+                "2. **One-Click Activation**: Toggle account status on/off instantly without leaving the dashboard.\n"
+                "3. **Export CSV**: Download complete user registry for external audit or marketing.\n\n"
+                "👉 **[Go to User Management](/admin-dashboard/users/)**\n"
+                "📥 **[Download Users CSV](/admin-dashboard/users/export/)**"
+            ), ["👥 User Management", "Export Users CSV", "📊 Platform Stats"]
+
+        # Admin Project Management & Cancellation
+        if any(k in msg for k in ['project', 'cancel project', 'dispute', 'close project']):
+            return (
+                "📁 **Project Oversight & Moderation**:\n\n"
+                "• **Inspect Projects**: Search by title, client, freelancer, or status.\n"
+                "• **Cancel & Refund**: If a dispute occurs, cancelling a project automatically resolves active milestones and **refunds held escrow funds** directly back to the client's wallet.\n"
+                "• **Activity Log**: View complete chronological audit trail of all project events.\n\n"
+                "👉 **[Manage Platform Projects](/admin-dashboard/projects/)**"
+            ), ["📁 All Projects", "📊 Platform Stats", "⚙️ Admin Quick Links"]
+
+        # Admin Delays & Milestones
+        if any(k in msg for k in ['delay', 'overdue', 'penalty', 'deadline']):
+            try:
+                unresolved = MilestoneDelay.objects.filter(is_resolved=False).count()
+            except Exception:
+                unresolved = 0
+            return (
+                f"⏱️ **Milestone Delay & Deadline Monitor**:\n\n"
+                f"• Currently **{unresolved} unresolved delayed milestones** flagged by the system.\n"
+                f"• The platform automatically checks deadlines and applies daily penalties up to the configured cap.\n"
+                f"• You can run an automated system check or adjust deadline extensions.\n\n"
+                f"👉 **[Scan For Delays Now](/check-for-delays/)**\n"
+                f"👉 **[View Projects Dashboard](/admin-dashboard/projects/)**"
+            ), ["Scan For Delays", "📁 All Projects", "📊 Platform Stats"]
+
+        # Admin Navigation & Direct Links
+        if any(k in msg for k in ['link', 'menu', 'dashboard', 'quick links', 'admin tool', 'actions']):
+            return (
+                "⚙️ **Administrator Quick Navigation Guide**:\n\n"
+                "| Section | Description | Direct Link |\n"
+                "| :--- | :--- | :--- |\n"
+                "| 📊 **Admin Dashboard** | Main KPIs & analytics charts | [Open](/admin-dashboard/) |\n"
+                "| 👥 **User Management** | Search, toggle active, export CSV | [Open](/admin-dashboard/users/) |\n"
+                "| 📁 **Project Control** | Inspect, filter, cancel & refund | [Open](/admin-dashboard/projects/) |\n"
+                "| 💳 **Transactions** | Full platform payment audit trail | [Open](/admin-dashboard/transactions/) |\n"
+                "| 💸 **Withdrawals** | Approve & process payouts | [Open](/admin-dashboard/withdrawals/) |\n"
+                "| 📈 **System Stats** | Server metrics & growth rates | [Open](/admin-dashboard/stats/) |\n"
+                "| ⏱️ **Delay Scanner** | Scan and apply milestone penalties | [Open](/check-for-delays/) |\n"
+                "| 🛠️ **Django Admin** | Native Django administration | [Open](/admin/) |"
+            ), ["📊 Platform Stats", "⏳ Pending Withdrawals", "👥 User Management", "📁 All Projects"]
+
+    # -------------------------------------------------------------
+    # GENERAL USER CAPABILITIES (Freelancers & Clients)
+    # -------------------------------------------------------------
 
     # Greetings
     if any(k in msg for k in ['hi', 'hello', 'hey', 'greetings', 'who are you', 'what can you do']):
         role_str = " (Freelancer)" if is_freelancer else (" (Client)" if is_client else "")
         return (
             f"Hello **{username}**{role_str}! 👋 I'm your **Freelenso AI Assistant**.\n\n"
-            "I can help you with:\n"
-            "• **Posting & Managing Projects**\n"
-            "• **Bids & Proposals** for freelancers\n"
-            "• **Milestones & Escrow Payments**\n"
-            "• **Wallet Deposits & Withdrawals**\n"
-            "• **Real-time Messaging & Reviews**\n\n"
-            "What would you like to know today?"
-        ), ["How to post a project?", "How does escrow work?", "How to bid?", "Wallet & Payments"]
+            "I can assist you with:\n"
+            "• **[Posting & Managing Projects](/projects/create/)**\n"
+            "• **[Browsing & Bidding on Jobs](/projects/)**\n"
+            "• **Milestones & Escrow Security**\n"
+            "• **[Wallet Deposits & Withdrawals](/wallet/)**\n"
+            "• **[Messages & Workspace](/messages/)**\n\n"
+            "How can I help you succeed today?"
+        ), ["How to post a project?", "How does escrow work?", "How to bid on jobs?", "Wallet & Payments"]
 
     # Posting Projects
     if any(k in msg for k in ['post project', 'create project', 'hire', 'post job', 'new project', 'post a project']):
         return (
-            "📌 **How to Post a Project on Freelenso**:\n\n"
-            "1. Click **Projects** in the navigation bar and select **Post a Project** (or go to `/projects/create/`).\n"
+            "📢 **How to Post a Project on Freelenso**:\n\n"
+            "1. Navigate to **[Post a Project](/projects/create/)**.\n"
             "2. Fill in the **Title**, **Description**, and **Required Skills**.\n"
             "3. Set your **Budget Range (Min - Max)**, project **Duration**, and **Experience Level**.\n"
-            "4. Publish your project! Interested freelancers will submit proposals with their bids.\n\n"
-            "💡 *Tip: Break your project into milestones for milestone-based escrow payments!*"
-        ), ["How to manage bids?", "How does escrow work?", "Go to Projects"]
+            "4. Publish your project! Qualified freelancers will submit proposals with their delivery estimates.\n\n"
+            "💡 *Tip: Break your project into milestones to release payments securely upon satisfactory delivery!*"
+        ), ["How to manage bids?", "How does escrow work?", "Post a Project Now"]
 
     # Bidding & Proposals
     if any(k in msg for k in ['bid', 'proposal', 'apply', 'find work', 'submit bid', 'how to bid']):
         return (
-            "💼 **How to Bid on Projects (Freelancers)**:\n\n"
-            "1. Browse open projects under **Projects** (`/projects/`).\n"
-            "2. Click on a project that matches your skills.\n"
-            "3. Enter your **Bid Amount**, **Estimated Delivery Time**, and a compelling **Cover Letter**.\n"
-            "4. Submit your proposal! You can track your active applications under **My Applications**."
-        ), ["My Applications", "Complete Profile", "How do I get paid?"]
+            "💼 **How to Win Projects (Freelancers)**:\n\n"
+            "1. Browse open projects in **[Explore Projects](/projects/)**.\n"
+            "2. Select a project matching your skills and experience.\n"
+            "3. Enter your **Bid Amount**, **Delivery Timeline**, and write a customized **Proposal**.\n"
+            "4. Track submitted proposals in **[My Applications](/my-applications/)**.\n\n"
+            "⭐ *Keep your profile at 100% completion to rank higher in client searches!*"
+        ), ["Explore Projects", "My Applications", "Edit Profile"]
 
     # Milestones & Escrow
-    if any(k in msg for k in ['milestone', 'escrow', 'fund', 'release payment', 'milestones']):
+    if any(k in msg for k in ['milestone', 'escrow', 'fund', 'release payment', 'milestones', 'safe']):
         return (
-            "🔒 **Milestones & Secure Escrow**:\n\n"
-            "• **Creating Milestones**: Break projects into clear deliverables with due dates.\n"
-            "• **Funding Escrow**: Clients deposit funds into escrow for a specific milestone before work starts.\n"
-            "• **Work & Submission**: Freelancers work on the milestone and submit progress.\n"
-            "• **Approve & Release**: Once the client approves the work, funds are released directly from escrow into the freelancer's wallet balance."
+            "🔒 **Milestones & Secure Escrow Protection**:\n\n"
+            "• **Milestone Creation**: Define key deliverables and deadlines for the project.\n"
+            "• **Escrow Funding**: The client funds the milestone into escrow before work begins. Money is safely held by Freelenso.\n"
+            "• **Submission & Review**: The freelancer submits deliverables for review.\n"
+            "• **Payment Release**: When the client approves, escrow funds are instantly credited to the freelancer's wallet balance."
         ), ["Go to Wallet", "Post a Project", "How to withdraw?"]
 
     # Wallet, Deposits & Payments
@@ -2546,11 +2731,11 @@ def get_freelenso_knowledge_response(message, user_context):
         bal = user_context.get('wallet_balance', 0.0)
         return (
             f"💰 **Wallet & Payment Management**:\n\n"
-            f"• **Current Wallet Balance**: `${bal:.2f}`\n"
-            "• **Depositing Funds**: Navigate to **Wallet** (`/wallet/`) and select **Deposit**. You can add funds via Razorpay or simulated payment methods.\n"
-            "• **Withdrawing Funds**: Request withdrawals to your bank account or payment method.\n"
-            "• **Transaction History**: View all escrow holds, deposits, and earnings history in your Wallet Dashboard."
-        ), ["Go to Wallet", "How does escrow work?", "Payment Methods"]
+            f"• **Your Wallet Balance**: `${bal:.2f}`\n"
+            f"• **[Deposit Funds](/wallet/deposit/)**: Add funds instantly using Razorpay or saved payment methods.\n"
+            f"• **[Withdraw Earnings](/wallet/withdraw/)**: Request a payout directly to your bank account.\n"
+            f"• **[Transaction Ledger](/wallet/transactions/)**: Inspect all deposits, escrow holds, and released earnings."
+        ), ["Go to Wallet", "Deposit Funds", "How does escrow work?"]
 
     # Profile & Account
     if any(k in msg for k in ['profile', 'skills', 'hourly rate', 'avatar', 'bio', 'complete profile']):
@@ -2558,35 +2743,36 @@ def get_freelenso_knowledge_response(message, user_context):
         status_txt = "✅ Complete" if is_comp else "⚠️ Incomplete"
         return (
             f"👤 **Your Profile Status**: {status_txt}\n\n"
-            "A complete profile increases freelancer hiring rates by 80%!\n"
-            "1. Go to **Profile -> Edit Profile** (`/profile/edit/`).\n"
-            "2. Add your **Bio**, **Skills**, **Hourly Rate**, **Country**, **Languages**, and **Portfolio links** (GitHub/LinkedIn).\n"
-            "3. Upload a professional profile picture."
-        ), ["Edit Profile", "View My Profile"]
+            "A polished profile significantly boosts client trust and hiring success!\n"
+            "• Update your **Bio**, **Skills**, and **Hourly Rate**\n"
+            "• Add your **GitHub & LinkedIn portfolio links**\n"
+            "• Upload a high-resolution profile picture\n\n"
+            "👉 **[Edit Your Profile Now](/profile/edit/)**"
+        ), ["Edit Profile", "View Profile", "Explore Projects"]
 
     # Chat & Communication
     if any(k in msg for k in ['chat', 'message', 'messaging', 'contact', 'talk']):
         return (
-            "💬 **Real-time Messaging & Chat**:\n\n"
-            "Once a project is active, clients and freelancers can communicate directly in real-time!\n"
-            "• Access active chat rooms from the project workspace or **Messages** (`/messages/`).\n"
-            "• Supported features: instant message exchange, file attachments, and notification alerts."
-        ), ["Go to Messages", "View Projects"]
+            "💬 **Real-time Messaging & Chatrooms**:\n\n"
+            "Collaborate seamlessly with clients and freelancers:\n"
+            "• Direct real-time project chatrooms with instant delivery.\n"
+            "• File attachment uploads for contracts and deliverables.\n"
+            "• Access all discussions under **[Messages](/messages/)**."
+        ), ["Go to Messages", "Explore Projects"]
 
     # Reviews & Ratings
     if any(k in msg for k in ['review', 'rating', 'feedback', 'stars']):
         return (
-            "⭐ **Reviews & Ratings**:\n\n"
-            "After a project is marked as **Completed**, both the client and freelancer can leave star ratings and written feedback to build platform reputation!"
-        ), ["My Projects", "Find Work"]
+            "⭐ **Reviews & Feedback System**:\n\n"
+            "Once a project is marked as **Completed**, both the client and freelancer can submit star ratings (1-5) and written feedback to build platform reputation!"
+        ), ["Explore Projects", "My Applications"]
 
     # Default / General Fallback
     return (
-        f"I'm here to help with all things **Freelenso**! 😊\n\n"
+        f"I'm here to help you get the most out of **Freelenso**! 😊\n\n"
         "You can ask me about:\n"
-        "• Posting or bidding on projects\n"
-        "• Milestones & escrow security\n"
-        "• Wallet deposits via Razorpay & withdrawals\n"
-        "• Profile setup and messaging"
-    ), ["How to post a project?", "How does escrow work?", "How to bid?", "Wallet & Payments"]
+        "• **[Posting](/projects/create/)** or **[Bidding on Projects](/projects/)**\n"
+        "• **Milestones & Secure Escrow**\n"
+        "• **[Wallet Deposits & Withdrawals](/wallet/)**\n"
+    ), ["How to post a project?", "How does escrow work?", "How to bid on jobs?", "Wallet & Payments"]
 
